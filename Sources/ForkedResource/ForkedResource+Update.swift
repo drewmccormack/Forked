@@ -45,12 +45,14 @@ public extension ForkedResource {
             return mostRecentVersion
         }
     }
-    
+}
+
+private extension ForkedResource {
     /// Removes any commits that no longer play a role
     /// Main should only ever have one commit in it - no common ancestor.
     /// Other branches hold the common ancestors, so they will have zero (ie same as main),
     /// or two or more commits (ie common ancestor, most recent, and — temporarily — inbetweens)
-    private func removeRedundantCommits(in fork: Fork) throws {
+    func removeRedundantCommits(in fork: Fork) throws {
         try serialize {
             let versions = try repository.ascendingVersions(storedIn: fork)
             let versionsToRemove = fork == .main ? versions.dropLast() : versions.dropFirst().dropLast()
@@ -61,7 +63,7 @@ public extension ForkedResource {
     }
     
     /// The current commit on main is copied to any empty forks in the repo, to form a common ancestor
-    private func addCommonAncestorsToEmptyForks() throws {
+    func addCommonAncestorsToEmptyForks() throws {
         for fork in forks where fork != .main {
             let versions = try repository.versions(storedIn: fork)
             if versions.isEmpty {
@@ -69,5 +71,4 @@ public extension ForkedResource {
             }
         }
     }
-    
 }
