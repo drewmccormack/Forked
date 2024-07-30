@@ -23,7 +23,6 @@ public protocol Repository: AnyObject {
 }
 
 extension Repository {
-    
     func ascendingVersions(storedIn fork: Fork) throws -> [Version] {
         try versions(storedIn: fork).sorted()
     }
@@ -39,4 +38,13 @@ extension Repository {
         try versions(storedIn: fork).max()
     }
     
+    func copyMostRecentCommit(from fromFork: Fork, to toFork: Fork) throws {
+        guard fromFork != toFork else { return }
+        guard let fromVersion = try mostRecentVersion(storedIn: fromFork) else {
+            throw Error.attemptToAccessNonExistentCommitInFork(fromFork)
+        }
+        let content = try content(of: fromFork, at: fromVersion)
+        let commit: Commit<ResourceType> = .init(content: content, version: fromVersion)
+        try store(commit, in: toFork)
+    }
 }
