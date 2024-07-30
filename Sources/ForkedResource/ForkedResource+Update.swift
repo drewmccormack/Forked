@@ -3,20 +3,28 @@ import Foundation
 /// Thread-safe wrappers around repository methods
 public extension ForkedResource {
     
-    func delete(_ fork: Fork) throws {
-        try accessRepositoryExclusively {
-            try accessRepositoryExclusively {
-                try repository.delete(fork)
+    func create(_ fork: Fork) throws {
+        try serialize {
+            guard !repository.forks.contains(fork) else {
+                throw Error.attemptToCreateExistingFork(fork)
             }
+            try repository.create(fork)
         }
     }
     
-    @discardableResult func update(_ fork: Fork, with content: CommitContent<ValueType>) throws -> Version {
-        try accessRepositoryExclusively {
-            version = version.next()
-            let commit: Commit<ValueType> = .init(content: content, version: version)
+    func delete(_ fork: Fork) throws {
+        try serialize {
+            try repository.delete(fork)
+        }
+    }
+    
+    @discardableResult func update(_ fork: Fork, with content: CommitContent<ResourceType>) throws -> Version {
+        try serialize {
+            let newVersion = mostRecentVersion.next()
+            let commit: Commit<ResourceType> = .init(content: content, version: newVersion)
             try repository.store(commit, in: fork)
-            return version
+            mostRecentVersion = newVersion
+            return newVersion
         }
     }
     

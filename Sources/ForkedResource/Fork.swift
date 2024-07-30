@@ -1,6 +1,6 @@
 import Foundation
 
-/// A simple type representing a named fork of the resource.
+/// A  type representing a named fork of the resource.
 public struct Fork: Hashable, Sendable {
     public let name: String
     public var protected: Bool { self == .main }
