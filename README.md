@@ -5,6 +5,31 @@
 
 Forked provides a forking data structure to manage concurrent updates to shared resources in a Swift app. 
 
+## Beyond Locks, Queues and Actors
+
+As a Swift developer, you have a variety of tools available to you in order
+to control access to shared data. 
+
+Actors are the most recent means of protecting shared data in Swift, and they do 
+guarantee that your data will not be corrupted by concurrent access from 
+multiple threads. 
+
+Unfortunately, actors can
+experience _interleaving_, whereby a race may arise between multiple invocations of 
+async funcs. This makes it difficult to make guarantees about data validity. 
+Even though your data is protected from corruption, it may end in an unexpected state, 
+and can even be completely invalid.
+
+Queues (eg `Dispatch`) and locks (eg `NSLock`) have been around longer, and can also prevent
+concurrent access to shared data. What's more, they don't suffer from the same
+interleaving issues that actors do. However, improper use can lead to deadlocks (freezes), or 
+temporary blockages of threads, which may result in undesirable
+glitches in an app's user interface.
+
+Forked provides a data structure which can be used across threads, and 
+guarantees not only that shared data is uncorrupted, but also is in a valid state.
+Data races, interleaving and deadlocks are not possible with Forked.
+
 ## Beyond Actors
 
 If you thought that Swift actors could protect shared data, you are only half right. 
