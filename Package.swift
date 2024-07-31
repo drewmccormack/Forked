@@ -17,5 +17,6 @@ let package = Package(
             name: "ForkedTests",
             dependencies: ["Forked"]
         ),
-    ]
+    ],
+    swiftLanguageVersions: [.v6]
 )
