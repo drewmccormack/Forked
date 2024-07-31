@@ -2,7 +2,8 @@ import Foundation
 
 /// Conforming types are capable of resolving conflicts during a merge.
 public protocol Resolver {
-    
-//    func resolveConflict(betweenMain mainFile: , andBranch branchFile: FilePresence, withCommonAncestor ancestorFile: FilePresence) throws -> ConflictResolution
+    associatedtype ResourceType: Resource
+
+    func mergedContent(forConflicting commits: (Commit<ResourceType>, Commit<ResourceType>), withCommonAncestor ancestorCommit: Commit<ResourceType>) throws -> CommitContent<ResourceType>
     
 }

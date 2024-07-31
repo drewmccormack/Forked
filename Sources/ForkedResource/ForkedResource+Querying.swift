@@ -52,12 +52,33 @@ public extension ForkedResource {
         }
     }
     
+    func mostRecentCommit(of fork: Fork) throws -> Commit<ResourceType> {
+        try serialize {
+            let version = try mostRecentVersion(of: fork)
+            let content = try content(of: fork)
+            return Commit(content: content, version: version)
+        }
+    }
+    
+    func commonAncestor(of fork: Fork) throws -> Commit<ResourceType> {
+        try serialize {
+            if let forkVersion = try repository.ascendingVersions(storedIn: fork).first, fork != .main {
+                let content = try repository.content(of: fork, at: forkVersion)
+                return Commit(content: content, version: forkVersion)
+            } else {
+                let mainVersion = try repository.mostRecentVersion(storedIn: .main)!
+                let content = try repository.content(of: .main, at: mainVersion)
+                return Commit(content: content, version: mainVersion)
+            }
+        }
+    }
+    
     /// Whether fork has commits not yet merged into main.
     /// If there are more than one commits in the repo for this fork, the fork must have changes not in main:
     /// Zero commits means fork is same as main.
     /// One commit is a common ancestor, meaning main has changes, but fork is unchanged from last merge.
     /// Two or more commits means fork has changes not yet in main.
-    func unmergedCommitsForMain(existIn fork: Fork) throws -> Bool {
+    func hasUnmergedCommitsForMain(in fork: Fork) throws -> Bool {
         try serialize {
             guard fork != .main else { return false }
             return try repository.versions(storedIn: fork).count > 1
@@ -67,7 +88,7 @@ public extension ForkedResource {
     /// Returns whether main has commits that haven't been merged into fork yet.
     /// Common ancestor is stored in the fork if either the fork or main get updated.
     /// By comparing common ancestor to main version, we can see if main has been updated.
-    func unmergedCommitsExistInMain(for fork: Fork) throws -> Bool {
+    func hasUnmergedCommitsInMain(for fork: Fork) throws -> Bool {
         try serialize {
             let mainVersion = try repository.ascendingVersions(storedIn: .main).last!
             guard let ancestorVersion = try repository.ascendingVersions(storedIn: fork).first else {
