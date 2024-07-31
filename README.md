@@ -5,6 +5,43 @@
 
 Forked provides a forking data structure to manage concurrent updates to shared resources in a Swift app. 
 
+## Beyond Actors
+
+If you thought that Swift actors could protect shared data, you are only half right. 
+It is true that an actor will prevent concurrent access to a shared resource from
+multiple threads, thereby ensuring it is not corrupted. But actors do not prevent
+data races, and can lead to unexpected behavior, and difficult to track down bugs.
+In short, your shared data may not be corrupted, but it may not be valid either.
+
+Take this simple example of an actor that maintains a count.
+
+```swift
+actor Counter {
+    var sum: Int = 0
+    
+    func addOne() {
+        sum += 1
+    }
+    
+    func addTwo() {
+        sum += 2
+    }
+}
+
+Task {
+    let counter = Counter()
+    async let first = await counter.addOne()
+    async let second = await counter.addTwo()
+    _ = await [first, second]
+    let result = await counter.sum
+    print("The result is \(result)")
+}
+```
+
+So far, so good. Even though we have deliberately called the `addOne` and `addTwo`
+funcs concurrently, we can be sure that each func is executed serially, 
+and the result is always 3.
+
 ## Features
 
 - Forking data structure to manage concurrent updates
@@ -39,7 +76,6 @@ import Forked
 ```
 
 ## Usage
-
 
 ## Contributing
 
