@@ -34,7 +34,6 @@ public extension ForkedResource {
                     let ancestorCommit = try commonAncestor(of: toFork)
                     let content = try resolver.mergedContent(forConflicting: (mainCommit, toCommit), withCommonAncestor: ancestorCommit)
                     try update(toFork, with: content)
-                    try removeRedundantCommits(in: toFork) // Make sure we only have 2 files in fork
                     try repository.copyMostRecentCommit(from: .main, to: toFork) // New common ancestor is the main version
                     try removeCommonAncestor(in: toFork) // Remove old common ancestor
                     return .resolveConflict
