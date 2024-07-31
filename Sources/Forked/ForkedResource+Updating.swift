@@ -14,6 +14,7 @@ public extension ForkedResource {
     
     func delete(_ fork: Fork) throws {
         try serialize {
+            guard fork != .main else { throw Error.attemptToDeleteMainFork }
             try repository.delete(fork)
         }
     }

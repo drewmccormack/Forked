@@ -1,9 +1,9 @@
-# ForkedResource
+# Forked
 
 [![Swift Version](https://img.shields.io/badge/swift-5.7-orange.svg)](https://swift.org/download/)
 [![Platform](https://img.shields.io/badge/platforms-macOS%20|%20iOS%20|%20tvOS%20|%20watchOS%20|%20Linux-lightgrey.svg)](https://swift.org/platform-support/)
 
-ForkedResource provides a forking data structure to manage concurrent updates to shared resources in a Swift app. 
+Forked provides a forking data structure to manage concurrent updates to shared resources in a Swift app. 
 
 ## Features
 
@@ -20,22 +20,22 @@ ForkedResource provides a forking data structure to manage concurrent updates to
 
 ### Swift Package Manager
 
-To add ForkedResource to your project, add the following to your `Package.swift` file:
+To add Forked to your project, add the following to your `Package.swift` file:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/drewmccormack/ForkedResource.git", from: "0.1.0")
+    .package(url: "https://github.com/drewmccormack/Forked.git", from: "0.1.0")
 ]
 ```
 
-And then add the ForkedResource library to your target.
+And then add the Forked library to your target.
 
 ### Importing
 
-In the files where you want to use ForkedResource, import it:
+In the files where you want to use Forked, import it:
 
 ```swift
-import ForkedResource
+import Forked
 ```
 
 ## Usage
@@ -47,4 +47,4 @@ Contributions are welcome! Please feel free to submit a pull request or open an 
 
 ## License
 
-ForkedResource is available under the MIT license. See the LICENSE file for more info.
+Forked is available under the MIT license. See the LICENSE file for more info.

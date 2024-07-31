@@ -6,4 +6,6 @@ public enum Error: Swift.Error {
     case attemptToDeleteMainFork
     case attemptToCreateExistingFork(Fork)
     case attemptToAccessNonExistentCommitInFork(Fork)
+    case attemptToAccessNonExistentVersion(Version, Fork)
+    case attemptToReplaceExistingVersion(Version, Fork)
 }

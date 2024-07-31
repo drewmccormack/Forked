@@ -5,9 +5,17 @@ public enum CommitContent<R: Resource> {
     case resourceValue(R)
 }
 
-public struct Commit<R: Resource> {
+public struct Commit<R: Resource>: Hashable, Equatable {
     public var content: CommitContent<R>
     public var version: Version
+    
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(version)
+    }
+    
+    public static func == (lhs: Commit<R>, rhs: Commit<R>) -> Bool {
+        lhs.version == rhs.version
+    }
 }
 
 extension CommitContent: Codable where R: Codable {}

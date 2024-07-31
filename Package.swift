@@ -3,19 +3,19 @@
 import PackageDescription
 
 let package = Package(
-    name: "ForkedResource",
+    name: "Forked",
     platforms: [.macOS(.v12), .iOS(.v14), .tvOS(.v14), .watchOS(.v7), .macCatalyst(.v14)],
     products: [
         .library(
-            name: "ForkedResource",
-            targets: ["ForkedResource"]),
+            name: "Forked",
+            targets: ["Forked"]),
     ],
     targets: [
         .target(
-            name: "ForkedResource"),
+            name: "Forked"),
         .testTarget(
-            name: "ForkedResourceTests",
-            dependencies: ["ForkedResource"]
+            name: "ForkedTests",
+            dependencies: ["Forked"]
         ),
     ]
 )
