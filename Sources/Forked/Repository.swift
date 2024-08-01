@@ -12,7 +12,7 @@ public protocol Repository: AnyObject {
     
     var forks: [Fork] { get }
 
-    func create(_ fork: Fork) throws
+    func create(_ fork: Fork, withInitialCommit commit: Commit<ResourceType>) throws
     func delete(_ fork: Fork) throws
     
     func versions(storedIn fork: Fork) throws -> Set<Version>

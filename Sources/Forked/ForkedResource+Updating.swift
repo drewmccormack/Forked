@@ -8,7 +8,7 @@ public extension ForkedResource {
             guard !repository.forks.contains(fork) else {
                 throw Error.attemptToCreateExistingFork(fork)
             }
-            try repository.create(fork)
+            try repository.create(fork, withInitialCommit: .init(content: .none, version: Version.initialVersion))
         }
     }
     

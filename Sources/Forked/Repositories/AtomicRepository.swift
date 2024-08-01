@@ -7,11 +7,11 @@ class AtomicRepository<ResourceType: Resource>: Repository {
         Array(forkToResource.keys)
     }
     
-    func create(_ fork: Fork) throws {
-        guard forkToResource[fork] == nil else { 
+    func create(_ fork: Fork, withInitialCommit commit: Commit<ResourceType>) throws {
+        guard forkToResource[fork] == nil else {
             throw Error.attemptToCreateExistingFork(fork)
         }
-        forkToResource[fork] = []
+        forkToResource[fork] = [commit]
     }
     
     func delete(_ fork: Fork) throws {

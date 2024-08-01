@@ -21,9 +21,7 @@ public final class ForkedResource<RespositoryType: Repository>: @unchecked Senda
         self.repository = repository
 
         if !repository.forks.contains(.main) {
-            try repository.create(.main)
-            let firstCommit: Commit<ResourceType> = .init(content: .none, version: .init())
-            try repository.store(firstCommit, in: .main)
+            try repository.create(.main, withInitialCommit: .init(content: .none, version: Version.initialVersion))
         }
         
         self.mostRecentVersion = try repository.mostRecentVersion()
