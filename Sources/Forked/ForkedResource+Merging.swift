@@ -2,6 +2,11 @@ import Foundation
 
 public extension ForkedResource {
     
+    /// Merges from one fork into the main fork. The resolver is used if a conflict exists, and may perform a 3-way merge.
+    /// By default, if no resolver is passed in, a last-write-wins strategy is applied, namely the most recent version is chosen as the result.
+    /// A `MergeAction` is returned to indicate the type of merge that took place.
+    /// After this operation, the main fork may be updated. The version of the other fork will be unchanged.
+    /// Note that this may change the commits stored in unrelated forks, in order to preserve common ancestors.
     @discardableResult func mergeIntoMain(from fromFork: Fork, resolver: (any Resolver) = LastWriteWinsResolver()) throws -> MergeAction {
         try serialize {
             switch (try hasUnmergedCommitsForMain(in: fromFork), try hasUnmergedCommitsInMain(for: fromFork)) {
@@ -25,6 +30,10 @@ public extension ForkedResource {
         }
     }
     
+    /// Merges from the main fork into another fork. The resolver is used if a conflict exists, and may perform a 3-way merge.
+    /// By default, if no resolver is passed in, a last-write-wins strategy is applied, namely the most recent version is chosen as the result.
+    /// A `MergeAction` is returned to indicate the type of merge that took place.
+    /// After this operation, the fork may be updated, with the version of the main fork unchanged.
     @discardableResult func mergeFromMain(into toFork: Fork, resolver: (any Resolver) = LastWriteWinsResolver()) throws -> MergeAction {
         try serialize {
             switch (try hasUnmergedCommitsForMain(in: toFork), try hasUnmergedCommitsInMain(for: toFork)) {
@@ -59,7 +68,8 @@ public extension ForkedResource {
         }
     }
     
-    /// Merges all forks so they are all at the same version
+    /// Merges all forks so they are all at the same version. This involves merging all forks into the main fork
+    /// first, and then merging the main fork into all other forks.
     func mergeAllForks(resolver: (any Resolver) = LastWriteWinsResolver()) throws {
         try serialize {
             // Update main with changes in all other forks

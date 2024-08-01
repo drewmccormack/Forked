@@ -14,7 +14,7 @@ public extension ForkedResource {
     
     func delete(_ fork: Fork) throws {
         try serialize {
-            guard fork != .main else { throw Error.attemptToDeleteMainFork }
+            guard !fork.isProtected else { throw Error.attemptToDeleteProtectedFork(fork) }
             try repository.delete(fork)
         }
     }
@@ -90,7 +90,7 @@ internal extension ForkedResource {
     /// merged into main, and that they are at the same version.
     func removeAllCommits(in fork: Fork) throws {
         try serialize {
-            guard fork != .main else { throw Error.attemptToDeleteMainFork }
+            guard fork != .main else { throw Error.attemptToDeleteProtectedFork(fork) }
             let versions = try repository.ascendingVersions(storedIn: fork)
             try versions.forEach {
                 try repository.removeCommit(at: $0, from: fork)

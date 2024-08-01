@@ -1,48 +1,55 @@
 import Foundation
 
-class AtomicRepository<ResourceType: Resource>: Repository {
+/// An atomic repository is one that is completely in memory.
+/// If the `Resource` it contains conforms to `Codable`, the `AtomicRepository` is
+/// also `Codable`, and can be converted to a serialized form and saved as a file.
+/// Saving and loading are atomic, that is, the whole repository is loaded from file, and the whole
+/// file is written to disk.
+public final class AtomicRepository<ResourceType: Resource>: Repository {
     private var forkToResource: [Fork:[Commit<ResourceType>]] = [:]
     
-    var forks: [Fork] {
+    public init() {}
+    
+    public var forks: [Fork] {
         Array(forkToResource.keys)
     }
     
-    func create(_ fork: Fork, withInitialCommit commit: Commit<ResourceType>) throws {
+    public func create(_ fork: Fork, withInitialCommit commit: Commit<ResourceType>) throws {
         guard forkToResource[fork] == nil else {
             throw Error.attemptToCreateExistingFork(fork)
         }
         forkToResource[fork] = [commit]
     }
     
-    func delete(_ fork: Fork) throws {
+    public func delete(_ fork: Fork) throws {
         guard forkToResource[fork] != nil else {
             throw Error.attemptToAccessNonExistentFork(fork)
         }
         forkToResource[fork] = nil
     }
     
-    func versions(storedIn fork: Fork) throws -> Set<Version> {
+    public func versions(storedIn fork: Fork) throws -> Set<Version> {
         guard let commits = forkToResource[fork] else {
             throw Error.attemptToAccessNonExistentFork(fork)
         }
         return Set(commits.map { $0.version })
     }
     
-    func removeCommit(at version: Version, from fork: Fork) throws {
+    public func removeCommit(at version: Version, from fork: Fork) throws {
         guard forkToResource[fork]?.first(where: { $0.version == version }) != nil else {
             throw Error.attemptToAccessNonExistentVersion(version, fork)
         }
         forkToResource[fork]!.removeAll(where: { $0.version == version })
     }
     
-    func content(of fork: Fork, at version: Version) throws -> CommitContent<ResourceType> {
+    public func content(of fork: Fork, at version: Version) throws -> CommitContent<ResourceType> {
         guard let commit = forkToResource[fork]?.first(where: { $0.version == version }) else {
             throw Error.attemptToAccessNonExistentVersion(version, fork)
         }
         return commit.content
     }
     
-    func store(_ commit: Commit<ResourceType>, in fork: Fork) throws {
+    public func store(_ commit: Commit<ResourceType>, in fork: Fork) throws {
         guard forkToResource[fork] != nil else {
             throw Error.attemptToAccessNonExistentFork(fork)
         }
@@ -51,5 +58,6 @@ class AtomicRepository<ResourceType: Resource>: Repository {
         }
         forkToResource[fork]!.append(commit)
     }
-    
 }
+
+extension AtomicRepository: Codable where ResourceType: Codable {}

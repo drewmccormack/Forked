@@ -1,17 +1,23 @@
 import Foundation
 
-/// A  type representing a named fork of the resource.
-public struct Fork: Hashable, Sendable {
+/// A  type representing a named fork.
+public struct Fork: Hashable, Codable, Sendable {
+    /// The name of the fork
     public let name: String
-    public var protected: Bool { self == .main }
+    
+    /// Whether the fork is protected from deletion. Only
+    /// the main fork has this protection for now.
+    public var isProtected: Bool { self == .main }
 
+    /// Initialize a fork with a given unique name.
     public init(name: String) {
         self.name = name
     }
     
-    /// The only fork created by default. All other forkes are formed from
-    /// the main, and can be merged back into it. It acts as the central trunk of the
-    /// version tree
+    /// The only fork created by default. All other forkes
+    /// can be merged with the main, but not directly with
+    /// each other.. It acts as the central hub of the
+    /// wheel of forks.
     public static let main = Fork(name: "main")
 }
 
