@@ -1,7 +1,7 @@
 import Testing
 @testable import Forked
 
-struct MergingSuite {
+struct MergingForksSuite {
     let repo = AtomicRepository<Int>()
     let resource: ForkedResource<AtomicRepository<Int>>
     let fork = Fork(name: "fork")
