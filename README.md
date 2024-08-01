@@ -9,16 +9,18 @@ or even actors.
 
 In short, it's forking brilliant! [1] 
 
+[1] "Forking" jokes are inspired by [The Good Place](https://en.wikipedia.org/wiki/The_Good_Place).
+
 ## Features
 
-Scroll down for a fuller discussion of Forked. Here is the bullet point summary.
+Scroll down for a fuller discussion of Forked. Here is the tldr; summary.
 
 - Existing approaches to sharing data can easily lead to invalid state
     - Actors suffer from data races due to interleaving
     - Locks can deadlock, and require disipline to use right
     - Queues can also deadlock, and tend to result in verbose code
 - Forked...
-    - Provides a shared data structure that avoids all these issues
+    - Provides a shared data structure that avoids these issues
     - Restricts access to shared data, like an actor
     - Can be used where different subsystems are updating the same data
     - Works with other shared resources, like files
@@ -58,6 +60,20 @@ import Forked
 ```
 
 ## Usage
+
+Define your shared data type
+
+Define how you want it to merge if a conflict should arise due to concurrent changes
+
+Decide what subsystems need to access it, and make forks for each
+
+Only one subsystem should update a given fork
+
+One rule of fork club: keep a fork chronological. 
+Only update a fork with new data that comes after what is already in the for
+
+We plan to add tools to help with merging of data. So before you get discouraged,
+it's forking comin', OK?!
 
 ## Beyond Locks, Queues and Actors
 
@@ -131,4 +147,3 @@ Contributions are welcome! Please feel free to submit a pull request or open an 
 Forked is available under the MIT license. See the LICENSE file for more info.
 
 
-[1] "Forking" jokes inspired by "The Good Place".
