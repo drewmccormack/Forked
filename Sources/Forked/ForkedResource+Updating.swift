@@ -92,8 +92,7 @@ internal extension ForkedResource {
         try serialize {
             guard fork != .main else { throw Error.attemptToDeleteMainFork }
             let versions = try repository.ascendingVersions(storedIn: fork)
-            let versionsToRemove = fork == .main ? versions.dropLast() : versions.dropFirst().dropLast()
-            try versionsToRemove.forEach {
+            try versions.forEach {
                 try repository.removeCommit(at: $0, from: fork)
             }
         }
