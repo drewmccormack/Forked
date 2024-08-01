@@ -19,6 +19,18 @@ public extension ForkedResource {
         }
     }
     
+    @discardableResult func update(_ fork: Fork, with resource: ResourceType) throws -> Version {
+        try serialize {
+            try update(fork, with: .resource(resource))
+        }
+    }
+    
+    @discardableResult func removeContent(from fork: Fork) throws -> Version {
+        try serialize {
+            try update(fork, with: .none)
+        }
+    }
+    
     @discardableResult func update(_ fork: Fork, with content: CommitContent<ResourceType>) throws -> Version {
         try serialize {
             func addNewCommit() throws {

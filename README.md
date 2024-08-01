@@ -101,6 +101,108 @@ Forked provides a data structure which can be used across threads, and
 guarantees not only that shared data is uncorrupted, but also is in a valid state.
 Data races, interleaving and deadlocks are not possible with Forked.
 
+## Forked and Actors
+
+May seem forked replaces them
+
+Not true. Forked just takes over one aspect of actors, namely, controlling access to shared data
+
+Forked does not provide any executable code, it is purely a data structure
+
+An actor has executable code
+
+You can use the two together
+
+Take this scenario
+
+```
+struct AppData { ... }
+
+actor Store {
+    private var appData: AppData
+
+    func download() async {
+        // Code including suspension points (await)
+        ...
+    }
+    
+    func import() async {
+        // Code including suspension points (await)
+        ...
+    }
+    
+    func userEntry() {
+        ...
+    }    
+}
+
+```
+This actor is charged with storing your app's data, and can be updated in a
+variety of different ways. The user could make changes; a long running data 
+import may take place, and data may even be downloaded from a server. The 
+funcs `import` and `download` are asynchronous, and can await other funcs.
+
+With this design, there is a reasonable chance that if any of the funcs are
+in-flight at the same time, or even invoked repeatedly, `sharedData` will
+end up invalid, or simply not contain all the changes. The actor will prevent
+concurrent access from different threads, but will not guarantee that only one
+func is in-flight at the same time, meaning it will be very easy for, say, a
+`download` to overwrite changes made by the user.
+
+Here is the same setup using Forked, which guarantees no data will ever be lost.
+
+```
+struct AppData: Resource { ... }
+struct AppDataResolver: Resolver { ... }
+
+actor Store {
+    private let forkedAppData: ForkedResource<AppData>
+    
+    private let resolver = AppDataResolver()
+    private let downloadFork = Fork(name: "download")
+    private let importFork = Fork(name: "import")
+    private let userEntryFork = Fork(name: "userEntry")
+
+    init() {
+        // Create new forked resource (if needed)
+        forkedAppData = ForkedResource<AppData>()
+        forkedAppData.update(.main, with: AppData())
+        forkedAppData.create(downloadFork)
+        forkedAppData.create(importFork)
+        forkedAppData.create(userEntryFork)
+    }
+
+    func download() async {
+        // Get latest data
+        forkedAppData.mergeAllForks(into: .downloadFork, resolver: resolver)
+        var appData: AppData = forkedAppData.resource(of: downloadFork)!
+        
+        // Update appData with downloaded data (async)
+        ...
+        
+        // Save
+        forkedAppData.update(downloadFork, with: appData)
+    }
+    
+    func import() async {
+        // Get latest data
+        forkedAppData.mergeAllForks(into: importFork)
+        var appData: AppData = forkedAppData.resource(of: importFork)!
+        
+        // Update appData with imported data (async)
+        ...
+        
+        // Save
+        forkedAppData.update(importFork, with: appData)
+    }
+    
+    func userEntry() {
+        ...
+    }    
+}
+
+```
+
 ## Beyond Actors
 
 If you thought that Swift actors could protect shared data, you are only half right. 

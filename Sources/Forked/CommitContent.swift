@@ -2,7 +2,7 @@ import Foundation
 
 public enum CommitContent<R: Resource> {
     case none
-    case resourceValue(R)
+    case resource(R)
 }
 
 public struct Commit<R: Resource>: Hashable, Equatable {

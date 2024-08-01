@@ -52,6 +52,18 @@ public extension ForkedResource {
         }
     }
     
+    /// Will return the resource, if there is one available
+    func resource(of fork: Fork) throws -> ResourceType? {
+        try serialize {
+            let content = try content(of: fork)
+            if case let .resource(resource) = content {
+                return resource
+            } else {
+                return nil
+            }
+        }
+    }
+    
     func mostRecentCommit(of fork: Fork) throws -> Commit<ResourceType> {
         try serialize {
             let version = try mostRecentVersion(of: fork)
@@ -90,6 +102,7 @@ public extension ForkedResource {
     /// By comparing common ancestor to main version, we can see if main has been updated.
     func hasUnmergedCommitsInMain(for fork: Fork) throws -> Bool {
         try serialize {
+            guard fork != .main else { return false }
             let mainVersion = try repository.ascendingVersions(storedIn: .main).last!
             guard let ancestorVersion = try repository.ascendingVersions(storedIn: fork).first else {
                 // If there is nothing in the fork, it is same as main

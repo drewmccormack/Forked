@@ -46,3 +46,33 @@ public extension ForkedResource {
         }
     }
 }
+
+public extension ForkedResource {
+    
+    /// Merges other forks into main, and then main into the target fork, so it has up-to-date data from all other forks
+    func mergeAllForks<ResolverType: Resolver>(into toFork: Fork, resolver: ResolverType) throws where ResolverType.ResourceType == ResourceType {
+        try serialize {
+            for fork in forks where fork != toFork && fork != .main {
+                try mergeIntoMain(from: fork, resolver: resolver)
+            }
+            try mergeFromMain(into: toFork, resolver: resolver)
+        }
+    }
+    
+    /// Merges all forks so they are all at the same version
+    func mergeAllForks<ResolverType: Resolver>(resolver: ResolverType) throws where ResolverType.ResourceType == ResourceType {
+        try serialize {
+            // Update main with changes in all other forks
+            for fork in forks where fork != .main {
+                try mergeIntoMain(from: fork, resolver: resolver)
+            }
+            
+            // Merge back into other forks to fast-forward them to main version
+            for fork in forks where fork != .main {
+                let action = try mergeFromMain(into: fork, resolver: resolver)
+                assert(action == .fastForward)
+            }
+        }
+    }
+    
+}
