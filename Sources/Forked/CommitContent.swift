@@ -20,3 +20,5 @@ public struct Commit<R: Resource>: Hashable, Equatable {
 
 extension CommitContent: Codable where R: Codable {}
 extension Commit: Codable where R: Codable {}
+
+extension CommitContent: Equatable where R: Equatable {}

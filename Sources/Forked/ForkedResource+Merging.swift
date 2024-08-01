@@ -2,7 +2,7 @@ import Foundation
 
 public extension ForkedResource {
     
-    @discardableResult func mergeIntoMain<ResolverType: Resolver>(from fromFork: Fork, resolver: ResolverType) throws -> MergeAction where ResolverType.ResourceType == ResourceType {
+    @discardableResult func mergeIntoMain(from fromFork: Fork, resolver: (any Resolver) = LastWriteWinsResolver()) throws -> MergeAction {
         try serialize {
             switch (try hasUnmergedCommitsForMain(in: fromFork), try hasUnmergedCommitsInMain(for: fromFork)) {
                 case (true, true):
@@ -25,7 +25,7 @@ public extension ForkedResource {
         }
     }
     
-    @discardableResult func mergeFromMain<ResolverType: Resolver>(into toFork: Fork, resolver: ResolverType) throws -> MergeAction where ResolverType.ResourceType == ResourceType {
+    @discardableResult func mergeFromMain(into toFork: Fork, resolver: (any Resolver) = LastWriteWinsResolver()) throws -> MergeAction {
         try serialize {
             switch (try hasUnmergedCommitsForMain(in: toFork), try hasUnmergedCommitsInMain(for: toFork)) {
                 case (true, true):
@@ -50,7 +50,7 @@ public extension ForkedResource {
 public extension ForkedResource {
     
     /// Merges other forks into main, and then main into the target fork, so it has up-to-date data from all other forks
-    func mergeAllForks<ResolverType: Resolver>(into toFork: Fork, resolver: ResolverType) throws where ResolverType.ResourceType == ResourceType {
+    func mergeAllForks(into toFork: Fork, resolver: (any Resolver) = LastWriteWinsResolver()) throws {
         try serialize {
             for fork in forks where fork != toFork && fork != .main {
                 try mergeIntoMain(from: fork, resolver: resolver)
@@ -60,7 +60,7 @@ public extension ForkedResource {
     }
     
     /// Merges all forks so they are all at the same version
-    func mergeAllForks<ResolverType: Resolver>(resolver: ResolverType) throws where ResolverType.ResourceType == ResourceType {
+    func mergeAllForks(resolver: (any Resolver) = LastWriteWinsResolver()) throws {
         try serialize {
             // Update main with changes in all other forks
             for fork in forks where fork != .main {
