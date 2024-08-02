@@ -9,6 +9,13 @@ public enum CommitContent<Resource> {
     
     /// The content contains a value of the resource.
     case resource(Resource)
+    
+    public var resource: Resource? {
+        if case let .resource(resource) = self {
+            return resource
+        }
+        return nil
+    }
 }
 
 /// A commit comprises of content, which is usually a value of the stored resource,

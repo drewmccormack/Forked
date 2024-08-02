@@ -107,3 +107,4 @@ struct MergingForksSuite {
         #expect(try resource.repository.versions(storedIn: fork).count == 2)
     }
 }
+

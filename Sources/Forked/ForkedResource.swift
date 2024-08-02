@@ -11,6 +11,9 @@ public final class ForkedResource<RespositoryType: Repository>: @unchecked Senda
     /// use the repository from outside the `ForkedResource` object. Doing so
     /// may lead to threading errors or logic bugs.
     let repository: RespositoryType
+    
+    // Resolves conflicts
+    internal let resolver: Resolver<Resource> = .init()
         
     /// The timestamp of the most recent resource version added on any fork
     internal var mostRecentVersion: Version
