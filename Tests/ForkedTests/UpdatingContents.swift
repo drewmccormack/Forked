@@ -43,10 +43,21 @@ struct UpdatingContentsSuite {
     
     @Test func multipleUpdates() throws {
         try resource.update(fork, with: 1)
+        #expect(try resource.resource(of: fork) == 1)
         try resource.update(fork, with: 2)
         #expect(try resource.resource(of: fork) == 2)
         #expect(try resource.resource(of: .main) == .none)
         #expect(try resource.repository.versions(storedIn: fork).count == 2)
         #expect(try resource.repository.versions(storedIn: .main).count == 1)
+    }
+    
+    @Test func versionsIncrement() throws {
+        let v1 = try resource.mostRecentVersion(of: fork)
+        try resource.update(fork, with: 1)
+        let v2 = try resource.mostRecentVersion(of: fork)
+        #expect(v2 > v1)
+        #expect(v2.timestamp > v1.timestamp)
+        #expect(v2.id != v1.id)
+        #expect(v2.count == v1.count+1)
     }
 }

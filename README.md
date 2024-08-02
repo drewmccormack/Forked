@@ -9,8 +9,6 @@ or even actors.
 
 In short, it's forking brilliant! [1] 
 
-[1] "Forking" jokes are inspired by [The Good Place](https://en.wikipedia.org/wiki/The_Good_Place).
-
 ## Features
 
 Scroll down for a fuller discussion of Forked. Here is the tldr; summary.
@@ -248,4 +246,6 @@ Contributions are welcome! Please feel free to submit a pull request or open an 
 
 Forked is available under the MIT license. See the LICENSE file for more info.
 
+## Footnotes
 
+[1] "Forking" jokes are inspired by [The Good Place](https://en.wikipedia.org/wiki/The_Good_Place).

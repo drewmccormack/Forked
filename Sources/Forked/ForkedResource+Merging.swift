@@ -58,7 +58,8 @@ public extension ForkedResource {
 
 public extension ForkedResource {
     
-    /// Merges other forks into main, and then main into the target fork, so it has up-to-date data from all other forks
+    /// Merges other forks into main, and then main into the target fork, so it has up-to-date data from all other forks.
+    /// You can pass in `.main` if you want to merge all other forks into `.main`.
     func mergeAllForks(into toFork: Fork, resolver: (any Resolver) = LastWriteWinsResolver()) throws {
         try serialize {
             for fork in forks where fork != toFork && fork != .main {
