@@ -8,14 +8,14 @@ import Foundation
 /// Classes conforming to this type simply have to setup a storage
 /// mechanism, and handle the requests, keeping commits assigned to forks.
 public protocol Repository: AnyObject {
-    associatedtype ResourceType: Resource
+    associatedtype Resource
     
     /// The forks in the repository, including .main, in no particular order.
     var forks: [Fork] { get }
 
     /// Creates a fork providing an initial commit to populate it with.
     /// Throws if the fork is already present.
-    func create(_ fork: Fork, withInitialCommit commit: Commit<ResourceType>) throws
+    func create(_ fork: Fork, withInitialCommit commit: Commit<Resource>) throws
     
     /// Delete an existing fork. Throws if it isn't present.
     func delete(_ fork: Fork) throws
@@ -29,11 +29,11 @@ public protocol Repository: AnyObject {
     
     /// Get the content from the repo with the version passed. If not found,
     /// it will throw an error.
-    func content(of fork: Fork, at version: Version) throws -> CommitContent<ResourceType>
+    func content(of fork: Fork, at version: Version) throws -> CommitContent<Resource>
     
     /// Store a version of the resource in a fork. The fork must exist, and the
     /// version must not already be in the fork, otherwise an error is thrown.
-    func store(_ commit: Commit<ResourceType>, in fork: Fork) throws
+    func store(_ commit: Commit<Resource>, in fork: Fork) throws
     
     /// Remove a commit for a given version from the fork. If the version is
     /// not found, an error is thrown.
@@ -66,7 +66,7 @@ extension Repository {
             throw Error.attemptToAccessNonExistentCommitInFork(fromFork)
         }
         let content = try content(of: fromFork, at: fromVersion)
-        let commit: Commit<ResourceType> = .init(content: content, version: fromVersion)
+        let commit: Commit<Resource> = .init(content: content, version: fromVersion)
         try store(commit, in: toFork)
     }
 }

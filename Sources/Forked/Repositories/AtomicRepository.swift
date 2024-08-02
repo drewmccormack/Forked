@@ -5,8 +5,8 @@ import Foundation
 /// also `Codable`, and can be converted to a serialized form and saved as a file.
 /// Saving and loading are atomic, that is, the whole repository is loaded from file, and the whole
 /// file is written to disk.
-public final class AtomicRepository<ResourceType: Resource>: Repository {
-    private var forkToResource: [Fork:[Commit<ResourceType>]] = [:]
+public final class AtomicRepository<Resource>: Repository {
+    private var forkToResource: [Fork:[Commit<Resource>]] = [:]
     
     public init() {}
     
@@ -14,7 +14,7 @@ public final class AtomicRepository<ResourceType: Resource>: Repository {
         Array(forkToResource.keys)
     }
     
-    public func create(_ fork: Fork, withInitialCommit commit: Commit<ResourceType>) throws {
+    public func create(_ fork: Fork, withInitialCommit commit: Commit<Resource>) throws {
         guard forkToResource[fork] == nil else {
             throw Error.attemptToCreateExistingFork(fork)
         }
@@ -42,14 +42,14 @@ public final class AtomicRepository<ResourceType: Resource>: Repository {
         forkToResource[fork]!.removeAll(where: { $0.version == version })
     }
     
-    public func content(of fork: Fork, at version: Version) throws -> CommitContent<ResourceType> {
+    public func content(of fork: Fork, at version: Version) throws -> CommitContent<Resource> {
         guard let commit = forkToResource[fork]?.first(where: { $0.version == version }) else {
             throw Error.attemptToAccessNonExistentVersion(version, fork)
         }
         return commit.content
     }
     
-    public func store(_ commit: Commit<ResourceType>, in fork: Fork) throws {
+    public func store(_ commit: Commit<Resource>, in fork: Fork) throws {
         guard forkToResource[fork] != nil else {
             throw Error.attemptToAccessNonExistentFork(fork)
         }
@@ -60,4 +60,4 @@ public final class AtomicRepository<ResourceType: Resource>: Repository {
     }
 }
 
-extension AtomicRepository: Codable where ResourceType: Codable {}
+extension AtomicRepository: Codable where Resource: Codable {}

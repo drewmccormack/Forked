@@ -7,7 +7,7 @@ public struct LastWriteWinsResolver: Resolver {
     
     public init() {}
     
-    public func mergedContent<R: Resource>(forConflicting commits: (Commit<R>, Commit<R>), withCommonAncestor ancestorCommit: Commit<R>) throws -> CommitContent<R> {
+    public func mergedContent<Resource>(forConflicting commits: (Commit<Resource>, Commit<Resource>), withCommonAncestor ancestorCommit: Commit<Resource>) throws -> CommitContent<Resource> {
         let firstCommitIsMostRecent = (commits.0.version.timestamp, commits.0.version.id.uuidString) > (commits.1.version.timestamp, commits.1.version.id.uuidString)
         return firstCommitIsMostRecent ? commits.0.content : commits.1.content
     }

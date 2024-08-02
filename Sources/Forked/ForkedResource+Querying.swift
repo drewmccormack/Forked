@@ -50,7 +50,7 @@ public extension ForkedResource {
     /// Note that this is not necessarily a commit stored in the fork of the repo itself. If the
     /// fork is fully merged with main, the repo fork itself may be empty (to save space)
     /// and the current commit may actually be returned from `.main`.
-    func content(of fork: Fork) throws -> CommitContent<ResourceType> {
+    func content(of fork: Fork) throws -> CommitContent<Resource> {
         try serialize {
             if let forkVersion = try repository.mostRecentVersion(storedIn: fork) {
                 return try repository.content(of: fork, at: forkVersion)
@@ -62,7 +62,7 @@ public extension ForkedResource {
     }
     
     /// Will return the resource, if there is one available, and `nil` otherwise.
-    func resource(of fork: Fork) throws -> ResourceType? {
+    func resource(of fork: Fork) throws -> Resource? {
         try serialize {
             let content = try content(of: fork)
             if case let .resource(resource) = content {
@@ -77,7 +77,7 @@ public extension ForkedResource {
     /// not actually be from the corresponding fork of the repository.
     /// In particular, if a repository fork is empty, it is considered to share the same
     /// version as the main fork, and the main fork commit will be returned.
-    func mostRecentCommit(of fork: Fork) throws -> Commit<ResourceType> {
+    func mostRecentCommit(of fork: Fork) throws -> Commit<Resource> {
         try serialize {
             let version = try mostRecentVersion(of: fork)
             let content = try content(of: fork)
@@ -90,7 +90,7 @@ public extension ForkedResource {
     /// It may be the same as the current commit on either fork, and can even be
     /// the same as both. For example, if the fork is fully merged into main, the
     /// forks are at the same version, and the common ancestor is the same version.
-    func commonAncestor(of fork: Fork) throws -> Commit<ResourceType> {
+    func commonAncestor(of fork: Fork) throws -> Commit<Resource> {
         try serialize {
             if let forkVersion = try repository.ascendingVersions(storedIn: fork).first, fork != .main {
                 let content = try repository.content(of: fork, at: forkVersion)

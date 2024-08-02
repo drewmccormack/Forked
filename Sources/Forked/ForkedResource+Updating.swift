@@ -22,7 +22,7 @@ public extension ForkedResource {
     }
     
     /// Update the contents of a fork with a new resource value. Will create a commit, and return the `Version`.
-    @discardableResult func update(_ fork: Fork, with resource: ResourceType) throws -> Version {
+    @discardableResult func update(_ fork: Fork, with resource: Resource) throws -> Version {
         try serialize {
             try update(fork, with: .resource(resource))
         }
@@ -41,12 +41,12 @@ public extension ForkedResource {
     
     /// Update the contents of a fork with a new resource value, or `.none` to indicate removal of a resource.
     /// Will create a commit, and return the `Version`.
-    @discardableResult func update(_ fork: Fork, with content: CommitContent<ResourceType>) throws -> Version {
+    @discardableResult func update(_ fork: Fork, with content: CommitContent<Resource>) throws -> Version {
         try serialize {
             func addNewCommit() throws {
                 if fork == .main { try addCommonAncestorsToEmptyForks() }
                 let newVersion = mostRecentVersion.next()
-                let commit: Commit<ResourceType> = .init(content: content, version: newVersion)
+                let commit: Commit<Resource> = .init(content: content, version: newVersion)
                 try repository.store(commit, in: fork)
                 mostRecentVersion = newVersion
             }

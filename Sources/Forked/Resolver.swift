@@ -8,6 +8,6 @@ public protocol Resolver {
     /// Merges the conflicting commits and returns a new commit for the result.
     /// The common ancestor holds the resource value when the two forks last
     /// contained the same version.
-    func mergedContent<R: Resource>(forConflicting commits: (Commit<R>, Commit<R>), withCommonAncestor ancestorCommit: Commit<R>) throws -> CommitContent<R>
+    func mergedContent<Resource>(forConflicting commits: (Commit<Resource>, Commit<Resource>), withCommonAncestor ancestorCommit: Commit<Resource>) throws -> CommitContent<Resource>
     
 }
