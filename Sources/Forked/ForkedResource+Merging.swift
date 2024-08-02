@@ -2,12 +2,70 @@ import Foundation
 
 public extension ForkedResource {
     
-    /// Merges from one fork into the main fork. The resolver is used if a conflict exists, and may perform a 3-way merge.
-    /// By default, if no resolver is passed in, a last-write-wins strategy is applied, namely the most recent version is chosen as the result.
+    /// Merges from one fork into the main fork. May perform a 3-way merge.
     /// A `MergeAction` is returned to indicate the type of merge that took place.
     /// After this operation, the main fork may be updated. The version of the other fork will be unchanged.
     /// Note that this may change the commits stored in unrelated forks, in order to preserve common ancestors.
+    /// This particular overload handles merges of non-`Mergable` resources.
     @discardableResult func mergeIntoMain(from fromFork: Fork) throws -> MergeAction {
+        try performMergeIntoMain(from: fromFork, mergedContent: mergedContent)
+    }
+    
+    /// Merges from the main fork into another fork. May perform a 3-way merge.
+    /// A `MergeAction` is returned to indicate the type of merge that took place.
+    /// After this operation, the fork may be updated, with the version of the main fork unchanged.
+    /// This particular overload handles merges of non-`Mergable` resources.
+    @discardableResult func mergeFromMain(into toFork: Fork) throws -> MergeAction {
+        try performMergeFromMain(into: toFork, mergedContent: mergedContent)
+    }
+    
+    /// If the Resource is not Mergable, fallback to last-write-wins approach. Most recent commit is chosen.
+    func mergedContent(forConflicting commits: ConflictingCommits<ResourceType>, withCommonAncestor ancestorCommit: Commit<ResourceType>) throws -> CommitContent<ResourceType> {
+        return commits.newer.content
+    }
+    
+}
+
+/// These methods handle the special case that the Resource is Mergable. We need to do that here, so that
+/// teh compiler can properly choose the appropriate overload.
+public extension ForkedResource where RespositoryType.Resource: Mergable {
+    
+    /// Merges from one fork into the main fork. May perform a 3-way merge.
+    /// A `MergeAction` is returned to indicate the type of merge that took place.
+    /// After this operation, the main fork may be updated. The version of the other fork will be unchanged.
+    /// Note that this may change the commits stored in unrelated forks, in order to preserve common ancestors.
+    /// This particular overload handles merges of `Mergable` resources.
+    @discardableResult func mergeIntoMain(from fromFork: Fork) throws -> MergeAction {
+        try performMergeIntoMain(from: fromFork, mergedContent: mergedContent)
+    }
+    
+    /// Merges from the main fork into another fork. May perform a 3-way merge.
+    /// A `MergeAction` is returned to indicate the type of merge that took place.
+    /// After this operation, the fork may be updated, with the version of the main fork unchanged.
+    /// This particular overload handles merges of `Mergable` resources.
+    @discardableResult func mergeFromMain(into toFork: Fork) throws -> MergeAction {
+        try performMergeFromMain(into: toFork, mergedContent: mergedContent)
+    }
+    
+    /// For `Mergable` types, we ask the `Resource` to do the merging itself
+    func mergedContent(forConflicting commits: ConflictingCommits<ResourceType>, withCommonAncestor ancestorCommit: Commit<ResourceType>) throws -> CommitContent<ResourceType>  {
+        switch (commits.newer.content, commits.older.content) {
+        case (.none, .none):
+            return .none
+        case (.resource, .none):
+            return commits.newer.content
+        case (.none, .resource):
+            return commits.older.content
+        case (.resource(let r1), .resource(let r2)):
+            let resource = try r1.merged(withOlderConflicting: r2, commonAncestor: ancestorCommit.content.resource)
+            return .resource(resource)
+        }
+    }
+}
+
+private extension ForkedResource {
+    
+    func performMergeIntoMain(from fromFork: Fork, mergedContent: (ConflictingCommits<ResourceType>, Commit<ResourceType>) throws -> CommitContent<ResourceType>) throws -> MergeAction {
         try serialize {
             switch (try hasUnmergedCommitsForMain(in: fromFork), try hasUnmergedCommitsInMain(for: fromFork)) {
                 case (true, true):
@@ -15,7 +73,7 @@ public extension ForkedResource {
                     let fromCommit = try mostRecentCommit(of: fromFork)
                     let ancestorCommit = try commonAncestor(of: fromFork)
                     let commits = ConflictingCommits(commits: (mainCommit, fromCommit))
-                    let content = try resolver.mergedContent(forConflicting: commits, withCommonAncestor: ancestorCommit)
+                    let content = try mergedContent(commits, ancestorCommit)
                     try update(.main, with: content)
                     try removeAllCommitsExceptMostRecent(in: fromFork) // Fork version is now common ancestor
                     return .resolveConflict
@@ -31,11 +89,7 @@ public extension ForkedResource {
         }
     }
     
-    /// Merges from the main fork into another fork. The resolver is used if a conflict exists, and may perform a 3-way merge.
-    /// By default, if no resolver is passed in, a last-write-wins strategy is applied, namely the most recent version is chosen as the result.
-    /// A `MergeAction` is returned to indicate the type of merge that took place.
-    /// After this operation, the fork may be updated, with the version of the main fork unchanged.
-    @discardableResult func mergeFromMain(into toFork: Fork) throws -> MergeAction {
+    func performMergeFromMain(into toFork: Fork, mergedContent: (ConflictingCommits<ResourceType>, Commit<ResourceType>) throws -> CommitContent<ResourceType>) throws -> MergeAction {
         try serialize {
             switch (try hasUnmergedCommitsForMain(in: toFork), try hasUnmergedCommitsInMain(for: toFork)) {
                 case (true, true):
@@ -43,7 +97,7 @@ public extension ForkedResource {
                     let toCommit = try mostRecentCommit(of: toFork)
                     let ancestorCommit = try commonAncestor(of: toFork)
                     let commits = ConflictingCommits(commits: (mainCommit, toCommit))
-                    let content = try resolver.mergedContent(forConflicting: commits, withCommonAncestor: ancestorCommit)
+                    let content = try mergedContent(commits, ancestorCommit)
                     try update(toFork, with: content)
                     try repository.copyMostRecentCommit(from: .main, to: toFork) // New common ancestor is the main version
                     try removeCommonAncestor(in: toFork) // Remove old common ancestor

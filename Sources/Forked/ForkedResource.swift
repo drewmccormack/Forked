@@ -4,7 +4,7 @@ import Synchronization
 /// This manages forks of a resource. It facilitiates concurrent changes to a single resource, and
 /// provides a systematic approach for merging changes, with support for 3-way merging.
 public final class ForkedResource<RespositoryType: Repository>: @unchecked Sendable {
-    public typealias Resource = RespositoryType.Resource
+    public typealias ResourceType = RespositoryType.Resource
     
     /// The repository used to store data for the forked resource.
     /// The forked resource takes complete ownership of this. You should not
@@ -13,7 +13,7 @@ public final class ForkedResource<RespositoryType: Repository>: @unchecked Senda
     let repository: RespositoryType
     
     // Resolves conflicts
-    internal let resolver: Resolver<Resource> = .init()
+    internal let resolver: Resolver<ResourceType> = .init()
         
     /// The timestamp of the most recent resource version added on any fork
     internal var mostRecentVersion: Version
