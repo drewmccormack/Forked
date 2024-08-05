@@ -19,6 +19,14 @@ public extension ForkedResource {
         try performMergeFromMain(into: toFork, mergedContent: mergedContent)
     }
     
+    /// Brings main and the other fork to the same version by first merging from
+    /// the other fork into main, and then merging from main into the other fork (fast forward).
+    /// This particular overload handles merges of non-`Mergable` resources.
+    func syncMain(with fork: Fork) throws {
+        try performMergeIntoMain(from: fork, mergedContent: mergedContent)
+        try performMergeFromMain(into: fork, mergedContent: mergedContent)
+    }
+    
     /// If the Resource is not Mergable, fallback to last-write-wins approach. Most recent commit is chosen.
     func mergedContent(forConflicting commits: ConflictingCommits<ResourceType>, withCommonAncestor ancestorCommit: Commit<ResourceType>) throws -> CommitContent<ResourceType> {
         return commits.newer.content
@@ -47,6 +55,14 @@ public extension ForkedResource where RespositoryType.Resource: Mergable {
         try performMergeFromMain(into: toFork, mergedContent: mergedContent)
     }
     
+    /// Brings main and the other fork to the same version by first merging from
+    /// the other fork into main, and then merging from main into the other fork (fast forward).
+    /// This particular overload handles merges of  `Mergable` resources.
+    func syncMain(with fork: Fork) throws {
+        try performMergeIntoMain(from: fork, mergedContent: mergedContent)
+        try performMergeFromMain(into: fork, mergedContent: mergedContent)
+    }
+    
     /// For `Mergable` types, we ask the `Resource` to do the merging itself
     func mergedContent(forConflicting commits: ConflictingCommits<ResourceType>, withCommonAncestor ancestorCommit: Commit<ResourceType>) throws -> CommitContent<ResourceType>  {
         switch (commits.newer.content, commits.older.content) {
@@ -65,7 +81,7 @@ public extension ForkedResource where RespositoryType.Resource: Mergable {
 
 private extension ForkedResource {
     
-    func performMergeIntoMain(from fromFork: Fork, mergedContent: (ConflictingCommits<ResourceType>, Commit<ResourceType>) throws -> CommitContent<ResourceType>) throws -> MergeAction {
+    @discardableResult func performMergeIntoMain(from fromFork: Fork, mergedContent: (ConflictingCommits<ResourceType>, Commit<ResourceType>) throws -> CommitContent<ResourceType>) throws -> MergeAction {
         try serialize {
             switch (try hasUnmergedCommitsForMain(in: fromFork), try hasUnmergedCommitsInMain(for: fromFork)) {
                 case (true, true):
@@ -89,7 +105,7 @@ private extension ForkedResource {
         }
     }
     
-    func performMergeFromMain(into toFork: Fork, mergedContent: (ConflictingCommits<ResourceType>, Commit<ResourceType>) throws -> CommitContent<ResourceType>) throws -> MergeAction {
+    @discardableResult func performMergeFromMain(into toFork: Fork, mergedContent: (ConflictingCommits<ResourceType>, Commit<ResourceType>) throws -> CommitContent<ResourceType>) throws -> MergeAction {
         try serialize {
             switch (try hasUnmergedCommitsForMain(in: toFork), try hasUnmergedCommitsInMain(for: toFork)) {
                 case (true, true):

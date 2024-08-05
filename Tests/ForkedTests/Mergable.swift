@@ -59,4 +59,23 @@ struct MergingMergableSuite {
         let r = try resource.mostRecentCommit(of: fork).content.resource
         #expect(r == Pair(a: 2, b: 3)) 
     }
+    
+    @Test
+    func syncingForksWithMergable() throws {
+        let p1 = Pair(a: 1, b: 2)
+        try resource.update(.main, with: p1)
+        try resource.mergeAllForks()
+        let p2 = Pair(a: 2, b: 2)
+        try resource.update(.main, with: p2)
+        let p3 = Pair(a: 1, b: 3)
+        try resource.update(fork, with: p3)
+        #expect(try resource.mostRecentVersion(of: fork).count == 3)
+        #expect(try resource.mostRecentVersion(of: .main).count == 2)
+        try resource.syncMain(with: fork)
+        #expect(try resource.mostRecentVersion(of: fork).count == 4)
+        #expect(try resource.mostRecentVersion(of: .main).count == 4)
+        #expect(try resource.mostRecentVersion(of: .main) == resource.mostRecentVersion(of: fork))
+        #expect(try resource.resource(of: .main) == Pair(a: 2, b: 3))
+    }
+    
 }
