@@ -23,8 +23,10 @@ public extension ForkedResource {
     /// the other fork into main, and then merging from main into the other fork (fast forward).
     /// This particular overload handles merges of non-`Mergable` resources.
     func syncMain(with fork: Fork) throws {
-        try performMergeIntoMain(from: fork, mergedContent: mergedContent)
-        try performMergeFromMain(into: fork, mergedContent: mergedContent)
+        try serialize {
+            try performMergeIntoMain(from: fork, mergedContent: mergedContent)
+            try performMergeFromMain(into: fork, mergedContent: mergedContent)
+        }
     }
     
     /// If the Resource is not Mergable, fallback to last-write-wins approach. Most recent commit is chosen.
@@ -59,8 +61,10 @@ public extension ForkedResource where RespositoryType.Resource: Mergable {
     /// the other fork into main, and then merging from main into the other fork (fast forward).
     /// This particular overload handles merges of  `Mergable` resources.
     func syncMain(with fork: Fork) throws {
-        try performMergeIntoMain(from: fork, mergedContent: mergedContent)
-        try performMergeFromMain(into: fork, mergedContent: mergedContent)
+        try serialize {
+            try performMergeIntoMain(from: fork, mergedContent: mergedContent)
+            try performMergeFromMain(into: fork, mergedContent: mergedContent)
+        }
     }
     
     /// For `Mergable` types, we ask the `Resource` to do the merging itself
