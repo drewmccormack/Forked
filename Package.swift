@@ -21,5 +21,5 @@ let package = Package(
             dependencies: ["Forked"]
         ),
     ],
-    swiftLanguageVersions: [.v6]
+    swiftLanguageModes: [.v6]
 )
