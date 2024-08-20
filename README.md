@@ -3,7 +3,12 @@
 [![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fdrewmccormack%2FForked%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/drewmccormack/Forked)
 [![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fdrewmccormack%2FForked%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/drewmccormack/Forked)
 
-Forked provides a forking data structure to manage concurrent access to shared resources in Swift.
+Forked introduces a new approach to sharing data in Swift apps. It not only prevents data races,
+where multiple threads access data at the same time, it also prevents race conditions causing 
+data to become invalid, which is a common problem when using Swift actors. 
+Forked even helps maintain the validity of data shared between devices!
+
+This package provides a forking data structure to manage concurrent access to shared resources in Swift.
 You can protect shared data, preventing corruption and guaranteeing validity, without locks, queues,
 or even actors. 
 
@@ -14,9 +19,9 @@ In short, it's forking brilliant! [1]
 Scroll down for a fuller discussion of Forked. Here is the tldr; summary.
 
 - Existing approaches to sharing data can easily lead to invalid state
-    - Actors suffer from data races due to interleaving
-    - Locks can deadlock, and require disipline to use right
-    - Queues can also deadlock, and tend to result in verbose code
+    - Actors suffer from race conditions due to interleaving and reentrance
+    - Locks can deadlock, cause freezes, and require disipline to use correctly
+    - Queues can also deadlock, freeze, and tend to result in verbose code
 - Forked...
     - Provides a shared data structure that avoids these issues
     - Restricts access to shared data, like an actor
@@ -48,6 +53,13 @@ dependencies: [
 ```
 
 And then add the Forked library to your target.
+
+### Xcode
+
+To add Forked to a project in Xcode, select the project root in the source list,
+and then in the panel on the right. Open the Package Dependencies tab, and
+use the + button to add a new dependency. Enter the URL for the Forked project,
+and add the package to the appropriate targets.
 
 ### Importing
 
