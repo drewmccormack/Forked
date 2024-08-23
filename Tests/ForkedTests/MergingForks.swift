@@ -5,7 +5,8 @@ struct MergingForksSuite {
     let repo = AtomicRepository<Int>()
     let resource: ForkedResource<AtomicRepository<Int>>
     let fork = Fork(name: "fork")
-    
+    let fork2 = Fork(name: "fork2")
+
     init() throws {
         resource = try ForkedResource(repository: repo)
         try resource.create(fork)
@@ -58,10 +59,27 @@ struct MergingForksSuite {
         try resource.update(.main, with: 2)
         #expect(try resource.mostRecentVersion(of: fork).count == 1)
         #expect(try resource.mostRecentVersion(of: .main).count == 2)
-        try resource.syncMain(with: fork)
+        try resource.syncMain(with: [fork])
         #expect(try resource.mostRecentVersion(of: fork).count == 3)
         #expect(try resource.mostRecentVersion(of: .main).count == 3)
         #expect(try resource.mostRecentVersion(of: .main) == resource.mostRecentVersion(of: fork))
+        #expect(try resource.resource(of: .main) == 2)
+    }
+    
+    @Test
+    func syncingMultipleForks() throws {
+        try resource.create(fork2)
+        try resource.update(fork, with: 1)
+        try resource.update(fork2, with: 3)
+        try resource.update(.main, with: 2)
+        #expect(try resource.mostRecentVersion(of: fork).count == 1)
+        #expect(try resource.mostRecentVersion(of: fork2).count == 2)
+        #expect(try resource.mostRecentVersion(of: .main).count == 3)
+        try resource.syncMain(with: [fork, fork2, .main])
+        #expect(try resource.mostRecentVersion(of: fork).count == 5)
+        #expect(try resource.mostRecentVersion(of: .main).count == 5)
+        #expect(try resource.mostRecentVersion(of: .main) == resource.mostRecentVersion(of: fork))
+        #expect(try resource.mostRecentVersion(of: .main) == resource.mostRecentVersion(of: fork2))
         #expect(try resource.resource(of: .main) == 2)
     }
     

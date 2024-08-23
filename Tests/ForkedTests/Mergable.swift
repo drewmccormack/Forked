@@ -71,7 +71,7 @@ struct MergingMergableSuite {
         try resource.update(fork, with: p3)
         #expect(try resource.mostRecentVersion(of: fork).count == 3)
         #expect(try resource.mostRecentVersion(of: .main).count == 2)
-        try resource.syncMain(with: fork)
+        try resource.syncMain(with: [fork])
         #expect(try resource.mostRecentVersion(of: fork).count == 4)
         #expect(try resource.mostRecentVersion(of: .main).count == 4)
         #expect(try resource.mostRecentVersion(of: .main) == resource.mostRecentVersion(of: fork))

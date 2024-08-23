@@ -34,12 +34,6 @@ Scroll down for a fuller discussion of Forked. Here is the tldr; summary.
     - It tracks changes to a shared resource, and resolves conflicts using 3-way merging
     - You are in control, and never lose changes to your data. Fork yeah!
 
-## Requirements
-
-- Swift 6.0+
-- Xcode 16.0+
-- iOS 13.0+ / macOS 10.15+ / tvOS 13.0+ / watchOS 6.0+
-
 ## Installation
 
 ### Swift Package Manager
@@ -70,6 +64,12 @@ import Forked
 ```
 
 ## Usage
+
+`ForkedResource` is the central data structure in `Forked`. It is a container for
+your shared data, which manages access to it.
+
+You can store standard data types in Forked, such as `Data`, `Int`, and `String`. But 
+it becomes more powerful when you store your own data types.
 
 Define your shared data type
 
