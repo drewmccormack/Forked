@@ -22,6 +22,8 @@ public extension ForkedResource {
     /// Brings main and the other forks to the same version by first merging from
     /// the other forks into main, and then merging from main into the other fork (fast forward).
     /// This particular overload handles merges of non-`Mergable` resources.
+    /// To sync up all forks, just pass all forks to this func, including .main. The main fork is ignored
+    /// when merging.
     func syncMain(with forks: [Fork]) throws {
         try serialize {
             for fork in forks where fork != .main {
@@ -64,6 +66,8 @@ public extension ForkedResource where RespositoryType.Resource: Mergable {
     /// Brings main and the other fork to the same version by first merging from
     /// the other fork into main, and then merging from main into the other fork (fast forward).
     /// This particular overload handles merges of  `Mergable` resources.
+    /// To sync up all forks, just pass all forks to this func, including .main. The main fork is ignored
+    /// when merging.
     func syncMain(with forks: [Fork]) throws {
         try serialize {
             for fork in forks where fork != .main {
