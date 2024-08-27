@@ -9,7 +9,7 @@ public enum CommitContent<Resource> {
     
     /// The content contains a value of the resource.
     case resource(Resource)
-    
+        
     public var resource: Resource? {
         if case let .resource(resource) = self {
             return resource
@@ -26,7 +26,7 @@ public struct Commit<Resource>: Hashable, Equatable {
     
     /// The version when the copy of the resource was committed.
     public var version: Version
-    
+        
     public func hash(into hasher: inout Hasher) {
         hasher.combine(version)
     }

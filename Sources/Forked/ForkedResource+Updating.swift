@@ -39,6 +39,17 @@ public extension ForkedResource {
         }
     }
     
+    /// Removes all content from all branches, resetting to the initial state.
+    /// It does not remove the existing branches, but removes their content.
+    func removeAllContent() throws {
+        try serialize {
+            try repository.forks.forEach { fork in
+                try repository.delete(fork)
+                try repository.create(fork, withInitialCommit: .init(content: .none, version: Version.initialVersion))
+            }
+        }
+    }
+    
     /// Update the contents of a fork with a new resource value, or `.none` to indicate removal of a resource.
     /// Will create a commit, and return the `Version`.
     @discardableResult func update(_ fork: Fork, with content: CommitContent<ResourceType>) throws -> Version {
