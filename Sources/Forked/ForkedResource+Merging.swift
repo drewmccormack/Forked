@@ -19,13 +19,19 @@ public extension ForkedResource {
         try performMergeFromMain(into: toFork, mergedContent: mergedContent)
     }
     
-    /// Brings main and the other fork to the same version by first merging from
-    /// the other fork into main, and then merging from main into the other fork (fast forward).
+    /// Brings main and the other forks to the same version by first merging from
+    /// the other forks into main, and then merging from main into the other fork (fast forward).
     /// This particular overload handles merges of non-`Mergable` resources.
-    func syncMain(with fork: Fork) throws {
+    /// To sync up all forks, just pass all forks to this func, including .main. The main fork is ignored
+    /// when merging.
+    func syncMain(with forks: [Fork]) throws {
         try serialize {
-            try performMergeIntoMain(from: fork, mergedContent: mergedContent)
-            try performMergeFromMain(into: fork, mergedContent: mergedContent)
+            for fork in forks where fork != .main {
+                try performMergeIntoMain(from: fork, mergedContent: mergedContent)
+            }
+            for fork in forks where fork != .main {
+                try performMergeFromMain(into: fork, mergedContent: mergedContent)
+            }
         }
     }
     
@@ -60,10 +66,16 @@ public extension ForkedResource where RespositoryType.Resource: Mergable {
     /// Brings main and the other fork to the same version by first merging from
     /// the other fork into main, and then merging from main into the other fork (fast forward).
     /// This particular overload handles merges of  `Mergable` resources.
-    func syncMain(with fork: Fork) throws {
+    /// To sync up all forks, just pass all forks to this func, including .main. The main fork is ignored
+    /// when merging.
+    func syncMain(with forks: [Fork]) throws {
         try serialize {
-            try performMergeIntoMain(from: fork, mergedContent: mergedContent)
-            try performMergeFromMain(into: fork, mergedContent: mergedContent)
+            for fork in forks where fork != .main {
+                try performMergeIntoMain(from: fork, mergedContent: mergedContent)
+            }
+            for fork in forks where fork != .main {
+                try performMergeFromMain(into: fork, mergedContent: mergedContent)
+            }
         }
     }
     
