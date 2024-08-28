@@ -23,6 +23,10 @@ public protocol CloudKitExchangeDelegate: AnyObject {
     func exchangeDidUpdateMainFork<R>(_ exchange: CloudKitExchange<R>)
 }
 
+extension CKRecord {
+    static let resourceDataKey = "resourceData"
+}
+
 @available(iOS 17.0, tvOS 17.0, watchOS 9.0, macOS 14.0, *)
 public actor CloudKitExchange<R: Repository> where R.Resource: Codable {
     let id: String
@@ -31,7 +35,7 @@ public actor CloudKitExchange<R: Repository> where R.Resource: Codable {
     let zoneID: CKRecordZone.ID = .init(zoneName: "Forked")
     weak var delegate: CloudKitExchangeDelegate?
     
-    private var engine: CKSyncEngine {
+    internal var engine: CKSyncEngine {
         if _engine == nil {
             self.initializeSyncEngine()
         }
@@ -125,17 +129,12 @@ extension CloudKitExchange: CKSyncEngineDelegate {
             handleFetchedDatabaseChanges(event)
         case .fetchedRecordZoneChanges(let event):
             self.handleFetchedRecordZoneChanges(event)
-//        case .sentRecordZoneChanges(let event):
-//            self.handleSentRecordZoneChanges(event)
-//            
-//        case .sentDatabaseChanges:
-//            // The sample app doesn't track sent database changes in any meaningful way, but this might be useful depending on your data model.
-//            break
-//            
-//        case .willFetchChanges, .willFetchRecordZoneChanges, .didFetchRecordZoneChanges, .didFetchChanges, .willSendChanges, .didSendChanges:
-//            // We don't do anything here in the sample app, but these events might be helpful if you need to do any setup/cleanup when sync starts/ends.
-//            break
-            
+        case .sentRecordZoneChanges(let event):
+            self.handleSentRecordZoneChanges(event)
+        case .sentDatabaseChanges:
+            break
+        case .willFetchChanges, .willFetchRecordZoneChanges, .didFetchRecordZoneChanges, .didFetchChanges, .willSendChanges, .didSendChanges:
+            break
         @unknown default:
             Logger.exchange.info("Received unknown event: \(event)")
         }
