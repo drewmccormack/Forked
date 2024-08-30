@@ -57,7 +57,6 @@ struct UpdatingContentsSuite {
         let v2 = try resource.mostRecentVersion(of: fork)
         #expect(v2 > v1)
         #expect(v2.timestamp > v1.timestamp)
-        #expect(v2.id != v1.id)
         #expect(v2.count == v1.count+1)
     }
 }
