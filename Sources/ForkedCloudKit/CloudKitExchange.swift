@@ -72,11 +72,8 @@ public actor CloudKitExchange<R: Repository> where R.Resource: Codable {
         try createFork()
     }
     
-    private let semaphore = AsyncSemaphore(value: 1)
-
-    public func sync() async throws {
-        await semaphore.wait()
-        defer { semaphore.signal() }
+    /// Enqueues an upload when there is changed data in main
+    private func sync() throws {
         if try forkedResource.hasUnmergedCommitsInMain(for: .cloudKit) {
             let content = try forkedResource.content(of: .main)
             if case .none = content {

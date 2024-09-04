@@ -12,7 +12,7 @@ public final class ForkedResource<RespositoryType: Repository>: @unchecked Senda
     /// may lead to threading errors or logic bugs.
     let repository: RespositoryType
     
-    // Resolves conflicts
+    /// Resolves conflicts
     internal let resolver: Resolver<ResourceType> = .init()
         
     /// The timestamp of the most recent resource version added on any fork

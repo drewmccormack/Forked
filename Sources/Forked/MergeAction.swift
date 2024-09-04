@@ -11,8 +11,6 @@ public enum MergeAction: Equatable, Sendable {
     case fastForward
     
     /// The two forks had both changed since the common ancestor version.
-    /// A `Resolver` was used to merge the two, with the new commit added
-    /// to the appropriate fork.
     case resolveConflict
 }
 
