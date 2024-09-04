@@ -7,6 +7,7 @@
 import CloudKit
 import SwiftUI
 import Forked
+import Semaphore
 import os.log
 
 extension Logger {
@@ -14,8 +15,7 @@ extension Logger {
 }
 
 extension Fork {
-    static let cloudKitSend: Self = .init(name: "cloudKitSend")
-    static let cloudKitReceive: Self = .init(name: "cloudKitReceive")
+    static let cloudKit: Self = .init(name: "cloudKit")
 }
 
 public protocol CloudKitExchangeDelegate: AnyObject {
@@ -33,6 +33,7 @@ public actor CloudKitExchange<R: Repository> where R.Resource: Codable {
     let forkedResource: ForkedResource<R>
     let cloudKitContainer: CKContainer
     let zoneID: CKRecordZone.ID = .init(zoneName: "Forked")
+    var recordID: CKRecord.ID { CKRecord.ID(recordName: id, zoneID: zoneID) }
     weak var delegate: CloudKitExchangeDelegate?
     
     internal var engine: CKSyncEngine {
@@ -50,7 +51,7 @@ public actor CloudKitExchange<R: Repository> where R.Resource: Codable {
     }
     private var state: State
     
-    init(id: String, forkedResource: ForkedResource<R>, cloudKitContainer: CKContainer = .default()) throws {
+    public init(id: String, forkedResource: ForkedResource<R>, cloudKitContainer: CKContainer = .default()) throws {
         self.id = id
         self.forkedResource = forkedResource
         self.cloudKitContainer = cloudKitContainer
@@ -68,7 +69,22 @@ public actor CloudKitExchange<R: Repository> where R.Resource: Codable {
         let stateData = (try? Data(contentsOf: dataURL)) ?? Data()
         self.state = (try? JSONDecoder().decode(State.self, from: stateData)) ?? State()
         
-        try createForks()
+        try createFork()
+    }
+    
+    private let semaphore = AsyncSemaphore(value: 1)
+
+    public func sync() async throws {
+        await semaphore.wait()
+        defer { semaphore.signal() }
+        if try forkedResource.hasUnmergedCommitsInMain(for: .cloudKit) {
+            let content = try forkedResource.content(of: .main)
+            if case .none = content {
+                engine.state.add(pendingRecordZoneChanges: [.deleteRecord(recordID)])
+            } else {
+                engine.state.add(pendingRecordZoneChanges: [.saveRecord(recordID)])
+            }
+        }
     }
     
     internal func saveState() {
@@ -94,22 +110,16 @@ internal extension CloudKitExchange {
         _engine = syncEngine
     }
     
-    nonisolated func createForks() throws {
-        if !forkedResource.has(.cloudKitSend) {
-            try forkedResource.create(.cloudKitSend)
-        }
-        if !forkedResource.has(.cloudKitReceive) {
-            try forkedResource.create(.cloudKitReceive)
+    nonisolated func createFork() throws {
+        if !forkedResource.has(.cloudKit) {
+            try forkedResource.create(.cloudKit)
         }
     }
     
-    nonisolated func removeForks() throws {
-        if forkedResource.has(.cloudKitReceive) {
-            try forkedResource.mergeIntoMain(from: .cloudKitReceive)
-            try forkedResource.delete(.cloudKitReceive)
-        }
-        if forkedResource.has(.cloudKitSend) {
-            try forkedResource.delete(.cloudKitSend)
+    nonisolated func removeFork() throws {
+        if forkedResource.has(.cloudKit) {
+            try forkedResource.mergeIntoMain(from: .cloudKit)
+            try forkedResource.delete(.cloudKit)
         }
     }
     
@@ -128,9 +138,9 @@ extension CloudKitExchange: CKSyncEngineDelegate {
         case .fetchedDatabaseChanges(let event):
             handleFetchedDatabaseChanges(event)
         case .fetchedRecordZoneChanges(let event):
-            self.handleFetchedRecordZoneChanges(event)
+            handleFetchedRecordZoneChanges(event)
         case .sentRecordZoneChanges(let event):
-            self.handleSentRecordZoneChanges(event)
+            handleSentRecordZoneChanges(event)
         case .sentDatabaseChanges:
             break
         case .willFetchChanges, .willFetchRecordZoneChanges, .didFetchRecordZoneChanges, .didFetchChanges, .willSendChanges, .didSendChanges:
