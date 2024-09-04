@@ -51,9 +51,13 @@ public actor CloudKitExchange<R: Repository> where R.Resource: Codable {
     }
     private var state: State
     
+    private let changeStream: ChangeStream
+    private var monitorTask: Task<(), Never>?
+    
     public init(id: String, forkedResource: ForkedResource<R>, cloudKitContainer: CKContainer = .default()) throws {
         self.id = id
         self.forkedResource = forkedResource
+        self.changeStream = forkedResource.changeStream
         self.cloudKitContainer = cloudKitContainer
         let dirURL = FileManager.default
             .urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
@@ -61,7 +65,7 @@ public actor CloudKitExchange<R: Repository> where R.Resource: Codable {
         self.dataURL = dirURL
             .appending(component: id)
             .appendingPathExtension("json")
-        
+
         if !FileManager.default.fileExists(atPath: dirURL.path()) {
             try FileManager.default.createDirectory(at: dirURL, withIntermediateDirectories: true)
         }
@@ -70,17 +74,38 @@ public actor CloudKitExchange<R: Repository> where R.Resource: Codable {
         self.state = (try? JSONDecoder().decode(State.self, from: stateData)) ?? State()
         
         try createFork()
+        
+        Task {
+            await monitorChangesToMain()
+        }
+    }
+    
+    deinit {
+        monitorTask?.cancel()
     }
     
     /// Enqueues an upload when there is changed data in main
-    private func sync() throws {
-        if try forkedResource.hasUnmergedCommitsInMain(for: .cloudKit) {
-            let content = try forkedResource.content(of: .main)
-            if case .none = content {
-                engine.state.add(pendingRecordZoneChanges: [.deleteRecord(recordID)])
-            } else {
-                engine.state.add(pendingRecordZoneChanges: [.saveRecord(recordID)])
+    private func monitorChangesToMain() {
+        monitorTask = Task {
+            uploadMainIfNeeded()
+            for await _ in changeStream.filter({ $0.fork == .main && $0.mergingFork != .cloudKit }) {
+                uploadMainIfNeeded()
             }
+        }
+    }
+    
+    private func uploadMainIfNeeded() {
+        do {
+            if try forkedResource.hasUnmergedCommitsInMain(for: .cloudKit) {
+                let content = try forkedResource.content(of: .main)
+                if case .none = content {
+                    engine.state.add(pendingRecordZoneChanges: [.deleteRecord(recordID)])
+                } else {
+                    engine.state.add(pendingRecordZoneChanges: [.saveRecord(recordID)])
+                }
+            }
+        } catch {
+            Logger.exchange.error("Failure monitoring changes: \(error)")
         }
     }
     

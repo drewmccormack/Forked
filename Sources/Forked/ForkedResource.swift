@@ -20,6 +20,10 @@ public final class ForkedResource<RespositoryType: Repository>: @unchecked Senda
     
     private let lock: NSRecursiveLock = .init()
     
+    private typealias StreamID = UInt64
+    private var nextStreamID: StreamID = 0
+    private var continuations: [StreamID:ChangeStream.Continuation] = [:]
+
     /// Initialize the `ForkedResource` with a repository. If the repository is new,
     /// and has no main fork, one will be added with an initial commit.
     public init(repository: RespositoryType) throws {
@@ -31,6 +35,12 @@ public final class ForkedResource<RespositoryType: Repository>: @unchecked Senda
         
         self.mostRecentVersion = try repository.mostRecentVersion()
     }
+    
+    deinit {
+        for contination in continuations.values {
+            contination.finish()
+        }
+    }
 }
 
 internal extension ForkedResource {
@@ -40,6 +50,27 @@ internal extension ForkedResource {
         lock.lock()
         defer { lock.unlock() }
         return try block()
+    }
+    
+}
+
+public extension ForkedResource {
+    
+    /// Creates and returns an AsyncStream which provides a
+    /// stream of all changes. It fires for any change to any fork.
+    var changeStream: ChangeStream {
+        serialize {
+            AsyncStream { continuation in
+                let id = nextStreamID
+                continuations[id] = continuation
+                continuation.onTermination = { @Sendable [self] _ in
+                    serialize {
+                        continuations[id] = nil
+                    }
+                }
+                nextStreamID += 1
+            }
+        }
     }
     
 }

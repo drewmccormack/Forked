@@ -26,3 +26,11 @@ public struct Version: Comparable, Hashable, Sendable, Codable {
         lhs.count < rhs.count
     }
 }
+
+public struct ForkChange: Hashable {
+    public let fork: Fork
+    public let version: Version
+    public let mergingFork: Fork?
+}
+
+public typealias ChangeStream = AsyncStream<ForkChange>
