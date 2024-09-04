@@ -27,7 +27,7 @@ public struct Version: Comparable, Hashable, Sendable, Codable {
     }
 }
 
-public struct ForkChange: Hashable {
+public struct ForkChange: Hashable, Sendable {
     public let fork: Fork
     public let version: Version
     public let mergingFork: Fork?

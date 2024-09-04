@@ -99,6 +99,13 @@ private extension ForkedResource {
     
     @discardableResult func performMergeIntoMain(from fromFork: Fork, mergedContent: (ConflictingCommits<ResourceType>, Commit<ResourceType>) throws -> CommitContent<ResourceType>) throws -> MergeAction {
         try serialize {
+            var change: ForkChange?
+            defer {
+                if let change {
+                    addToChangeStreams(change)
+                }
+            }
+            
             switch (try hasUnmergedCommitsForMain(in: fromFork), try hasUnmergedCommitsInMain(for: fromFork)) {
                 case (true, true):
                     let mainCommit = try mostRecentCommit(of: .main)
@@ -106,7 +113,8 @@ private extension ForkedResource {
                     let ancestorCommit = try commonAncestor(of: fromFork)
                     let commits = ConflictingCommits(commits: (mainCommit, fromCommit))
                     let content = try mergedContent(commits, ancestorCommit)
-                    try update(.main, with: content)
+                    let newVersion = try update(.main, with: content)
+                    change = ForkChange(fork: .main, version: newVersion, mergingFork: fromFork)
                     try removeAllCommitsExceptMostRecent(in: fromFork) // Fork version is now common ancestor
                     return .resolveConflict
                 case (true, false):
@@ -114,6 +122,8 @@ private extension ForkedResource {
                     try repository.copyMostRecentCommit(from: fromFork, to: .main)
                     try removeRedundantCommits(in: .main)
                     try removeAllCommits(in: fromFork)
+                    let newVersion = try mostRecentVersion(of: .main)
+                    change = ForkChange(fork: .main, version: newVersion, mergingFork: fromFork)
                     return .fastForward
                 case (false, true), (false, false):
                     return .none
@@ -123,6 +133,13 @@ private extension ForkedResource {
     
     @discardableResult func performMergeFromMain(into toFork: Fork, mergedContent: (ConflictingCommits<ResourceType>, Commit<ResourceType>) throws -> CommitContent<ResourceType>) throws -> MergeAction {
         try serialize {
+            var change: ForkChange?
+            defer {
+                if let change {
+                    addToChangeStreams(change)
+                }
+            }
+            
             switch (try hasUnmergedCommitsForMain(in: toFork), try hasUnmergedCommitsInMain(for: toFork)) {
                 case (true, true):
                     let mainCommit = try mostRecentCommit(of: .main)
@@ -130,12 +147,15 @@ private extension ForkedResource {
                     let ancestorCommit = try commonAncestor(of: toFork)
                     let commits = ConflictingCommits(commits: (mainCommit, toCommit))
                     let content = try mergedContent(commits, ancestorCommit)
-                    try update(toFork, with: content)
+                    let newVersion = try update(toFork, with: content)
                     try repository.copyMostRecentCommit(from: .main, to: toFork) // New common ancestor is the main version
                     try removeCommonAncestor(in: toFork) // Remove old common ancestor
+                    change = ForkChange(fork: toFork, version: newVersion, mergingFork: .main)
                     return .resolveConflict
                 case (false, true):
                     try removeAllCommits(in: toFork)
+                    let newVersion = try mostRecentVersion(of: toFork)
+                    change = ForkChange(fork: toFork, version: newVersion, mergingFork: .main)
                     return .fastForward
                 case (true, false), (false, false):
                     return .none

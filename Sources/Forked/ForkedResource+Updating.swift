@@ -21,10 +21,17 @@ public extension ForkedResource {
         }
     }
     
+}
+    
+public extension ForkedResource {
+
     /// Update the contents of a fork with a new resource value. Will create a commit, and return the `Version`.
     @discardableResult func update(_ fork: Fork, with resource: ResourceType) throws -> Version {
         try serialize {
-            try update(fork, with: .resource(resource))
+            let newVersion = try update(fork, with: .resource(resource))
+            let change = ForkChange(fork: fork, version: newVersion, mergingFork: nil)
+            addToChangeStreams(change)
+            return newVersion
         }
     }
     
@@ -35,7 +42,10 @@ public extension ForkedResource {
     /// that something has been removed.)
     @discardableResult func removeContent(from fork: Fork) throws -> Version {
         try serialize {
-            try update(fork, with: .none)
+            let newVersion = try update(fork, with: .none)
+            let change = ForkChange(fork: fork, version: newVersion, mergingFork: nil)
+            addToChangeStreams(change)
+            return newVersion
         }
     }
     
@@ -50,6 +60,10 @@ public extension ForkedResource {
         }
     }
     
+}
+
+internal extension ForkedResource {
+
     /// Update the contents of a fork with a new resource value, or `.none` to indicate removal of a resource.
     /// Will create a commit, and return the `Version`.
     @discardableResult func update(_ fork: Fork, with content: CommitContent<ResourceType>) throws -> Version {
@@ -79,9 +93,7 @@ public extension ForkedResource {
             return mostRecentVersion
         }
     }
-}
 
-internal extension ForkedResource {
     /// Removes any commits that no longer play a role.
     /// Main should only ever have one commit in it - no common ancestor.
     /// Other branches hold the common ancestors, so they will have zero (ie same as main),

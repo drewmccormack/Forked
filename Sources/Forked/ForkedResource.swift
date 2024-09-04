@@ -54,11 +54,11 @@ internal extension ForkedResource {
     
 }
 
-public extension ForkedResource {
+extension ForkedResource {
     
     /// Creates and returns an AsyncStream which provides a
     /// stream of all changes. It fires for any change to any fork.
-    var changeStream: ChangeStream {
+    public var changeStream: ChangeStream {
         serialize {
             AsyncStream { continuation in
                 let id = nextStreamID
@@ -69,6 +69,14 @@ public extension ForkedResource {
                     }
                 }
                 nextStreamID += 1
+            }
+        }
+    }
+    
+    internal func addToChangeStreams(_ change: ForkChange) {
+        serialize {
+            for continuation in continuations.values {
+                continuation.yield(change)
             }
         }
     }

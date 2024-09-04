@@ -69,7 +69,7 @@ extension CloudKitExchange {
             let id = deletion.recordID.recordName
             guard self.id == id else { continue }
             do {
-                try forkedResource.update(.cloudKit, with: .none)
+                try forkedResource.removeContent(from: .cloudKit)
                 try forkedResource.mergeIntoMain(from: .cloudKit)
             } catch {
                 Logger.exchange.error("Failed to update resource with downloaded data: \(error)")
