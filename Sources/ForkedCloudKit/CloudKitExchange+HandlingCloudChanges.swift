@@ -24,7 +24,6 @@ extension CloudKitExchange {
                     Logger.exchange.log("Unknown account change type: \(event)")
                 }
             }
-            delegate?.exchangeDidUpdateAllForks(self)
         } catch {
             Logger.exchange.error("Failure during handling of account change: \(error)")
         }
