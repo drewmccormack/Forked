@@ -1,15 +1,6 @@
 {
-  "originHash" : "66d4179b70ecec3c8112c87b8c33e99df4a755f227e4dc99b7fea7d4de1fa440",
+  "originHash" : "d1792211cb364d516fa6893345c62af46ee763dcfbe8e1cf4645c65b7d9c087f",
   "pins" : [
-    {
-      "identity" : "semaphore",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/groue/Semaphore.git",
-      "state" : {
-        "revision" : "2543679282aa6f6c8ecf2138acd613ed20790bc2",
-        "version" : "0.1.0"
-      }
-    },
     {
       "identity" : "swift-docc-plugin",
       "kind" : "remoteSourceControl",

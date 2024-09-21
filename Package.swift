@@ -15,14 +15,13 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-docc-plugin", from: "1.0.0"),
-        .package(url: "https://github.com/groue/Semaphore.git", from: "0.1.0")
     ],
     targets: [
         .target(
             name: "Forked"),
         .target(
             name: "ForkedCloudKit",
-            dependencies: ["Forked", "Semaphore"]
+            dependencies: ["Forked"]
         ),
         .testTarget(
             name: "ForkedTests",
