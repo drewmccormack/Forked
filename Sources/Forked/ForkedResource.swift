@@ -23,6 +23,12 @@ public final class ForkedResource<RespositoryType: Repository>: @unchecked Senda
     private typealias StreamID = UInt64
     private var nextStreamID: StreamID = 0
     private var continuations: [StreamID:ChangeStream.Continuation] = [:]
+    
+    var hasSubscribedChangeStreams: Bool {
+        serialize {
+            !continuations.isEmpty
+        }
+    }
 
     /// Initialize the `ForkedResource` with a repository. If the repository is new,
     /// and has no main fork, one will be added with an initial commit.
@@ -60,10 +66,12 @@ extension ForkedResource {
     /// stream of all changes. It fires for any change to any fork.
     public var changeStream: ChangeStream {
         serialize {
-            AsyncStream { continuation in
+            AsyncStream { [weak self] continuation in
+                guard let self else { return }
                 let id = nextStreamID
                 continuations[id] = continuation
-                continuation.onTermination = { @Sendable [self] _ in
+                continuation.onTermination = { @Sendable [weak self] _ in
+                    guard let self else { return }
                     serialize {
                         continuations[id] = nil
                     }

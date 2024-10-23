@@ -74,10 +74,11 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
         try createFork()
         
         // Monitor changes to main
-        monitorTask = Task {
-            uploadMainIfNeeded()
+        monitorTask = Task { [weak self, changeStream] in
+            self?.uploadMainIfNeeded()
             for await _ in changeStream.filter({ $0.fork == .main && $0.mergingFork != .cloudKit }) {
-                uploadMainIfNeeded()
+                guard let self else { break }
+                self.uploadMainIfNeeded()
             }
         }
     }

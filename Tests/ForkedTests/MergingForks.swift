@@ -53,8 +53,7 @@ struct MergingForksSuite {
         #expect(try resource.repository.versions(storedIn: .main).count == 1)
     }
     
-    @Test
-    func syncingForks() throws {
+    @Test func syncingForks() throws {
         try resource.update(fork, with: 1)
         try resource.update(.main, with: 2)
         #expect(try resource.mostRecentVersion(of: fork).count == 1)
@@ -66,8 +65,7 @@ struct MergingForksSuite {
         #expect(try resource.resource(of: .main) == 2)
     }
     
-    @Test
-    func syncingMultipleForks() throws {
+    @Test func syncingMultipleForks() throws {
         try resource.create(fork2)
         try resource.update(fork, with: 1)
         try resource.update(fork2, with: 3)
