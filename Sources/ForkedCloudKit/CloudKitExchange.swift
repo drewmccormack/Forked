@@ -14,7 +14,8 @@ extension Logger {
 }
 
 extension Fork {
-    static let cloudKit: Self = .init(name: "cloudKit")
+    static let cloudKitUpload: Self = .init(name: "cloudKitUpload")
+    static let cloudKitDownload: Self = .init(name: "cloudKitDownload")
 }
 
 extension CKRecord {
@@ -27,6 +28,7 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
     let forkedResource: ForkedResource<R>
     let cloudKitContainer: CKContainer
     let zoneID: CKRecordZone.ID = .init(zoneName: "Forked")
+    let recordType: CKRecord.RecordType = "ForkedResource"
     var recordID: CKRecord.ID { CKRecord.ID(recordName: id, zoneID: zoneID) }
     
     internal private(set) var engine: CKSyncEngine!
@@ -71,12 +73,12 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
         engine = CKSyncEngine(configuration)
         
         // Fork for sync
-        try createFork()
+        try createForks()
         
         // Monitor changes to main
         monitorTask = Task { [weak self, changeStream] in
             self?.uploadMainIfNeeded()
-            for await _ in changeStream.filter({ $0.fork == .main && $0.mergingFork != .cloudKit }) {
+            for await _ in changeStream.filter({ $0.fork == .main && ![.cloudKitDownload, .cloudKitUpload].contains($0.mergingFork) }) {
                 guard let self else { break }
                 self.uploadMainIfNeeded()
             }
@@ -90,8 +92,9 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
     private func uploadMainIfNeeded() {
         do {
             try forkedResource.performAtomically {
-                if try forkedResource.hasUnmergedCommitsInMain(for: .cloudKit) {
-                    let content = try forkedResource.content(of: .main)
+                if try forkedResource.hasUnmergedCommitsInMain(for: .cloudKitUpload) {
+                    try forkedResource.mergeFromMain(into: .cloudKitUpload)
+                    let content = try forkedResource.content(of: .cloudKitUpload)
                     if case .none = content {
                         engine.state.add(pendingRecordZoneChanges: [.deleteRecord(recordID)])
                     } else {
@@ -116,16 +119,16 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
 
 internal extension CloudKitExchange {
     
-    nonisolated func createFork() throws {
-        if !forkedResource.has(.cloudKit) {
-            try forkedResource.create(.cloudKit)
+    nonisolated func createForks() throws {
+        for fork in [Fork.cloudKitUpload, .cloudKitDownload] where !forkedResource.has(fork) {
+            try forkedResource.create(fork)
         }
     }
     
-    nonisolated func removeFork() throws {
-        if forkedResource.has(.cloudKit) {
-            try forkedResource.mergeIntoMain(from: .cloudKit)
-            try forkedResource.delete(.cloudKit)
+    nonisolated func removeForks() throws {
+        for fork in [Fork.cloudKitUpload, .cloudKitDownload] where forkedResource.has(fork) {
+            try forkedResource.mergeIntoMain(from: fork)
+            try forkedResource.delete(fork)
         }
     }
     
@@ -159,7 +162,21 @@ extension CloudKitExchange: CKSyncEngineDelegate {
     public func nextRecordZoneChangeBatch(_ context: CKSyncEngine.SendChangesContext, syncEngine: CKSyncEngine) async -> CKSyncEngine.RecordZoneChangeBatch? {
         let pendingChanges = syncEngine.state.pendingRecordZoneChanges.filter { context.options.scope.contains($0) }
         return await CKSyncEngine.RecordZoneChangeBatch(pendingChanges: pendingChanges) { recordID in
-            self.recordToSave(for: recordID)
+            guard recordID.recordName == id else { return nil }
+            do {
+                if let resourceValue = try forkedResource.resource(of: .cloudKitUpload) {
+                    let record = (try? await syncEngine.database.record(for: recordID)) ?? CKRecord(recordType: recordType, recordID: recordID)
+                    let data = try JSONEncoder().encode(resourceValue)
+                    record.encryptedValues[CKRecord.resourceDataKey] = data
+                    return record
+                } else {
+                    syncEngine.state.remove(pendingRecordZoneChanges: [.saveRecord(recordID)])
+                    return nil
+                }
+            } catch {
+                Logger.exchange.error("Error while preparing batch of changes: \(error)")
+                return nil
+            }
         }
     }
     

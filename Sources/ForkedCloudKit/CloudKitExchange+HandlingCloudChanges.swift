@@ -16,10 +16,10 @@ extension CloudKitExchange {
             try forkedResource.performAtomically {
                 switch event.changeType {
                 case .signIn, .switchAccounts:
-                    try removeFork()
-                    try createFork()
+                    try removeForks()
+                    try createForks()
                 case .signOut:
-                    try removeFork()
+                    try removeForks()
                 @unknown default:
                     Logger.exchange.log("Unknown account change type: \(event)")
                 }
@@ -34,7 +34,7 @@ extension CloudKitExchange {
             switch deletion.zoneID.zoneName {
             case zoneID.zoneName:
                 do {
-                    try removeFork()
+                    try removeForks()
                 } catch {
                     Logger.exchange.error("Failed to delete content when zone removed: \(error)")
                 }
@@ -46,30 +46,15 @@ extension CloudKitExchange {
     
     func handleFetchedRecordZoneChanges(_ event: CKSyncEngine.Event.FetchedRecordZoneChanges) {
         for modification in event.modifications {
-            let record = modification.record
-            let id = record.recordID.recordName
-            guard self.id == id else { continue }
-            
-            guard let data = record.encryptedValues[CKRecord.resourceDataKey] as? Data else {
-                Logger.exchange.error("No data found in CKRecord")
-                continue
-            }
-            
-            do {
-                let resource = try JSONDecoder().decode(R.Resource.self, from: data)
-                try forkedResource.update(.cloudKit, with: resource)
-                try forkedResource.mergeIntoMain(from: .cloudKit)
-            } catch {
-                Logger.exchange.error("Failed to update resource with downloaded data: \(error)")
-            }
+            update(withDownloadedRecord: modification.record)
         }
         
         for deletion in event.deletions {
             let id = deletion.recordID.recordName
             guard self.id == id else { continue }
             do {
-                try forkedResource.removeContent(from: .cloudKit)
-                try forkedResource.mergeIntoMain(from: .cloudKit)
+                try forkedResource.removeContent(from: .cloudKitDownload)
+                try forkedResource.mergeIntoMain(from: .cloudKitDownload)
             } catch {
                 Logger.exchange.error("Failed to update resource with downloaded data: \(error)")
             }
@@ -77,23 +62,6 @@ extension CloudKitExchange {
     }
     
     func handleSentRecordZoneChanges(_ event: CKSyncEngine.Event.SentRecordZoneChanges) {
-        for savedRecord in event.savedRecords {
-            let id = savedRecord.recordID.recordName
-            guard self.id == id else { continue }
-
-            guard let data = savedRecord.encryptedValues[CKRecord.resourceDataKey] as? Data else {
-                Logger.exchange.error("No data found in CKRecord")
-                continue
-            }
-            
-            do {
-                let resource = try JSONDecoder().decode(R.Resource.self, from: data)
-                try forkedResource.update(.cloudKit, with: resource)
-            } catch {
-                Logger.exchange.error("Failed to update resource with downloaded data: \(error)")
-            }
-        }
-        
         for failedRecordSave in event.failedRecordSaves {
             let failedRecord = failedRecordSave.record
             let id = failedRecord.recordID.recordName
@@ -101,18 +69,25 @@ extension CloudKitExchange {
             
             switch failedRecordSave.error.code {
             case .serverRecordChanged:
-                break // Conflict. Just wait for the new record to download
+                guard let serverRecord = failedRecordSave.error.serverRecord else {
+                    Logger.exchange.error("No server record for conflict \(failedRecordSave.error)")
+                    continue
+                }
+                update(withDownloadedRecord: serverRecord)
+                engine.state.add(pendingRecordZoneChanges: [.saveRecord(failedRecord.recordID)])
             case .zoneNotFound:
                 do {
-                    try removeFork()
-                    try createFork()
+                    try removeForks()
+                    try createForks()
                     let zone = CKRecordZone(zoneID: failedRecord.recordID.zoneID)
                     engine.state.add(pendingDatabaseChanges: [.saveZone(zone)])
+                    engine.state.add(pendingRecordZoneChanges: [.saveRecord(failedRecord.recordID)])
                 } catch {
                     Logger.exchange.error("Failed to recover from missing zone: \(error)")
                 }
             case .unknownItem:
-                engine.state.add(pendingRecordZoneChanges: [.saveRecord(failedRecord.recordID)]) // Reupload
+                // May be deleted by other device. Let that deletion propagate naturally.
+                Logger.exchange.error("Unknown item error following upload. Ignoring: \(failedRecordSave.error)")
             case .networkFailure, .networkUnavailable, .zoneBusy, .serviceUnavailable, .notAuthenticated, .operationCancelled:
                 Logger.exchange.debug("Retryable error saving \(failedRecord.recordID): \(failedRecordSave.error)")
             default:
@@ -120,4 +95,24 @@ extension CloudKitExchange {
             }
         }
     }
+    
+    func update(withDownloadedRecord record: CKRecord) {
+        let id = record.recordID.recordName
+        guard self.id == id else { return }
+        
+        guard let data = record.encryptedValues[CKRecord.resourceDataKey] as? Data else {
+            Logger.exchange.error("No data found in CKRecord")
+            return
+        }
+        
+        do {
+            let resource = try JSONDecoder().decode(R.Resource.self, from: data)
+            try forkedResource.update(.cloudKitDownload, with: resource)
+            try forkedResource.mergeIntoMain(from: .cloudKitDownload)
+        } catch {
+            Logger.exchange.error("Failed to update resource with downloaded data: \(error)")
+        }
+    }
+    
 }
+
