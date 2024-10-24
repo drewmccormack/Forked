@@ -157,6 +157,10 @@ extension CloudKitExchange: CKSyncEngineDelegate {
     }
     
     public func nextRecordZoneChangeBatch(_ context: CKSyncEngine.SendChangesContext, syncEngine: CKSyncEngine) async -> CKSyncEngine.RecordZoneChangeBatch? {
-        nil
+        let pendingChanges = syncEngine.state.pendingRecordZoneChanges.filter { context.options.scope.contains($0) }
+        return await CKSyncEngine.RecordZoneChangeBatch(pendingChanges: pendingChanges) { recordID in
+            self.recordToSave(for: recordID)
+        }
     }
+    
 }
