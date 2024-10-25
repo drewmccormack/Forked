@@ -42,7 +42,8 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
     
     private let changeStream: ChangeStream
     private var monitorTask: Task<(), Never>!
-        
+    private var pollingTask: Task<(), Swift.Error>!
+
     public init(id: String, forkedResource: ForkedResource<R>, cloudKitContainer: CKContainer = .default()) throws {
         self.id = id
         self.forkedResource = forkedResource
@@ -83,23 +84,36 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
                 self.uploadMainIfNeeded()
             }
         }
+        
+        // Regularly check if an upload is needed,
+        // in case the monitor task fails
+        pollingTask = Task { [weak self] in
+            while true {
+                try Task.checkCancellation()
+                try await Task.sleep(for: .seconds(60))
+                self?.uploadMainIfNeeded()
+                try? self?.forkedResource.mergeIntoMain(from: .cloudKitDownload)
+            }
+        }
     }
     
     deinit {
         monitorTask.cancel()
+        pollingTask.cancel()
     }
     
     private func uploadMainIfNeeded() {
         do {
             try forkedResource.performAtomically {
                 if try forkedResource.hasUnmergedCommitsInMain(for: .cloudKitUpload) {
-                    try forkedResource.mergeFromMain(into: .cloudKitUpload)
-                    let content = try forkedResource.content(of: .cloudKitUpload)
+                    let content = try forkedResource.content(of: .main)
                     if case .none = content {
                         engine.state.add(pendingRecordZoneChanges: [.deleteRecord(recordID)])
                     } else {
                         engine.state.add(pendingRecordZoneChanges: [.saveRecord(recordID)])
                     }
+                    let action = try forkedResource.mergeFromMain(into: .cloudKitUpload)
+                    assert(action == .fastForward)
                 }
             }
         } catch {

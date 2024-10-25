@@ -66,7 +66,7 @@ extension ForkedResource {
     /// stream of all changes. It fires for any change to any fork.
     public var changeStream: ChangeStream {
         serialize {
-            AsyncStream { [weak self] continuation in
+            ChangeStream { [weak self] continuation in
                 guard let self else { return }
                 let id = nextStreamID
                 continuations[id] = continuation
