@@ -121,16 +121,13 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
         }
     }
     
-    internal func saveState() {
-        do {
-            let data = try JSONEncoder().encode(syncState)
-            try data.write(to: dataURL)
-        } catch {
-            Logger.exchange.error("Failed to save state")
-        }
+    internal func saveState() throws {
+        let data = try JSONEncoder().encode(syncState)
+        try data.write(to: dataURL)
     }
 }
 
+@available(iOS 17.0, tvOS 17.0, watchOS 10.0, macOS 14.0, *)
 internal extension CloudKitExchange {
     
     nonisolated func createForks() throws {
@@ -148,14 +145,23 @@ internal extension CloudKitExchange {
     
 }
 
-@available(iOS 17.0, tvOS 17.0, watchOS 9.0, macOS 14.0, *)
+@available(iOS 17.0, tvOS 17.0, watchOS 10.0, macOS 14.0, *)
 extension CloudKitExchange: CKSyncEngineDelegate {
     
     public func handleEvent(_ event: CKSyncEngine.Event, syncEngine: CKSyncEngine) async {
         switch event {
         case .stateUpdate(let event):
-            syncState.stateSerialization = event.stateSerialization
-            saveState()
+            do {
+                // Careful to save resource first, so if there is a crash,
+                // we continue from the previous state and don't lose anything
+                syncState.stateSerialization = event.stateSerialization
+                try forkedResource.performAtomically {
+                    try forkedResource.persist()
+                    try saveState()
+                }
+            } catch {
+                Logger.exchange.error("Failed to save state: \(error)")
+            }
         case .accountChange(let event):
             handleAccountChange(event)
         case .fetchedDatabaseChanges(let event):
@@ -181,8 +187,12 @@ extension CloudKitExchange: CKSyncEngineDelegate {
                 if let resourceValue = try forkedResource.resource(of: .cloudKitUpload) {
                     let record = (try? await syncEngine.database.record(for: recordID)) ?? CKRecord(recordType: recordType, recordID: recordID)
                     let data = try JSONEncoder().encode(resourceValue)
-                    record.encryptedValues[CKRecord.resourceDataKey] = data
-                    return record
+                    if data != record.encryptedValues[CKRecord.resourceDataKey] {
+                        record.encryptedValues[CKRecord.resourceDataKey] = data
+                        return record
+                    } else {
+                        return nil
+                    }
                 } else {
                     syncEngine.state.remove(pendingRecordZoneChanges: [.saveRecord(recordID)])
                     return nil

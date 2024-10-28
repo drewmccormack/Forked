@@ -47,6 +47,12 @@ public final class ForkedResource<RespositoryType: Repository>: @unchecked Senda
             contination.finish()
         }
     }
+    
+    public func persist() throws {
+        if let persistable = repository as? (any Persistable) {
+            try persistable.persist()
+        }
+    }
 }
 
 internal extension ForkedResource {

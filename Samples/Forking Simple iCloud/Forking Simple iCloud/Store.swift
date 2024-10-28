@@ -1,6 +1,7 @@
 import Forked
 import ForkedCloudKit
 import Foundation
+import AsyncAlgorithms
 
 extension Fork {
     static let ui = Fork(name: "ui")
@@ -10,6 +11,7 @@ struct Model: Codable {
     var text: String
 }
 
+@MainActor
 @Observable
 class Store {
     private typealias RepoType = AtomicRepository<Model>
@@ -35,39 +37,43 @@ class Store {
     }
 
     init() throws {
-        // Read repo from disk if it exists, otherwise create anew
-        if fileManager.fileExists(atPath: Self.repoFileURL.path) {
-            let data = try Data(contentsOf: Self.repoFileURL)
-            repo = try JSONDecoder().decode(RepoType.self, from: data)
-        } else {
-            try? fileManager.createDirectory(at: Self.repoDirURL, withIntermediateDirectories: true)
-            repo = .init()
-        }
+        // Reads repo from disk if it exists, otherwise creates it anew
+        repo = try AtomicRepository(fileURL: Self.repoFileURL)
         
         // Setup ForkedResource
-        forkedText = try .init(repository: repo)
+        forkedText = try ForkedResource(repository: repo)
         if !forkedText.has(.ui) {
             try forkedText.create(.ui)
             try forkedText.update(.ui, with: Model(text: "Fork yeah!")) // First text in UI
         }
      
         // Setup CloudKitExchange
-        cloudKitExchange = try .init(id: "ForkingSimpleICloudData", forkedResource: forkedText)
+        cloudKitExchange = try .init(id: "ForkedRepo", forkedResource: forkedText)
         
         // Set displayed text to what is in the repo
         displayedText = try forkedText.resource(of: .ui)!.text
         
-        // Monitor stream of updates to resource (eg remote sync changes)
-        Task {
-            try! forkedText.mergeFromMain(into: .ui)
-            for await change in forkedText.changeStream where change.fork == .main && change.mergingFork != .ui {
-                try! forkedText.mergeFromMain(into: .ui)
-                displayedText = model.text
-            }
-        }
+        // Setup streams to monitor changes
+        setupStreams()
     }
     
-    func save() throws {
-        try! JSONEncoder().encode(repo).write(to: Self.repoFileURL)
+    private func setupStreams() {
+        // Monitor stream of updates to resource (eg remote sync changes)
+        Task { [weak self, forkedText] in
+            try! forkedText.mergeFromMain(into: .ui)
+            for await change in forkedText.changeStream where change.fork == .main && change.mergingFork != .ui {
+                guard let self else { return }
+                try! forkedText.mergeFromMain(into: .ui)
+                self.displayedText = model.text
+            }
+        }
+        
+        // Save following changes
+        Task { [weak self, forkedText] in
+            for await _ in forkedText.changeStream.debounce(for: .seconds(0.5)) {
+                guard let self else { return }
+                try! self.repo.persist()
+            }
+        }
     }
 }

@@ -12,7 +12,7 @@ public protocol Repository: AnyObject {
     
     /// The forks in the repository, including .main, in no particular order.
     var forks: [Fork] { get }
-
+    
     /// Creates a fork providing an initial commit to populate it with.
     /// Throws if the fork is already present.
     func create(_ fork: Fork, withInitialCommit commit: Commit<Resource>) throws
@@ -38,6 +38,14 @@ public protocol Repository: AnyObject {
     /// Remove a commit for a given version from the fork. If the version is
     /// not found, an error is thrown.
     func removeCommit(at version: Version, from fork: Fork) throws
+}
+
+public protocol Persistable {
+    /// If needed, the repo can store data persistently at this point (or do nothing)
+    func persist() throws
+    
+    /// Loads repo from storage
+    func load() throws
 }
 
 extension Repository {
