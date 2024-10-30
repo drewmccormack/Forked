@@ -4,7 +4,7 @@ import Testing
 struct ChangeStreamSuite {
     
     @Test func singleChangeTriggersSingleValueInStream() async throws {
-        let repo = AtomicRepository<Int>()
+        let repo = try AtomicRepository<Int>()
         let resource = try ForkedResource(repository: repo)
         let stream = resource.changeStream
         var iterator = stream.makeAsyncIterator()
@@ -16,7 +16,7 @@ struct ChangeStreamSuite {
     }
     
     @Test func doubleChangeTriggersTwoValuesInStream() async throws {
-        let repo = AtomicRepository<Int>()
+        let repo = try AtomicRepository<Int>()
         let resource = try ForkedResource(repository: repo)
         let stream = resource.changeStream
         var iterator = stream.makeAsyncIterator()
@@ -33,7 +33,7 @@ struct ChangeStreamSuite {
     }
     
     @Test func releasingStreamRemovesContinuation() async throws {
-        let repo = AtomicRepository<Int>()
+        let repo = try AtomicRepository<Int>()
         let resource = try ForkedResource(repository: repo)
         do {
             let stream = resource.changeStream

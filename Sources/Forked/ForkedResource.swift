@@ -49,9 +49,7 @@ public final class ForkedResource<RespositoryType: Repository>: @unchecked Senda
     }
     
     public func persist() throws {
-        if let persistable = repository as? (any Persistable) {
-            try persistable.persist()
-        }
+        try repository.persist()
     }
 }
 

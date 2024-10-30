@@ -38,9 +38,7 @@ public protocol Repository: AnyObject {
     /// Remove a commit for a given version from the fork. If the version is
     /// not found, an error is thrown.
     func removeCommit(at version: Version, from fork: Fork) throws
-}
 
-public protocol Persistable {
     /// If needed, the repo can store data persistently at this point (or do nothing)
     func persist() throws
     
@@ -49,6 +47,11 @@ public protocol Persistable {
 }
 
 extension Repository {
+    
+    public func persist() throws {}
+    
+    public func load() throws {}
+    
     /// Versions in ascending order, from oldest to newest
     func ascendingVersions(storedIn fork: Fork) throws -> [Version] {
         try versions(storedIn: fork).sorted()
@@ -77,4 +80,5 @@ extension Repository {
         let commit: Commit<Resource> = .init(content: content, version: fromVersion)
         try store(commit, in: toFork)
     }
+    
 }

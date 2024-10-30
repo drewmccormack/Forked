@@ -91,8 +91,8 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
             while true {
                 try Task.checkCancellation()
                 try await Task.sleep(for: .seconds(60))
+                _ = try? self?.forkedResource.mergeIntoMain(from: .cloudKitDownload)
                 self?.uploadMainIfNeeded()
-                try? self?.forkedResource.mergeIntoMain(from: .cloudKitDownload)
             }
         }
     }

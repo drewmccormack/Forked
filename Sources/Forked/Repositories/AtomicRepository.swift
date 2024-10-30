@@ -8,18 +8,14 @@ import Foundation
 public final class AtomicRepository<Resource>: Repository {
     private var forkToResource: [Fork:[Commit<Resource>]] = [:]
     
-    /// If nil, does not persist to disk. Otherwise will persist to the file at
-    /// the URL whenver  `persist` is called.
-    let fileURL: URL?
+    /// If set, the persistence of the repo is managed for you. It will load and
+    /// save as needed, though you can trigger the functions `persist` to save yourself too.
+    /// If nil, `persist` and `load` do nothing, and you manually manage the repo.
+    let managedFileURL: URL?
     
-    public init(fileURL: URL?) throws {
-        self.fileURL = fileURL
-        
-        guard let fileURL, let data = try? Data(contentsOf: fileURL) else { return }
-        
-        if let persistable = self as? (any Persistable) {
-            try persistable.load()
-        }
+    public init(managedFileURL: URL? = nil) throws {
+        self.managedFileURL = managedFileURL
+        try load()
     }
     
     public var forks: [Fork] {
@@ -72,21 +68,17 @@ public final class AtomicRepository<Resource>: Repository {
     }
 }
 
-extension AtomicRepository: Persistable, Codable where Resource: Codable {
+extension AtomicRepository: Codable where Resource: Codable {
 
     public func persist() throws {
-        guard let fileURL else { return }
-        guard let codable = self as? Codable else {
-            fatalError("AtomicRepository with fileURL non-nil must conform to Codable")
-        }
-        let data = try JSONEncoder().encode(codable)
-        try data.write(to: fileURL)
+        guard let managedFileURL else { return }
+        let data = try JSONEncoder().encode(self)
+        try data.write(to: managedFileURL)
     }
     
     public func load() throws {
-        guard let fileURL else { return }
-        guard self is Codable, Resource.self is Codable.Type else { return }
-        let data = try Data(contentsOf: fileURL)
+        guard let managedFileURL else { return }
+        let data = try Data(contentsOf: managedFileURL)
         let loadedRepo = try JSONDecoder().decode(Self.self, from: data)
         forkToResource = loadedRepo.forkToResource
     }
