@@ -3,11 +3,21 @@ import Testing
 
 struct ChangeStreamSuite {
     
-    @Test func singleChangeTriggersSingleValueInStream() async throws {
-        let repo = try AtomicRepository<Int>()
-        let resource = try ForkedResource(repository: repo)
-        let stream = resource.changeStream
-        var iterator = stream.makeAsyncIterator()
+    typealias Repo = AtomicRepository<Int>
+    let repo = try! AtomicRepository<Int>()
+    let resource: ForkedResource<Repo>
+    let fork = Fork(name: "fork")
+    let stream: ChangeStream
+    var iterator: ChangeStream.Iterator
+
+    init() throws {
+        resource = try ForkedResource(repository: repo)
+        try resource.create(fork)
+        stream = resource.changeStream
+        iterator = stream.makeAsyncIterator()
+    }
+    
+    @Test mutating func singleChangeTriggersSingleValueInStream() async throws {
         try resource.update(.main, with: 1)
         let change = await iterator.next()
         #expect(change?.fork == .main)
@@ -15,11 +25,7 @@ struct ChangeStreamSuite {
         #expect(change?.mergingFork == nil)
     }
     
-    @Test func doubleChangeTriggersTwoValuesInStream() async throws {
-        let repo = try AtomicRepository<Int>()
-        let resource = try ForkedResource(repository: repo)
-        let stream = resource.changeStream
-        var iterator = stream.makeAsyncIterator()
+    @Test mutating func doubleChangeTriggersTwoValuesInStream() async throws {
         try resource.update(.main, with: 1)
         try resource.update(.main, with: 2)
         let change1 = await iterator.next()
@@ -47,4 +53,18 @@ struct ChangeStreamSuite {
         #expect(!resource.hasSubscribedChangeStreams)
     }
     
+    @Test mutating func changeStreamDoesNotContainMergingFork() async throws {
+        try resource.update(.main, with: 1)
+        let change = await iterator.next()
+        #expect(change?.mergingFork == nil)
+    }
+    
+    @Test mutating func changeStreamContainsMergingFork() async throws {
+        try resource.update(fork, with: 1)
+        try resource.mergeIntoMain(from: fork)
+        let updateChange = await iterator.next()
+        let mergeChange = await iterator.next()
+        #expect(updateChange?.mergingFork == nil)
+        #expect(mergeChange?.mergingFork == fork)
+    }
 }
