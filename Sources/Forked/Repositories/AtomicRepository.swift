@@ -11,11 +11,17 @@ public final class AtomicRepository<Resource>: Repository {
     /// If set, the persistence of the repo is managed for you. It will load and
     /// save as needed, though you can trigger the functions `persist` to save yourself too.
     /// If nil, `persist` and `load` do nothing, and you manually manage the repo.
-    let managedFileURL: URL?
+    private let managedFileURL: URL?
     
-    public init(managedFileURL: URL? = nil) throws {
+    /// Persist using Codable
+    public init(managedFileURL: URL) throws where Resource: Codable {
         self.managedFileURL = managedFileURL
         try load()
+    }
+    
+    /// Initialize with no persistence
+    public init() {
+        managedFileURL = nil
     }
     
     public var forks: [Fork] {
@@ -71,14 +77,12 @@ public final class AtomicRepository<Resource>: Repository {
 extension AtomicRepository: Codable where Resource: Codable {
 
     public func persist() throws {
-        guard let managedFileURL else { return }
         let data = try JSONEncoder().encode(self)
-        try data.write(to: managedFileURL)
+        try data.write(to: managedFileURL!)
     }
     
     public func load() throws {
-        guard let managedFileURL else { return }
-        let data = try Data(contentsOf: managedFileURL)
+        let data = try Data(contentsOf: managedFileURL!)
         let loadedRepo = try JSONDecoder().decode(Self.self, from: data)
         forkToResource = loadedRepo.forkToResource
     }

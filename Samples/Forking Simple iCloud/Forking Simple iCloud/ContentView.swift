@@ -13,10 +13,12 @@ struct ContentView: View {
     var body: some View {
         @Bindable var store = store
         VStack(alignment: .center) {
-            Text("Enter a message to store in iCloud")
-                .foregroundStyle(.secondary)
-                .font(.headline)
+            Text("Message in iCloud")
+                .font(.title2)
+                .multilineTextAlignment(.center)
+                .opacity(0.6)
             TextField("Message", text: $store.displayedText)
+                .textFieldStyle(.roundedBorder)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

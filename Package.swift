@@ -15,13 +15,17 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-docc-plugin", from: "1.0.0"),
+        .package(url: "https://github.com/apple/swift-async-algorithms", from: "1.0.2"),
     ],
     targets: [
         .target(
             name: "Forked"),
         .target(
             name: "ForkedCloudKit",
-            dependencies: ["Forked"]
+            dependencies: [
+                "Forked",
+                .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
+            ]
         ),
         .testTarget(
             name: "ForkedTests",

@@ -6,6 +6,7 @@
 //
 import CloudKit
 import SwiftUI
+import AsyncAlgorithms
 import Forked
 import os.log
 
@@ -79,7 +80,12 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
         // Monitor changes to main
         monitorTask = Task { [weak self, changeStream] in
             self?.uploadMainIfNeeded()
-            for await _ in changeStream.filter({ $0.fork == .main && ![.cloudKitDownload, .cloudKitUpload].contains($0.mergingFork) }) {
+            for await _ in changeStream
+                .filter({
+                    $0.fork == .main &&
+                    ![.cloudKitDownload, .cloudKitUpload].contains($0.mergingFork)
+                })
+                .debounce(for: .seconds(1)) {
                 guard let self else { break }
                 self.uploadMainIfNeeded()
             }
@@ -89,10 +95,13 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
         // in case the monitor task fails
         pollingTask = Task { [weak self] in
             while true {
+                guard let self else { break }
                 try Task.checkCancellation()
                 try await Task.sleep(for: .seconds(60))
-                _ = try? self?.forkedResource.mergeIntoMain(from: .cloudKitDownload)
-                self?.uploadMainIfNeeded()
+                await try? engine.fetchChanges()
+                _ = try? forkedResource.mergeIntoMain(from: .cloudKitDownload)
+                uploadMainIfNeeded()
+                await try? engine.sendChanges()
             }
         }
     }
