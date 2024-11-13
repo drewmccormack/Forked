@@ -36,7 +36,7 @@ class Store {
         }
     }
     private var suppressModelUpdates: Bool = false
-
+    
     init() throws {
         // Reads repo from disk if it exists, otherwise creates it anew
         repo = try AtomicRepository(managedFileURL: Self.repoFileURL)

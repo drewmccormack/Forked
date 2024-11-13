@@ -18,7 +18,6 @@ struct ContentView: View {
                 .multilineTextAlignment(.center)
                 .opacity(0.6)
             TextField("Message", text: $store.displayedText)
-                .textFieldStyle(.roundedBorder)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

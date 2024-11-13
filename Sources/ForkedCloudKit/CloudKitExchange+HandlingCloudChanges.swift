@@ -42,11 +42,15 @@ extension CloudKitExchange {
                 Logger.exchange.info("Received deletion for unknown zone: \(deletion.zoneID)")
             }
         }
+        Logger.exchange.info("Fetched database changes")
     }
     
     func handleFetchedRecordZoneChanges(_ event: CKSyncEngine.Event.FetchedRecordZoneChanges) {
+        Logger.exchange.info("Handling fetched record zone changes")
+
         for modification in event.modifications {
             update(withDownloadedRecord: modification.record)
+            Logger.exchange.info("Updated with record: \(modification.record.recordID.recordName)")
         }
         
         for deletion in event.deletions {
@@ -58,7 +62,10 @@ extension CloudKitExchange {
             } catch {
                 Logger.exchange.error("Failed to update resource with downloaded data: \(error)")
             }
+            Logger.exchange.info("Updated for deletion of record: \(id)")
         }
+        
+        Logger.exchange.info("Fetched record zone changes")
     }
     
     func handleSentRecordZoneChanges(_ event: CKSyncEngine.Event.SentRecordZoneChanges) {
@@ -66,6 +73,8 @@ extension CloudKitExchange {
             let failedRecord = failedRecordSave.record
             let id = failedRecord.recordID.recordName
             guard self.id == id else { continue }
+            
+            Logger.exchange.warning("Failed record save: \(failedRecordSave.error)")
             
             switch failedRecordSave.error.code {
             case .serverRecordChanged:
@@ -75,6 +84,7 @@ extension CloudKitExchange {
                 }
                 update(withDownloadedRecord: serverRecord)
                 engine.state.add(pendingRecordZoneChanges: [.saveRecord(failedRecord.recordID)])
+                Logger.exchange.info("Server record was changed, so updated and will try again")
             case .zoneNotFound:
                 do {
                     try removeForks()
@@ -109,6 +119,7 @@ extension CloudKitExchange {
             let resource = try JSONDecoder().decode(R.Resource.self, from: data)
             try forkedResource.update(.cloudKitDownload, with: resource)
             try forkedResource.mergeIntoMain(from: .cloudKitDownload)
+            Logger.exchange.info("Updated cloudKitDownload with downloaded data, and merged into main")
         } catch {
             Logger.exchange.error("Failed to update resource with downloaded data: \(error)")
         }

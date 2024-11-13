@@ -16,7 +16,7 @@ public final class AtomicRepository<Resource>: Repository {
     /// Persist using Codable
     public init(managedFileURL: URL) throws where Resource: Codable {
         self.managedFileURL = managedFileURL
-        try load()
+        try? load()
     }
     
     /// Initialize with no persistence

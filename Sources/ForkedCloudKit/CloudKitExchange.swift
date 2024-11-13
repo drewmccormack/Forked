@@ -8,9 +8,9 @@ import CloudKit
 import SwiftUI
 import AsyncAlgorithms
 import Forked
-import os.log
+public import os.log
 
-extension Logger {
+public extension Logger {
     static let exchange = Logger(subsystem: "forked", category: "CloudKitExchange")
 }
 
@@ -79,7 +79,7 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
         
         // Monitor changes to main
         monitorTask = Task { [weak self, changeStream] in
-            self?.uploadMainIfNeeded()
+            await self?.uploadAsync()
             for await _ in changeStream
                 .filter({
                     $0.fork == .main &&
@@ -87,7 +87,8 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
                 })
                 .debounce(for: .seconds(1)) {
                 guard let self else { break }
-                self.uploadMainIfNeeded()
+                Logger.exchange.info("Main fork changed, so will upload")
+                await uploadAsync()
             }
         }
         
@@ -98,10 +99,12 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
                 guard let self else { break }
                 try Task.checkCancellation()
                 try await Task.sleep(for: .seconds(60))
+                Logger.exchange.info("Polling for new changes in cloud")
                 await try? engine.fetchChanges()
-                _ = try? forkedResource.mergeIntoMain(from: .cloudKitDownload)
-                uploadMainIfNeeded()
-                await try? engine.sendChanges()
+                if let action = try? forkedResource.mergeIntoMain(from: .cloudKitDownload), action != .none {
+                    Logger.exchange.info("Merged new changes into main from poll")
+                }
+                await uploadAsync()
             }
         }
     }
@@ -115,6 +118,7 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
         do {
             try forkedResource.performAtomically {
                 if try forkedResource.hasUnmergedCommitsInMain(for: .cloudKitUpload) {
+                    Logger.exchange.info("Main fork has unmerged changes. Uploading...")
                     let content = try forkedResource.content(of: .main)
                     if case .none = content {
                         engine.state.add(pendingRecordZoneChanges: [.deleteRecord(recordID)])
@@ -128,6 +132,11 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
         } catch {
             Logger.exchange.error("Failure monitoring changes: \(error)")
         }
+    }
+    
+    private func uploadAsync() async {
+        uploadMainIfNeeded()
+        await try? engine.sendChanges()
     }
     
     internal func saveState() throws {
