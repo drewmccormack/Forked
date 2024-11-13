@@ -3,14 +3,14 @@ import Testing
 
 struct ManipulatingForksSuite {
     @Test func creatingEmptyResource() throws {
-        let repo = try AtomicRepository<Int>()
+        let repo = AtomicRepository<Int>()
         let resource = try ForkedResource(repository: repo)
         try #require(resource.forks.count == 1)
         #expect(resource.forks.contains(.main))
     }
     
     @Test func creatingFork() throws {
-        let repo = try AtomicRepository<Int>()
+        let repo = AtomicRepository<Int>()
         let resource = try ForkedResource(repository: repo)
         let fork = Fork(name: "Test")
         try resource.create(fork)
@@ -20,7 +20,7 @@ struct ManipulatingForksSuite {
     }
     
     @Test func creatingExistingForkFails() throws {
-        let repo = try AtomicRepository<Int>()
+        let repo = AtomicRepository<Int>()
         let resource = try ForkedResource(repository: repo)
         let fork = Fork(name: "Test")
         try resource.create(fork)
@@ -30,7 +30,7 @@ struct ManipulatingForksSuite {
     }
     
     @Test func creatingMainForkFails() throws {
-        let repo = try AtomicRepository<Int>()
+        let repo = AtomicRepository<Int>()
         let resource = try ForkedResource(repository: repo)
         #expect(throws: (Forked.Error).self) {
             try resource.create(.main)
@@ -38,7 +38,7 @@ struct ManipulatingForksSuite {
     }
     
     @Test func deletingFork() throws {
-        let repo = try AtomicRepository<Int>()
+        let repo = AtomicRepository<Int>()
         let resource = try ForkedResource(repository: repo)
         let fork1 = Fork(name: "Test1")
         try resource.create(fork1)
@@ -56,7 +56,7 @@ struct ManipulatingForksSuite {
     }
     
     @Test func deletingMainFails() throws {
-        let repo = try AtomicRepository<Int>()
+        let repo = AtomicRepository<Int>()
         let resource = try ForkedResource(repository: repo)
         #expect(throws: (Forked.Error).self) {
             try resource.delete(.main)
@@ -64,7 +64,7 @@ struct ManipulatingForksSuite {
     }
     
     @Test func deletingNonexistentForkFails() throws {
-        let repo = try AtomicRepository<Int>()
+        let repo = AtomicRepository<Int>()
         let resource = try ForkedResource(repository: repo)
         #expect(throws: (Forked.Error).self) {
             try resource.delete(Fork(name: "None"))

@@ -4,7 +4,7 @@ import Testing
 struct ChangeStreamSuite {
     
     typealias Repo = AtomicRepository<Int>
-    let repo = try! AtomicRepository<Int>()
+    let repo = AtomicRepository<Int>()
     let resource: ForkedResource<Repo>
     let fork = Fork(name: "fork")
     let stream: ChangeStream
@@ -39,7 +39,7 @@ struct ChangeStreamSuite {
     }
     
     @Test func releasingStreamRemovesContinuation() async throws {
-        let repo = try AtomicRepository<Int>()
+        let repo = AtomicRepository<Int>()
         let resource = try ForkedResource(repository: repo)
         do {
             let stream = resource.changeStream

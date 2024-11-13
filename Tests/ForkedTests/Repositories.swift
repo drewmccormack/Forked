@@ -4,7 +4,7 @@ import Testing
 
 struct RepositoriesSuite {
     @Test func savingBasicAtomicRepository() throws {
-        let repo = try AtomicRepository<Int>()
+        let repo = AtomicRepository<Int>()
         let _ = try ForkedResource(repository: repo)
         let data = try JSONEncoder().encode(repo)
         let newRepo = try JSONDecoder().decode(AtomicRepository<Int>.self, from: data)
@@ -14,7 +14,7 @@ struct RepositoriesSuite {
     }
     
     @Test func savingAtomicRepositoryWithChanges() throws {
-        let repo = try AtomicRepository<Int>()
+        let repo = AtomicRepository<Int>()
         let resource = try ForkedResource(repository: repo)
         let fork = Fork(name: "fork")
         try resource.create(fork)

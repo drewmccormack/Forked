@@ -79,7 +79,7 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
         
         // Monitor changes to main
         monitorTask = Task { [weak self, changeStream] in
-            await self?.uploadAsync()
+            await self?.uploadMain()
             for await _ in changeStream
                 .filter({
                     $0.fork == .main &&
@@ -88,7 +88,7 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
                 .debounce(for: .seconds(1)) {
                 guard let self else { break }
                 Logger.exchange.info("Main fork changed, so will upload")
-                await uploadAsync()
+                await uploadMain()
             }
         }
         
@@ -100,11 +100,11 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
                 try Task.checkCancellation()
                 try await Task.sleep(for: .seconds(60))
                 Logger.exchange.info("Polling for new changes in cloud")
-                await try? engine.fetchChanges()
+                try? await engine.fetchChanges()
                 if let action = try? forkedResource.mergeIntoMain(from: .cloudKitDownload), action != .none {
                     Logger.exchange.info("Merged new changes into main from poll")
                 }
-                await uploadAsync()
+                await uploadMain()
             }
         }
     }
@@ -114,7 +114,7 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
         pollingTask.cancel()
     }
     
-    private func uploadMainIfNeeded() {
+    private func enqueueUploadOfMainIfNeeded() {
         do {
             try forkedResource.performAtomically {
                 if try forkedResource.hasUnmergedCommitsInMain(for: .cloudKitUpload) {
@@ -134,9 +134,9 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
         }
     }
     
-    private func uploadAsync() async {
-        uploadMainIfNeeded()
-        await try? engine.sendChanges()
+    private func uploadMain() async {
+        enqueueUploadOfMainIfNeeded()
+        try? await engine.sendChanges()
     }
     
     internal func saveState() throws {
