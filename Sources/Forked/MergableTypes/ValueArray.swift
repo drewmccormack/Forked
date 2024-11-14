@@ -44,6 +44,9 @@ public struct ValueArray<Element> {
         
     public init() {}
     
+    public init(_ array: [Element]) {
+        array.forEach { append($0) }
+    }
 }
 
 public extension ValueArray {
