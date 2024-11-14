@@ -1,6 +1,6 @@
 import Foundation
 
-/// An atomic repository is one that is completely in memory.
+/// An atomic repository is one that gets loaded completely into memory.
 /// If the `Resource` it contains conforms to `Codable`, the `AtomicRepository` is
 /// also `Codable`, and can be converted to a serialized form and saved as a file.
 /// Saving and loading are atomic, that is, the whole repository is loaded from file, and the whole
