@@ -48,7 +48,11 @@ let package = Package(
         ),
         .testTarget(
             name: "ForkedTests",
-            dependencies: ["Forked"]
+            dependencies: [
+                "Forked",
+                "ForkedModelMacros",
+                .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax"),
+            ]
         ),
     ],
     swiftLanguageModes: [.v6]

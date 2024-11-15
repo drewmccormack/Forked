@@ -3,6 +3,8 @@ import SwiftSyntaxMacros
 import SwiftCompilerPlugin
 
 @main
-struct ForkedModelMacros: CompilerPlugin {
-    var providingMacros: [Macro.Type] = [ModelMacro.self]
+struct ForkedModelPlugin: CompilerPlugin {
+    var providingMacros: [Macro.Type] = [
+        ForkedModelMacro.self,
+    ]
 }

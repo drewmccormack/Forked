@@ -1,7 +1,7 @@
 import Foundation
 
-@attached(peer)
-macro ForkedModel() = #externalMacro(module: "ForkedModelMacros", type: "ModelMacro")
+@attached(peer, names: prefixed(forkedmodel_))
+macro ForkedModel() = #externalMacro(module: "ForkedModelMacros", type: "ForkedModelMacro")
 
-@attached(accessor)
-macro Merge() = #externalMacro(module: "ForkedModelMacros", type: "MergeMacro")
+@attached(accessor, names: prefixed(forkedproperty_))
+macro ForkedProperty() = #externalMacro(module: "ForkedModelMacros", type: "ForkedPropertyMacro")

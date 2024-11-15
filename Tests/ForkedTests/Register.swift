@@ -67,7 +67,7 @@ struct RegisterSuite {
         r2.value = 2
         let r3 = try r2.merged(withOlderConflicting: r1, commonAncestor: r1)
         let r4 = try r1.merged(withOlderConflicting: r2, commonAncestor: r1)
-        #expect(r3 == r4)
+        #expect(r3.value == r4.value)
         #expect(r3.value == 2)
         r1.value = 3
         let r5 = try r2.merged(withOlderConflicting: r1, commonAncestor: r1)

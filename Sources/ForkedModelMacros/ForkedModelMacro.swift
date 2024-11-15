@@ -2,7 +2,7 @@ import SwiftSyntax
 import SwiftSyntaxMacros
 import SwiftCompilerPlugin
 
-public enum ModelError: Error, CustomStringConvertible {
+public enum ForkedModelError: Error, CustomStringConvertible {
     case appliedToNonStruct
 
     public var description: String {
@@ -13,12 +13,12 @@ public enum ModelError: Error, CustomStringConvertible {
     }
 }
 
-public struct ModelMacro: PeerMacro {
+public struct ForkedModelMacro: PeerMacro {
 
     public static func expansion(of node: AttributeSyntax, providingPeersOf declaration: some DeclSyntaxProtocol, in context: some MacroExpansionContext) throws -> [DeclSyntax] {
         // Check that the node is a struct
         guard let structDecl = declaration.as(StructDeclSyntax.self) else {
-            throw ModelError.appliedToNonStruct
+            throw ForkedModelError.appliedToNonStruct
         }
         
         // Check if the struct already conforms to Mergable
@@ -35,7 +35,7 @@ public struct ModelMacro: PeerMacro {
         let mergeVariableSyntaxes: [VariableDeclSyntax] = structDecl.memberBlock.members.compactMap { member -> VariableDeclSyntax? in
             guard let varSyntax = member.decl.as(VariableDeclSyntax.self) else { return nil }
             let contains = varSyntax.attributes.contains { attribute in
-                attribute.as(AttributeSyntax.self)?.attributeName.description == "@Merge"
+                attribute.as(AttributeSyntax.self)?.attributeName.description == "@ForkedProperty"
             }
             return contains ? varSyntax : nil
         }
