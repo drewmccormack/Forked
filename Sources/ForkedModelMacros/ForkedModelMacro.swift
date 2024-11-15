@@ -1,32 +1,5 @@
 import SwiftSyntax
 import SwiftSyntaxMacros
-import SwiftCompilerPlugin
-
-public enum ForkedModelError: Error, CustomStringConvertible {
-    case appliedToNonStruct
-    case appliedToNonVariable
-    case conformsToMergable
-
-    public var description: String {
-        switch self {
-        case .appliedToNonStruct:
-            return "@ForkedModel can only be applied to structs"
-        case .appliedToNonVariable:
-            return "@ForkedProperty can only be applied to properties"
-        case .conformsToMergable:
-            return "@ForkedModel should not explicitly conform to Mergable protocol"
-        }
-    }
-}
-
-public struct ForkedPropertyMacro: PeerMacro {
-    public static func expansion(of node: AttributeSyntax, providingPeersOf declaration: some DeclSyntaxProtocol, in context: some MacroExpansionContext) throws -> [DeclSyntax] {
-        guard let _ = declaration.as(VariableDeclSyntax.self) else {
-            throw ForkedModelError.appliedToNonVariable
-        }
-        return []
-    }
-}
 
 public struct ForkedModelMacro: PeerMacro {
 
