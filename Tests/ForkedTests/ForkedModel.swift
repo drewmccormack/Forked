@@ -11,6 +11,7 @@ final class ForkedModelSuite: XCTestCase {
 
     static let testMacros: [String: Macro.Type] = [
         "ForkedModel": ForkedModelMacro.self,
+        "ForkedProperty": ForkedPropertyMacro.self,
     ]
     
     func testMacro() throws {
@@ -18,7 +19,7 @@ final class ForkedModelSuite: XCTestCase {
             """
             @ForkedModel
             struct TestModel {
-                var text: String
+                @ForkedProperty var text: String
             }
             """,
             expandedSource:
@@ -30,7 +31,7 @@ final class ForkedModelSuite: XCTestCase {
             extension TestModel: Forked.Mergable {
                 public func merged(withOlderConflicting other: Self, commonAncestor: Self?) throws -> Self {
                     var merged = self
-
+                    merged.text = self.text.merged(withOlderConflicting: other.text, commonAncestor: commonAncestor?.text)
                     return merged
                 }
             }

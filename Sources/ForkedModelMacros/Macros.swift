@@ -6,5 +6,6 @@ import SwiftCompilerPlugin
 struct ForkedModelPlugin: CompilerPlugin {
     var providingMacros: [Macro.Type] = [
         ForkedModelMacro.self,
+        ForkedPropertyMacro.self,
     ]
 }

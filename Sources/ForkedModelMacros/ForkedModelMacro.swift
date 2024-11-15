@@ -4,12 +4,27 @@ import SwiftCompilerPlugin
 
 public enum ForkedModelError: Error, CustomStringConvertible {
     case appliedToNonStruct
+    case appliedToNonVariable
+    case conformsToMergable
 
     public var description: String {
         switch self {
         case .appliedToNonStruct:
-            return "@Model can only be applied to structs"
+            return "@ForkedModel can only be applied to structs"
+        case .appliedToNonVariable:
+            return "@ForkedProperty can only be applied to properties"
+        case .conformsToMergable:
+            return "@ForkedModel should not explicitly conform to Mergable protocol"
         }
+    }
+}
+
+public struct ForkedPropertyMacro: PeerMacro {
+    public static func expansion(of node: AttributeSyntax, providingPeersOf declaration: some DeclSyntaxProtocol, in context: some MacroExpansionContext) throws -> [DeclSyntax] {
+        guard let _ = declaration.as(VariableDeclSyntax.self) else {
+            throw ForkedModelError.appliedToNonVariable
+        }
+        return []
     }
 }
 
@@ -28,14 +43,14 @@ public struct ForkedModelMacro: PeerMacro {
         
         // If it already conforms to Mergable, do nothing
         guard !alreadyConformsToCodable else {
-            return []
+            throw ForkedModelError.conformsToMergable
         }
                 
         // Gather names of all stored properties
         let mergeVariableSyntaxes: [VariableDeclSyntax] = structDecl.memberBlock.members.compactMap { member -> VariableDeclSyntax? in
             guard let varSyntax = member.decl.as(VariableDeclSyntax.self) else { return nil }
             let contains = varSyntax.attributes.contains { attribute in
-                attribute.as(AttributeSyntax.self)?.attributeName.description == "@ForkedProperty"
+                attribute.as(AttributeSyntax.self)?.attributeName.trimmedDescription == "ForkedProperty"
             }
             return contains ? varSyntax : nil
         }
