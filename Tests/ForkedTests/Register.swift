@@ -61,9 +61,10 @@ struct RegisterSuite {
         #expect(a.value == d.value)
     }
     
-    @Test func testMergeChoosesMostRecent() throws {
+    @Test func testMergeChoosesMostRecent() async throws {
         var r1: Register<Int> = .init(1)
         var r2: Register<Int> = r1
+        try? await Task.sleep(for: .milliseconds(10)) // Add this ensure no timestamp collision
         r2.value = 2
         let r3 = try r2.merged(withOlderConflicting: r1, commonAncestor: r1)
         let r4 = try r1.merged(withOlderConflicting: r2, commonAncestor: r1)
@@ -74,9 +75,10 @@ struct RegisterSuite {
         #expect(r5.value == 3)
     }
     
-    @Test func testThatCommonAncestorIsIgnored() throws {
+    @Test func testThatCommonAncestorIsIgnored() async throws {
         let r1: Register<Int> = .init(1)
         var r2: Register<Int> = r1
+        try? await Task.sleep(for: .milliseconds(10)) // Add this ensure no timestamp collision
         r2.value = 2
         let r3 = try r2.merged(withOlderConflicting: r1, commonAncestor: r1)
         let r4 = try r1.merged(withOlderConflicting: r2, commonAncestor: nil)
