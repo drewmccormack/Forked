@@ -1,6 +1,11 @@
 import SwiftSyntax
 import SwiftSyntaxMacros
 
+private struct PropertyInfo {
+    var varSyntax: VariableDeclSyntax
+    var mergeAlgorithm: MergeAlgorithm
+}
+
 public struct ForkedModelMacro: PeerMacro {
 
     public static func expansion(of node: AttributeSyntax, providingPeersOf declaration: some DeclSyntaxProtocol, in context: some MacroExpansionContext) throws -> [DeclSyntax] {
@@ -20,21 +25,53 @@ public struct ForkedModelMacro: PeerMacro {
         }
                 
         // Gather names of all stored properties
-        let mergeVariableSyntaxes: [VariableDeclSyntax] = structDecl.memberBlock.members.compactMap { member -> VariableDeclSyntax? in
+        let propertyInfos: [PropertyInfo] = try structDecl.memberBlock.members.compactMap { member -> PropertyInfo? in
             guard let varSyntax = member.decl.as(VariableDeclSyntax.self) else { return nil }
-            let contains = varSyntax.attributes.contains { attribute in
+            let propertyAttribute = varSyntax.attributes.first { attribute in
                 attribute.as(AttributeSyntax.self)?.attributeName.trimmedDescription == "ForkedProperty"
             }
-            return contains ? varSyntax : nil
+            guard let propertyAttribute else { return nil }
+            
+            var mergeAlgorithm: MergeAlgorithm = .mergablePropertyAlgorithm
+            if let argumentList = propertyAttribute.as(AttributeSyntax.self)?.arguments?.as(LabeledExprListSyntax.self) {
+                argloop: for argument in argumentList {
+                    if argument.label?.text == "mergeAlgorithm",
+                       let expr = argument.expression.as(MemberAccessExprSyntax.self)?.declName.baseName.text {
+                        if let algorithm = MergeAlgorithm(rawValue: expr) {
+                            mergeAlgorithm = algorithm
+                            break argloop
+                        } else {
+                            throw ForkedModelError.invalidMergeAlgorithm
+                        }
+                    }
+                }
+            }
+            
+            return PropertyInfo(varSyntax: varSyntax, mergeAlgorithm: mergeAlgorithm)
         }
         
         // Generate merge expression for each variable
         var mergeExpressions: [String] = []
-        for varSyntax in mergeVariableSyntaxes {
+        for propertyInfo in propertyInfos {
+            let varSyntax = propertyInfo.varSyntax
             let varName = varSyntax.bindings.first!.pattern.as(IdentifierPatternSyntax.self)!.identifier.text
-            let expr = """
-            merged.\(varName) = self.\(varName).merged(withOlderConflicting: other.\(varName), commonAncestor: commonAncestor?.\(varName))
-            """
+            let expr: String
+            switch propertyInfo.mergeAlgorithm {
+            case .mergablePropertyAlgorithm:
+                expr =
+                    """
+                    merged.\(varName) = self.\(varName).merged(withOlderConflicting: other.\(varName), commonAncestor: commonAncestor?.\(varName))
+                    """
+            case .valueArray:
+                expr =
+                    """
+                    do {
+                        let merger = ValueArrayMerger()
+                        merged.\(varName) = try merger.merge(self.\(varName), withOlderConflicting: other.\(varName), commonAncestor: commonAncestor?.\(varName))
+                    }
+                    """
+            }
+
             mergeExpressions.append(expr)
         }
 

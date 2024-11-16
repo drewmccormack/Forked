@@ -14,7 +14,7 @@ final class ForkedModelSuite: XCTestCase {
         "ForkedProperty": ForkedPropertyMacro.self,
     ]
     
-    func testMacro() throws {
+    func testBasicMacro() {
         assertMacroExpansion(
             """
             @ForkedModel
@@ -40,5 +40,33 @@ final class ForkedModelSuite: XCTestCase {
         )
     }
     
+    func testPropertyMergeAlgorithm() {
+        assertMacroExpansion(
+            """
+            @ForkedModel
+            struct TestModel {
+                @ForkedProperty(mergeAlgorithm: .valueArray) var text: String
+            }
+            """,
+            expandedSource:
+            """
+            struct TestModel {
+                var text: String
+            }
+
+            extension TestModel: Forked.Mergable {
+                public func merged(withOlderConflicting other: Self, commonAncestor: Self?) throws -> Self {
+                    var merged = self
+                    do {
+                let merger = ValueArrayMerger()
+                merged.text = try merger.merge(self.text, withOlderConflicting: other.text, commonAncestor: commonAncestor?.text)
+                    }
+                    return merged
+                }
+            }
+            """,
+            macros: Self.testMacros
+        )
+    }
 }
 #endif
