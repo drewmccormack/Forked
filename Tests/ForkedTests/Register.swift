@@ -28,7 +28,8 @@ struct RegisterSuite {
         #expect(c.value == b.value)
     }
     
-    @Test mutating func testLastChangeWins() throws {
+    @Test mutating func testLastChangeWins() async throws {
+        try? await Task.sleep(for: .milliseconds(10)) // Add this ensure no timestamp collision
         a.value = 3
         let c = try a.merged(withOlderConflicting: b, commonAncestor: nil)
         #expect(c.value == a.value)

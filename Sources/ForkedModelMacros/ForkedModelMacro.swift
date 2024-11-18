@@ -26,27 +26,9 @@ public struct ForkedModelMacro: PeerMacro {
         
         // Gather names of all stored properties
         let propertyInfos: [PropertyInfo] = try structDecl.memberBlock.members.compactMap { member -> PropertyInfo? in
-            guard let varSyntax = member.decl.as(VariableDeclSyntax.self) else { return nil }
-            let propertyAttribute = varSyntax.attributes.first { attribute in
-                attribute.as(AttributeSyntax.self)?.attributeName.trimmedDescription == "ForkedProperty"
-            }
-            guard let propertyAttribute else { return nil }
-            
-            var mergeAlgorithm: MergeAlgorithm = .property
-            if let argumentList = propertyAttribute.as(AttributeSyntax.self)?.arguments?.as(LabeledExprListSyntax.self) {
-                argloop: for argument in argumentList {
-                    if argument.label?.text == "mergeAlgorithm",
-                       let expr = argument.expression.as(MemberAccessExprSyntax.self)?.declName.baseName.text {
-                        if let algorithm = MergeAlgorithm(rawValue: expr) {
-                            mergeAlgorithm = algorithm
-                            break argloop
-                        } else {
-                            throw ForkedModelError.invalidMergeAlgorithm
-                        }
-                    }
-                }
-            }
-            
+            guard let varSyntax = member.decl.as(VariableDeclSyntax.self),
+                  let mergeAlgorithm = try varSyntax.mergeAlgorithm()
+                else { return nil }
             return PropertyInfo(varSyntax: varSyntax, mergeAlgorithm: mergeAlgorithm)
         }
         
@@ -86,6 +68,11 @@ public struct ForkedModelMacro: PeerMacro {
                         merged.\(varName) = try merger.merge(self.\(varName), withOlderConflicting: other.\(varName), commonAncestor: commonAncestor?.\(varName))
                     }
                     """
+            case .mostRecentWins:
+                expr =
+                    """
+                    merged._\(varName) = self._\(varName).merged(withOlderConflicting: other._\(varName), commonAncestor: commonAncestor?._\(varName))
+                    """
             }
             
             mergeExpressions.append(expr)
@@ -105,4 +92,32 @@ public struct ForkedModelMacro: PeerMacro {
         
         return [extensionSyntax]
     }
+}
+
+extension VariableDeclSyntax {
+    
+    func mergeAlgorithm() throws -> MergeAlgorithm? {
+        let propertyAttribute = self.attributes.first { attribute in
+            attribute.as(AttributeSyntax.self)?.attributeName.trimmedDescription == "ForkedProperty"
+        }
+        guard let propertyAttribute else { return nil }
+        
+        var mergeAlgorithm: MergeAlgorithm = .property
+        if let argumentList = propertyAttribute.as(AttributeSyntax.self)?.arguments?.as(LabeledExprListSyntax.self) {
+            argloop: for argument in argumentList {
+                if argument.label?.text == "mergeAlgorithm",
+                   let expr = argument.expression.as(MemberAccessExprSyntax.self)?.declName.baseName.text {
+                    if let algorithm = MergeAlgorithm(rawValue: expr) {
+                        mergeAlgorithm = algorithm
+                        break argloop
+                    } else {
+                        throw ForkedModelError.invalidMergeAlgorithm
+                    }
+                }
+            }
+        }
+        
+        return mergeAlgorithm
+    }
+    
 }

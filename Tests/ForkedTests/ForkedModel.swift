@@ -97,5 +97,40 @@ final class ForkedModelSuite: XCTestCase {
             macros: Self.testMacros
         )
     }
+    
+    func testMostRecentWinsMergeAlgorithm() {
+        assertMacroExpansion(
+            """
+            @ForkedModel
+            struct TestModel {
+                @ForkedProperty(mergeAlgorithm: .mostRecentWins) var text: String
+            }
+            """,
+            expandedSource:
+            """
+            struct TestModel {
+                var text: String {
+                    get {
+                        return _text.value
+                    }
+                    set {
+                        _text.value = newValue
+                    }
+                }
+
+                private var _text = Register<String>()
+            }
+
+            extension TestModel: Forked.Mergable {
+                public func merged(withOlderConflicting other: Self, commonAncestor: Self?) throws -> Self {
+                    var merged = self
+                    merged._text = self._text.merged(withOlderConflicting: other._text, commonAncestor: commonAncestor?._text)
+                    return merged
+                }
+            }
+            """,
+            macros: Self.testMacros
+        )
+    }
 }
 #endif
