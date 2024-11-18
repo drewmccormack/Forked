@@ -1,4 +1,5 @@
 import Foundation
+import Forked
 
 /// Implements Last-Writer-Wins Register. Whenever the contained value is updated, it stores a timestamp with it.
 /// This allows the type to automatically merge simply by choosing the value that was written later.

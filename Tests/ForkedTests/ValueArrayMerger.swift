@@ -1,6 +1,7 @@
 import Testing
 import Foundation
-@testable import Forked
+import Forked
+@testable import ForkedMerge
 
 struct ValueArrayMergerSuite {
     let ancestor = [1, 2, 3]

@@ -1,4 +1,5 @@
 import Foundation
+import Forked
 
 /// Represents a CRDT for an array of values, such as characters in a string.
 /// The stress here is on values, because this array does not guarantee that uniqueness of

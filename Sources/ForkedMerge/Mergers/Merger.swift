@@ -1,4 +1,5 @@
 import Foundation
+import Forked
 
 /// A merger is a type that applies a merging algorithm to merge two values together.
 /// The values are typically of a simple type. The algorithm could be anything, from a

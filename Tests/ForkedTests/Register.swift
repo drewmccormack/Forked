@@ -1,6 +1,7 @@
 import Testing
 import Foundation
-@testable import Forked
+import Forked
+@testable import ForkedMerge
 
 struct RegisterSuite {
     

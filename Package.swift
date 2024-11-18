@@ -11,11 +11,14 @@ let package = Package(
             name: "Forked",
             targets: ["Forked"]),
         .library(
-            name: "ForkedCloudKit",
-            targets: ["ForkedCloudKit"]),
+            name: "ForkedMerge",
+            targets: ["ForkedMerge"]),
         .library(
             name: "ForkedModel",
             targets: ["ForkedModel"]),
+        .library(
+            name: "ForkedCloudKit",
+            targets: ["ForkedCloudKit"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-docc-plugin", from: "1.0.0"),
@@ -33,17 +36,24 @@ let package = Package(
         .target(
             name: "Forked"),
         .target(
-            name: "ForkedCloudKit",
+            name: "ForkedMerge",
             dependencies: [
                 "Forked",
-                .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
             ]
         ),
         .target(
             name: "ForkedModel",
             dependencies: [
                 "Forked",
+                "ForkedMerge",
                 "ForkedModelMacros",
+            ]
+        ),
+        .target(
+            name: "ForkedCloudKit",
+            dependencies: [
+                "Forked",
+                .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
             ]
         ),
         .testTarget(
@@ -51,6 +61,7 @@ let package = Package(
             dependencies: [
                 "Forked",
                 "ForkedModelMacros",
+                "ForkedMerge",
                 .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax"),
             ]
         ),
