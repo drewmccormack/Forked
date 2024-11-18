@@ -5,4 +5,4 @@ import ForkedModelMacros
 macro ForkedModel() = #externalMacro(module: "ForkedModelMacros", type: "ForkedModelMacro")
 
 @attached(peer)
-macro ForkedProperty(mergeAlgorithm: MergeAlgorithm = .mergablePropertyAlgorithm) = #externalMacro(module: "ForkedModelMacros", type: "ForkedPropertyMacro")
+macro ForkedProperty(mergeAlgorithm: MergeAlgorithm = .property) = #externalMacro(module: "ForkedModelMacros", type: "ForkedPropertyMacro")

@@ -14,7 +14,7 @@ final class ForkedModelSuite: XCTestCase {
         "ForkedProperty": ForkedPropertyMacro.self,
     ]
     
-    func testBasicMacro() {
+    func testDefault() {
         assertMacroExpansion(
             """
             @ForkedModel
@@ -40,12 +40,41 @@ final class ForkedModelSuite: XCTestCase {
         )
     }
     
-    func testPropertyMergeAlgorithm() {
+    func testArrayMergeAlgorithm() {
         assertMacroExpansion(
             """
             @ForkedModel
             struct TestModel {
-                @ForkedProperty(mergeAlgorithm: .valueArray) var text: String
+                @ForkedProperty(mergeAlgorithm: .array) var text: [String.Element]
+            }
+            """,
+            expandedSource:
+            """
+            struct TestModel {
+                var text: [String.Element]
+            }
+
+            extension TestModel: Forked.Mergable {
+                public func merged(withOlderConflicting other: Self, commonAncestor: Self?) throws -> Self {
+                    var merged = self
+                    do {
+                let merger = ValueArrayMerger<String.Element>()
+                merged.text = try merger.merge(self.text, withOlderConflicting: other.text, commonAncestor: commonAncestor?.text)
+                    }
+                    return merged
+                }
+            }
+            """,
+            macros: Self.testMacros
+        )
+    }
+    
+    func testStringMergeAlgorithm() {
+        assertMacroExpansion(
+            """
+            @ForkedModel
+            struct TestModel {
+                @ForkedProperty(mergeAlgorithm: .string) var text: String
             }
             """,
             expandedSource:
@@ -58,7 +87,7 @@ final class ForkedModelSuite: XCTestCase {
                 public func merged(withOlderConflicting other: Self, commonAncestor: Self?) throws -> Self {
                     var merged = self
                     do {
-                let merger = ValueArrayMerger()
+                let merger = StringMerger()
                 merged.text = try merger.merge(self.text, withOlderConflicting: other.text, commonAncestor: commonAncestor?.text)
                     }
                     return merged

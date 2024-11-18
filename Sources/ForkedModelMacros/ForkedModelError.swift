@@ -4,6 +4,7 @@ public enum ForkedModelError: Error, CustomStringConvertible {
     case appliedToNonVariable
     case conformsToMergable
     case invalidMergeAlgorithm
+    case mergeAlgorithmAndTypeAreIncompatible
 
     public var description: String {
         switch self {
@@ -14,7 +15,9 @@ public enum ForkedModelError: Error, CustomStringConvertible {
         case .conformsToMergable:
             return "@ForkedModel should not explicitly conform to Mergable protocol"
         case .invalidMergeAlgorithm:
-            return "@Property has invalid merge algorithm"
+            return "@ForkedProperty has invalid merge algorithm"
+        case .mergeAlgorithmAndTypeAreIncompatible:
+            return "@ForkedProperty has a merge algorithm that is incompatible with the type"
         }
     }
 }
