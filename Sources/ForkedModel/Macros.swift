@@ -1,9 +1,12 @@
 import Foundation
-import ForkedModelMacros
+import Forked
+import ForkedMerge
 
-@attached(peer)
-macro ForkedModel() = #externalMacro(module: "ForkedModelMacros", type: "ForkedModelMacro")
+public typealias Mergable = Forked.Mergable
+
+@attached(`extension`, names: arbitrary, conformances: Mergable)
+public macro ForkedModel() = #externalMacro(module: "ForkedModelMacros", type: "ForkedModelMacro")
 
 @attached(peer)
 @attached(accessor)
-macro ForkedProperty(mergeAlgorithm: MergeAlgorithm = .property) = #externalMacro(module: "ForkedModelMacros", type: "ForkedPropertyMacro")
+public macro ForkedProperty(mergeWith: PropertyMergeAlgorithm = .mergable) = #externalMacro(module: "ForkedModelMacros", type: "ForkedPropertyMacro")

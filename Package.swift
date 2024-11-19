@@ -29,6 +29,8 @@ let package = Package(
         .macro(
             name: "ForkedModelMacros",
             dependencies: [
+                "Forked",
+                "ForkedMerge",
                 .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
                 .product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
             ]
@@ -62,6 +64,7 @@ let package = Package(
                 "Forked",
                 "ForkedModelMacros",
                 "ForkedMerge",
+                "ForkedModel",
                 .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax"),
             ]
         ),
