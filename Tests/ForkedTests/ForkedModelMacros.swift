@@ -20,13 +20,13 @@ final class ForkedModelMacrosSuite: XCTestCase {
             """
             @ForkedModel
             struct TestModel {
-                @Merged var text: String
+                @Merged var text: String = ""
             }
             """,
             expandedSource:
             """
             struct TestModel {
-                var text: String
+                var text: String = ""
             }
 
             extension TestModel: ForkedModel.Mergable {
@@ -46,13 +46,13 @@ final class ForkedModelMacrosSuite: XCTestCase {
             """
             @ForkedModel
             struct TestModel {
-                @Merged(using: .arrayMerge) var text: [String.Element]
+                @Merged(using: .arrayMerge) var text: [String.Element] = []
             }
             """,
             expandedSource:
             """
             struct TestModel {
-                var text: [String.Element]
+                var text: [String.Element] = []
             }
 
             extension TestModel: ForkedModel.Mergable {
@@ -75,13 +75,13 @@ final class ForkedModelMacrosSuite: XCTestCase {
             """
             @ForkedModel
             struct TestModel {
-                @Merged(using: .textMerge) var text: String
+                @Merged(using: .textMerge) var text: String = ""
             }
             """,
             expandedSource:
             """
             struct TestModel {
-                var text: String
+                var text: String = ""
             }
 
             extension TestModel: ForkedModel.Mergable {
@@ -104,13 +104,13 @@ final class ForkedModelMacrosSuite: XCTestCase {
             """
             @ForkedModel
             struct TestModel {
-                @Backed var text: String
+                @Backed var text: String = ""
             }
             """,
             expandedSource:
             """
             struct TestModel {
-                var text: String {
+                var text: String = "" {
                     get {
                         return _forked_backedproperty_text.value
                     }
@@ -119,7 +119,7 @@ final class ForkedModelMacrosSuite: XCTestCase {
                     }
                 }
 
-                private var _forked_backedproperty_text = Register<String>(.init())
+                private var _forked_backedproperty_text = Register<String>("")
             }
 
             extension TestModel: ForkedModel.Mergable {
@@ -139,24 +139,24 @@ final class ForkedModelMacrosSuite: XCTestCase {
             """
             @ForkedModel
             private struct User {
-                var name: String
-                var age: Int
+                var name: String = ""
+                var age: Int = 0
             }
             
             @ForkedModel
             private struct Note {
-                @Backed(by: .register) var title: String
-                @Merged(using: .textMerge) var text: String
+                @Backed(by: .register) var title: String = ""
+                @Merged(using: .textMerge) var text: String = ""
             }
             """,
             expandedSource:
             """
             private struct User {
-                var name: String
-                var age: Int
+                var name: String = ""
+                var age: Int = 0
             }
             private struct Note {
-                var title: String {
+                var title: String = "" {
                     get {
                         return _forked_backedproperty_title.value
                     }
@@ -165,8 +165,8 @@ final class ForkedModelMacrosSuite: XCTestCase {
                     }
                 }
 
-                private var _forked_backedproperty_title = Register<String>(.init())
-                var text: String
+                private var _forked_backedproperty_title = Register<String>("")
+                var text: String = ""
             }
 
             extension User: ForkedModel.Mergable {

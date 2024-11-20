@@ -13,11 +13,13 @@ public struct BackedPropertyMacro: PeerMacro, AccessorMacro {
         
         guard let _ = try variableDecl.propertyBacking() else { return [] }
         
-        let propertyName = variableDecl.bindings.first!.pattern.as(IdentifierPatternSyntax.self)!.identifier.text
-        let originalType = variableDecl.bindings.first!.typeAnnotation!.type.trimmedDescription
+        let binding = variableDecl.bindings.first!
+        let propertyName = binding.pattern.as(IdentifierPatternSyntax.self)!.identifier.text
+        let originalType = binding.typeAnnotation!.type.trimmedDescription
+        let defaultValue = binding.initializer?.value.trimmedDescription ?? "nil"
         let backingProperty: DeclSyntax =
             """
-            private var \(raw: backingPropertyPrefix + propertyName) = Register<\(raw: originalType)>(.init())
+            private var \(raw: backingPropertyPrefix + propertyName) = Register<\(raw: originalType)>(\(raw: defaultValue))
             """
         
         return [backingProperty]

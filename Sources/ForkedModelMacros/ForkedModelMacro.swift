@@ -24,9 +24,14 @@ public struct ForkedModelMacro: ExtensionMacro {
             $0.type.trimmedDescription == "Mergable" || $0.type.trimmedDescription == "Forked.Mergable"
         } ?? false
         
-        // If it already conforms to Mergable, do nothing
+        // If it already conforms to Mergable, throw an error
         guard !alreadyConformsToCodable else {
             throw ForkedModelError.conformsToMergable
+        }
+        
+        // Make sure the struct has defaults for all properties that are stored and non-optional
+        guard structDecl.allStoredPropertiesHaveDefaultValue else {
+            throw ForkedModelError.nonOptionalStoredPropertiesMustHaveDefaultValues
         }
         
         // Gather names of all mergable properties

@@ -7,6 +7,7 @@ public enum ForkedModelError: Error, CustomStringConvertible {
     case invalidPropertyBacking
     case propertyMergeAndTypeAreIncompatible
     case propertyBackingAndTypeAreIncompatible
+    case nonOptionalStoredPropertiesMustHaveDefaultValues
 
     public var description: String {
         switch self {
@@ -24,6 +25,8 @@ public enum ForkedModelError: Error, CustomStringConvertible {
             return "@Merged has a merge algorithm that is incompatible with the type"
         case .propertyBackingAndTypeAreIncompatible:
             return "@Backed has a backing type that is incompatible with the property type"
+        case .nonOptionalStoredPropertiesMustHaveDefaultValues:
+            return "Non-optional stored properties in a ForkedModel struct must have default values"
         }
     }
 }

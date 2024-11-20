@@ -6,8 +6,8 @@ import ForkedMerge
 
 @ForkedModel
 private struct User {
-    var name: String
-    var age: Int
+    var name: String = ""
+    var age: Int = 0
 }
 
 @ForkedModel
@@ -66,4 +66,5 @@ struct ForkedModelSuite {
         let merged = try note2.merged(withOlderConflicting: note1, commonAncestor: ancestor)
         #expect(merged.text == "More Text More")
     }
+    
 }
