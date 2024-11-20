@@ -57,27 +57,5 @@ extension VariableDeclSyntax {
         
         return propertyBacking
     }
-    
-//    func initialValue() throws -> String? {
-//        let propertyAttribute = self.attributes.first { attribute in
-//            attribute.as(AttributeSyntax.self)?.attributeName.trimmedDescription == "ForkedProperty"
-//        }
-//        guard let propertyAttribute else { return nil }
-//
-//        if let argumentList = propertyAttribute.as(AttributeSyntax.self)?.arguments?.as(LabeledExprListSyntax.self) {
-//            argloop: for argument in argumentList {
-//                if argument.label?.text == "mergeWith",
-//                   let expr = argument.expression.as(MemberAccessExprSyntax.self)?.declName.baseName.text {
-//                    if let algorithm = PropertyMerge(rawValue: expr) {
-//                        propertyMerge = algorithm
-//                        break argloop
-//                    } else {
-//                        throw ForkedModelError.invalidPropertyMerge
-//                    }
-//                }
-//            }
-//        }
-//
-//        return propertyMerge
-//    }
+
 }

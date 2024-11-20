@@ -34,6 +34,12 @@ public struct ForkedModelMacro: ExtensionMacro {
             throw ForkedModelError.nonOptionalStoredPropertiesMustHaveDefaultValues
         }
         
+        // Get all vars
+        let allPropertyVars: [VariableDeclSyntax] = structDecl.memberBlock.members.compactMap { member -> VariableDeclSyntax? in
+            guard let varSyntax = member.decl.as(VariableDeclSyntax.self) else { return nil }
+            return varSyntax
+        }
+        
         // Gather names of all mergable properties
         let mergePropertyVars: [MergePropertyVar] = try structDecl.memberBlock.members.compactMap { member -> MergePropertyVar? in
             guard let varSyntax = member.decl.as(VariableDeclSyntax.self),
@@ -50,8 +56,27 @@ public struct ForkedModelMacro: ExtensionMacro {
             return BackedPropertyVar(varSyntax: varSyntax, backing: backing)
         }
         
-        // Generate merge expression for each variable
+        // Variables that should use the default merge
+        let defaultMergeVars = allPropertyVars.filter { varSyntax in
+            !mergePropertyVars.contains { $0.varSyntax == varSyntax } &&
+            !backedPropertyVars.contains { $0.varSyntax == varSyntax }
+        }
+        
+        // Generate merge expression for defaults
         var expressions: [String] = []
+        for varSyntax in defaultMergeVars {
+            let varName = varSyntax.bindings.first!.pattern.as(IdentifierPatternSyntax.self)!.identifier.text
+            let expr =
+                """
+                if  let anyEquatableSelf = ForkedEquatable(self.\(varName)),
+                    case let anyEquatableCommon = commonAncestor.flatMap({ ForkedEquatable($0.\(varName)) }) {
+                    merged.\(varName) = anyEquatableSelf != anyEquatableCommon ? self.\(varName) : other.\(varName)
+                }
+                """
+            expressions.append(expr)
+        }
+        
+        // Generate merge expression for each variable
         for propertyInfo in mergePropertyVars {
             let varSyntax = propertyInfo.varSyntax
             let varName = varSyntax.bindings.first!.pattern.as(IdentifierPatternSyntax.self)!.identifier.text

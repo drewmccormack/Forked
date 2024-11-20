@@ -171,7 +171,20 @@ final class ForkedModelMacrosSuite: XCTestCase {
 
             extension User: ForkedModel.Mergable {
                 public func merged(withOlderConflicting other: Self, commonAncestor: Self?) throws -> Self {
-                    return self
+                    var merged = self
+                    if  let anyEquatableSelf = ForkedEquatable(self.name),
+                case let anyEquatableCommon = commonAncestor.flatMap({
+                            ForkedEquatable($0.name)
+                        }) {
+                merged.name = anyEquatableSelf != anyEquatableCommon ? self.name : other.name
+                    }
+                    if  let anyEquatableSelf = ForkedEquatable(self.age),
+                        case let anyEquatableCommon = commonAncestor.flatMap({
+                            ForkedEquatable($0.age)
+                        }) {
+                        merged.age = anyEquatableSelf != anyEquatableCommon ? self.age : other.age
+                    }
+                    return merged
                 }
             }
 
