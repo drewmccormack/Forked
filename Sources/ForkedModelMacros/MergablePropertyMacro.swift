@@ -10,17 +10,6 @@ public struct MergablePropertyMacro: PeerMacro {
         }
         
         return []
-        
-//        guard let alg = try variableDecl.propertyMerge(), alg.needsBackingType else { return [] }
-//        
-//        let propertyName = variableDecl.bindings.first!.pattern.as(IdentifierPatternSyntax.self)!.identifier.text
-//        let originalType = variableDecl.bindings.first!.typeAnnotation!.type.trimmedDescription
-//        let backingProperty: DeclSyntax =
-//            """
-//            private var _\(raw: propertyName) = Register<\(raw: originalType)>(.init())
-//            """
-//        
-//        return [backingProperty]
     }
     
 }

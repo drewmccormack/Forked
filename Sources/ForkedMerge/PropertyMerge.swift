@@ -5,7 +5,7 @@
 public enum PropertyMerge: String {
     /// The property must be a `Mergable` type, and will be merged accordingly
     /// to the `Mergable` protocol.
-    /// This is the default algorithm if `@ForkedProperty` has been applied with no
+    /// This is the default algorithm if `@Merged` has been applied with no
     /// algorithm stated.
     case mergableProtocol
     

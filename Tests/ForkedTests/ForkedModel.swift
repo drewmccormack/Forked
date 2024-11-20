@@ -18,6 +18,7 @@ private struct User {
 @ForkedModel
 struct Note {
     @Backed(by: .register) var title: String = ""
+    @Backed(by: .valueArray) var pageWordCounts: [Int] = []
     @Merged(using: .textMerge) var text: String = ""
 }
 
@@ -83,7 +84,7 @@ struct ForkedModelSuite {
     @Test func testDefaultMergeForNonEquatableAlwaysFavorsMostRecent() async throws {
         let ancestor = User(name: "Alice", age: 30)
         var user1 = ancestor
-        var user2 = ancestor
+        let user2 = ancestor
         user1.notEquatableInt = NotEquatableInt(value: 1)
         let merged = try user2.merged(withOlderConflicting: user1, commonAncestor: ancestor)
         #expect(merged.notEquatableInt.value == 0)
@@ -112,4 +113,14 @@ struct ForkedModelSuite {
         #expect(merged.text == "More Text More")
     }
 
+    @Test func testValueArrayBacking() async throws {
+        var ancestor = Note()
+        ancestor.pageWordCounts = [1, 2, 3]
+        var note1 = ancestor
+        var note2 = ancestor
+        note1.pageWordCounts = [1, 3, 4]
+        note2.pageWordCounts = [1, 2, 3, 4]
+        let merged = try note2.merged(withOlderConflicting: note1, commonAncestor: ancestor)
+        #expect(merged.pageWordCounts == [1, 3, 4, 4])
+    }
 }

@@ -105,6 +105,7 @@ final class ForkedModelMacrosSuite: XCTestCase {
             @ForkedModel
             struct TestModel {
                 @Backed var text: String = ""
+                @Backed(by: .valueArray) var ints: [Int] = [1,2,3]
             }
             """,
             expandedSource:
@@ -119,13 +120,31 @@ final class ForkedModelMacrosSuite: XCTestCase {
                     }
                 }
 
-                private var _forked_backedproperty_text = Register<String>("")
+                private var _forked_backedproperty_text = ForkedMerge.Register<String>("")
+                var ints: [Int] = [1,2,3] {
+                    get {
+                        return _forked_backedproperty_ints.values
+                    }
+                    set {
+                        for diff in newValue.difference(from: _forked_backedproperty_ints.values) {
+                            switch diff {
+                            case let .insert(offset, element, _):
+                                _forked_backedproperty_ints.insert(element, at: offset)
+                            case let .remove(offset, _, _):
+                                _forked_backedproperty_ints.remove(at: offset)
+                            }
+                        }
+                    }
+                }
+
+                private var _forked_backedproperty_ints = ForkedMerge.ValueArray<Int>([1, 2, 3])
             }
 
             extension TestModel: ForkedModel.Mergable {
                 public func merged(withOlderConflicting other: Self, commonAncestor: Self?) throws -> Self {
                     var merged = self
                     merged._forked_backedproperty_text = try self._forked_backedproperty_text.merged(withOlderConflicting: other._forked_backedproperty_text, commonAncestor: commonAncestor?._forked_backedproperty_text)
+                    merged._forked_backedproperty_ints = try self._forked_backedproperty_ints.merged(withOlderConflicting: other._forked_backedproperty_ints, commonAncestor: commonAncestor?._forked_backedproperty_ints)
                     return merged
                 }
             }
@@ -165,7 +184,7 @@ final class ForkedModelMacrosSuite: XCTestCase {
                     }
                 }
 
-                private var _forked_backedproperty_title = Register<String>("")
+                private var _forked_backedproperty_title = ForkedMerge.Register<String>("")
                 var text: String = ""
             }
 

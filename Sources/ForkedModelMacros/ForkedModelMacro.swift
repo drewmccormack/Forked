@@ -122,7 +122,7 @@ public struct ForkedModelMacro: ExtensionMacro {
             let varName = varSyntax.bindings.first!.pattern.as(IdentifierPatternSyntax.self)!.identifier.text
             let expr: String
             switch propertyInfo.backing {
-            case .register:
+            case .register, .valueArray:
                 expr =
                     """
                     merged.\(BackedPropertyMacro.backingPropertyPrefix + varName) = try self.\(BackedPropertyMacro.backingPropertyPrefix + varName).merged(withOlderConflicting: other.\(BackedPropertyMacro.backingPropertyPrefix + varName), commonAncestor: commonAncestor?.\(BackedPropertyMacro.backingPropertyPrefix + varName))

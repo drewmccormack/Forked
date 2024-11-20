@@ -7,4 +7,7 @@ public enum PropertyBacking: String {
     /// The register stores a timestamp with the value whenever there is an update.
     /// A merge will choose the most recent updated value.
     case register
+    
+    /// Uses a `ValueArray` type as the backing of the variable.
+    case valueArray
 }
