@@ -10,7 +10,9 @@ struct RegisterSuite {
     
     init() {
         a = .init(1)
+        usleep(10) // Add this ensure no timestamp collision
         b = .init(2)
+        usleep(10) // Add this ensure no timestamp collision
     }
     
     @Test func testInitialCreation() {

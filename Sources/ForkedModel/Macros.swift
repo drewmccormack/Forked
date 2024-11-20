@@ -8,5 +8,8 @@ public typealias Mergable = Forked.Mergable
 public macro ForkedModel() = #externalMacro(module: "ForkedModelMacros", type: "ForkedModelMacro")
 
 @attached(peer)
-@attached(accessor)
-public macro ForkedProperty(mergeWith: PropertyMergeAlgorithm = .mergable) = #externalMacro(module: "ForkedModelMacros", type: "ForkedPropertyMacro")
+public macro Merged(using: PropertyMerge = .mergableProtocol) = #externalMacro(module: "ForkedModelMacros", type: "MergablePropertyMacro")
+
+@attached(peer, names: arbitrary)
+@attached(accessor, names: named(get), named(set))
+public macro Backed(by: PropertyBacking = .register) = #externalMacro(module: "ForkedModelMacros", type: "BackedPropertyMacro")

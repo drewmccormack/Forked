@@ -1,7 +1,9 @@
 
-struct StringMerger: Merger {
+public struct TextMerger: Merger {
     
-    func merge(_ value: String, withOlderConflicting other: String, commonAncestor: String?) throws -> String {
+    public init() {}
+    
+    public func merge(_ value: String, withOlderConflicting other: String, commonAncestor: String?) throws -> String {
         let valueChars = Array(value)
         let otherChars = Array(other)
         let commonAncestorChars = commonAncestor.flatMap { Array($0) }

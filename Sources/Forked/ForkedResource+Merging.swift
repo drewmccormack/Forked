@@ -44,7 +44,7 @@ public extension ForkedResource {
 
 /// These methods handle the special case that the Resource is Mergable. We need to do that here, so that
 /// the compiler can properly choose the appropriate overload.
-public extension ForkedResource where RespositoryType.Resource: Mergable {
+public extension ForkedResource where RepositoryType.Resource: Mergable {
     
     /// Merges from one fork into the main fork. May perform a 3-way merge.
     /// A `MergeAction` is returned to indicate the type of merge that took place.

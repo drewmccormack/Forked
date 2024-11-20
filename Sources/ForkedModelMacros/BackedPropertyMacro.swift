@@ -2,20 +2,22 @@ import SwiftSyntax
 import SwiftSyntaxMacros
 import ForkedMerge
 
-public struct ForkedPropertyMacro: PeerMacro, AccessorMacro {
+public struct BackedPropertyMacro: PeerMacro, AccessorMacro {
+    
+    public static let backingPropertyPrefix = "_forked_backedproperty_"
     
     public static func expansion(of node: AttributeSyntax, providingPeersOf declaration: some DeclSyntaxProtocol, in context: some MacroExpansionContext) throws -> [DeclSyntax] {
         guard let variableDecl = declaration.as(VariableDeclSyntax.self) else {
             throw ForkedModelError.appliedToNonVariable
         }
         
-        guard let alg = try variableDecl.propertyMergeAlgorithm(), alg.needsBackingType else { return [] }
+        guard let _ = try variableDecl.propertyBacking() else { return [] }
         
         let propertyName = variableDecl.bindings.first!.pattern.as(IdentifierPatternSyntax.self)!.identifier.text
         let originalType = variableDecl.bindings.first!.typeAnnotation!.type.trimmedDescription
         let backingProperty: DeclSyntax =
             """
-            private var _\(raw: propertyName) = Register<\(raw: originalType)>()
+            private var \(raw: backingPropertyPrefix + propertyName) = Register<\(raw: originalType)>(.init())
             """
         
         return [backingProperty]
@@ -26,19 +28,21 @@ public struct ForkedPropertyMacro: PeerMacro, AccessorMacro {
             throw ForkedModelError.appliedToNonVariable
         }
         
-        guard let alg = try variableDecl.propertyMergeAlgorithm(), alg.needsBackingType else { return [] }
+        guard let _ = try variableDecl.propertyBacking() else {
+            throw ForkedModelError.propertyBackingAndTypeAreIncompatible
+        }
         
         let propertyName = variableDecl.bindings.first!.pattern.as(IdentifierPatternSyntax.self)!.identifier.text
         let getter =
             """
             get {
-                return _\(propertyName).value
+                return \(backingPropertyPrefix + propertyName).value
             }
             """
         let setter =
             """
             set {
-                _\(propertyName).value = newValue
+                \(backingPropertyPrefix + propertyName).value = newValue
             }
             """
         

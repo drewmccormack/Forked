@@ -11,7 +11,8 @@ final class ForkedModelMacrosSuite: XCTestCase {
 
     static let testMacros: [String: Macro.Type] = [
         "ForkedModel": ForkedModelMacro.self,
-        "ForkedProperty": ForkedPropertyMacro.self,
+        "Merged": MergablePropertyMacro.self,
+        "Backed": BackedPropertyMacro.self,
     ]
     
     func testDefault() {
@@ -19,7 +20,7 @@ final class ForkedModelMacrosSuite: XCTestCase {
             """
             @ForkedModel
             struct TestModel {
-                @ForkedProperty var text: String
+                @Merged var text: String
             }
             """,
             expandedSource:
@@ -31,7 +32,7 @@ final class ForkedModelMacrosSuite: XCTestCase {
             extension TestModel: ForkedModel.Mergable {
                 public func merged(withOlderConflicting other: Self, commonAncestor: Self?) throws -> Self {
                     var merged = self
-                    merged.text = self.text.merged(withOlderConflicting: other.text, commonAncestor: commonAncestor?.text)
+                    merged.text = try self.text.merged(withOlderConflicting: other.text, commonAncestor: commonAncestor?.text)
                     return merged
                 }
             }
@@ -45,7 +46,7 @@ final class ForkedModelMacrosSuite: XCTestCase {
             """
             @ForkedModel
             struct TestModel {
-                @ForkedProperty(mergeWith: .array) var text: [String.Element]
+                @Merged(using: .arrayMerge) var text: [String.Element]
             }
             """,
             expandedSource:
@@ -74,7 +75,7 @@ final class ForkedModelMacrosSuite: XCTestCase {
             """
             @ForkedModel
             struct TestModel {
-                @ForkedProperty(mergeWith: .string) var text: String
+                @Merged(using: .textMerge) var text: String
             }
             """,
             expandedSource:
@@ -87,7 +88,7 @@ final class ForkedModelMacrosSuite: XCTestCase {
                 public func merged(withOlderConflicting other: Self, commonAncestor: Self?) throws -> Self {
                     var merged = self
                     do {
-                let merger = StringMerger()
+                let merger = TextMerger()
                 merged.text = try merger.merge(self.text, withOlderConflicting: other.text, commonAncestor: commonAncestor?.text)
                     }
                     return merged
@@ -103,7 +104,7 @@ final class ForkedModelMacrosSuite: XCTestCase {
             """
             @ForkedModel
             struct TestModel {
-                @ForkedProperty(mergeWith: .mostRecent) var text: String
+                @Backed var text: String
             }
             """,
             expandedSource:
@@ -111,20 +112,77 @@ final class ForkedModelMacrosSuite: XCTestCase {
             struct TestModel {
                 var text: String {
                     get {
-                        return _text.value
+                        return _forked_backedproperty_text.value
                     }
                     set {
-                        _text.value = newValue
+                        _forked_backedproperty_text.value = newValue
                     }
                 }
 
-                private var _text = Register<String>()
+                private var _forked_backedproperty_text = Register<String>(.init())
             }
 
             extension TestModel: ForkedModel.Mergable {
                 public func merged(withOlderConflicting other: Self, commonAncestor: Self?) throws -> Self {
                     var merged = self
-                    merged._text = self._text.merged(withOlderConflicting: other._text, commonAncestor: commonAncestor?._text)
+                    merged._forked_backedproperty_text = try self._forked_backedproperty_text.merged(withOlderConflicting: other._forked_backedproperty_text, commonAncestor: commonAncestor?._forked_backedproperty_text)
+                    return merged
+                }
+            }
+            """,
+            macros: Self.testMacros
+        )
+    }
+    
+    func testBackedAndMergedTogether() {
+        assertMacroExpansion(
+            """
+            @ForkedModel
+            private struct User {
+                var name: String
+                var age: Int
+            }
+            
+            @ForkedModel
+            private struct Note {
+                @Backed(by: .register) var title: String
+                @Merged(using: .textMerge) var text: String
+            }
+            """,
+            expandedSource:
+            """
+            private struct User {
+                var name: String
+                var age: Int
+            }
+            private struct Note {
+                var title: String {
+                    get {
+                        return _forked_backedproperty_title.value
+                    }
+                    set {
+                        _forked_backedproperty_title.value = newValue
+                    }
+                }
+
+                private var _forked_backedproperty_title = Register<String>(.init())
+                var text: String
+            }
+
+            extension User: ForkedModel.Mergable {
+                public func merged(withOlderConflicting other: Self, commonAncestor: Self?) throws -> Self {
+                    return self
+                }
+            }
+
+            extension Note: ForkedModel.Mergable {
+                public func merged(withOlderConflicting other: Self, commonAncestor: Self?) throws -> Self {
+                    var merged = self
+                    do {
+                let merger = TextMerger()
+                merged.text = try merger.merge(self.text, withOlderConflicting: other.text, commonAncestor: commonAncestor?.text)
+                    }
+                    merged._forked_backedproperty_title = try self._forked_backedproperty_title.merged(withOlderConflicting: other._forked_backedproperty_title, commonAncestor: commonAncestor?._forked_backedproperty_title)
                     return merged
                 }
             }
@@ -134,3 +192,4 @@ final class ForkedModelMacrosSuite: XCTestCase {
     }
 }
 #endif
+

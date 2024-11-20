@@ -2,9 +2,14 @@ import SwiftSyntax
 import SwiftSyntaxMacros
 import ForkedMerge
 
-private struct PropertyInfo {
+private struct MergePropertyVar {
     var varSyntax: VariableDeclSyntax
-    var propertyMergeAlgorithm: PropertyMergeAlgorithm
+    var merge: PropertyMerge
+}
+
+private struct BackedPropertyVar {
+    var varSyntax: VariableDeclSyntax
+    var backing: PropertyBacking
 }
 
 public struct ForkedModelMacro: ExtensionMacro {
@@ -24,35 +29,38 @@ public struct ForkedModelMacro: ExtensionMacro {
             throw ForkedModelError.conformsToMergable
         }
         
-        // Gather names of all stored properties
-        let propertyInfos: [PropertyInfo] = try structDecl.memberBlock.members.compactMap { member -> PropertyInfo? in
+        // Gather names of all mergable properties
+        let mergePropertyVars: [MergePropertyVar] = try structDecl.memberBlock.members.compactMap { member -> MergePropertyVar? in
             guard let varSyntax = member.decl.as(VariableDeclSyntax.self),
-                  let propertyMergeAlgorithm = try varSyntax.propertyMergeAlgorithm()
+                  let propertyMerge = try varSyntax.propertyMerge()
                 else { return nil }
-            return PropertyInfo(varSyntax: varSyntax, propertyMergeAlgorithm: propertyMergeAlgorithm)
+            return MergePropertyVar(varSyntax: varSyntax, merge: propertyMerge)
+        }
+        
+        // Gather names of all backed properties
+        let backedPropertyVars: [BackedPropertyVar] = try structDecl.memberBlock.members.compactMap { member -> BackedPropertyVar? in
+            guard let varSyntax = member.decl.as(VariableDeclSyntax.self),
+                  let backing = try varSyntax.propertyBacking()
+                else { return nil }
+            return BackedPropertyVar(varSyntax: varSyntax, backing: backing)
         }
         
         // Generate merge expression for each variable
-        var mergeExpressions: [String] = []
-        for propertyInfo in propertyInfos {
+        var expressions: [String] = []
+        for propertyInfo in mergePropertyVars {
             let varSyntax = propertyInfo.varSyntax
             let varName = varSyntax.bindings.first!.pattern.as(IdentifierPatternSyntax.self)!.identifier.text
             let varType = varSyntax.bindings.first!.typeAnnotation!.type.trimmedDescription
             let expr: String
-            switch propertyInfo.propertyMergeAlgorithm {
-            case .parent:
+            switch propertyInfo.merge {
+            case .mergableProtocol:
                 expr =
                     """
-                    merged.\(varName) = self.\(varName)
+                    merged.\(varName) = try self.\(varName).merged(withOlderConflicting: other.\(varName), commonAncestor: commonAncestor?.\(varName))
                     """
-            case .mergable:
-                expr =
-                    """
-                    merged.\(varName) = self.\(varName).merged(withOlderConflicting: other.\(varName), commonAncestor: commonAncestor?.\(varName))
-                    """
-            case .array:
+            case .arrayMerge:
                 guard varType.hasPrefix("[") && varType.hasSuffix("]") else {
-                    throw ForkedModelError.propertyMergeAlgorithmAndTypeAreIncompatible
+                    throw ForkedModelError.propertyMergeAndTypeAreIncompatible
                 }
                 let elementType = varType.dropFirst().dropLast()
                 expr =
@@ -62,30 +70,41 @@ public struct ForkedModelMacro: ExtensionMacro {
                         merged.\(varName) = try merger.merge(self.\(varName), withOlderConflicting: other.\(varName), commonAncestor: commonAncestor?.\(varName))
                     }
                     """
-            case .string:
+            case .textMerge:
                 guard varType == "String" else {
-                    throw ForkedModelError.propertyMergeAlgorithmAndTypeAreIncompatible
+                    throw ForkedModelError.propertyMergeAndTypeAreIncompatible
                 }
                 expr =
                     """
                     do {
-                        let merger = StringMerger()
+                        let merger = TextMerger()
                         merged.\(varName) = try merger.merge(self.\(varName), withOlderConflicting: other.\(varName), commonAncestor: commonAncestor?.\(varName))
                     }
                     """
-            case .mostRecent:
+            }
+            
+            expressions.append(expr)
+        }
+        
+        // Generate backed expression for each variable
+        for propertyInfo in backedPropertyVars {
+            let varSyntax = propertyInfo.varSyntax
+            let varName = varSyntax.bindings.first!.pattern.as(IdentifierPatternSyntax.self)!.identifier.text
+            let expr: String
+            switch propertyInfo.backing {
+            case .register:
                 expr =
                     """
-                    merged._\(varName) = self._\(varName).merged(withOlderConflicting: other._\(varName), commonAncestor: commonAncestor?._\(varName))
+                    merged.\(BackedPropertyMacro.backingPropertyPrefix + varName) = try self.\(BackedPropertyMacro.backingPropertyPrefix + varName).merged(withOlderConflicting: other.\(BackedPropertyMacro.backingPropertyPrefix + varName), commonAncestor: commonAncestor?.\(BackedPropertyMacro.backingPropertyPrefix + varName))
                     """
             }
             
-            mergeExpressions.append(expr)
+            expressions.append(expr)
         }
         
         // generate extension syntax
         let declSyntax: DeclSyntax
-        if mergeExpressions.isEmpty {
+        if expressions.isEmpty {
             declSyntax = """
                 extension \(type.trimmed): ForkedModel.Mergable {
                     public func merged(withOlderConflicting other: Self, commonAncestor: Self?) throws -> Self {
@@ -98,7 +117,7 @@ public struct ForkedModelMacro: ExtensionMacro {
                 extension \(type.trimmed): ForkedModel.Mergable {
                     public func merged(withOlderConflicting other: Self, commonAncestor: Self?) throws -> Self {
                         var merged = self
-                        \(raw: mergeExpressions.joined(separator: "\n"))
+                        \(raw: expressions.joined(separator: "\n"))
                         return merged
                     }
                 }
@@ -116,30 +135,3 @@ public struct ForkedModelMacro: ExtensionMacro {
     }
 }
 
-extension VariableDeclSyntax {
-    
-    func propertyMergeAlgorithm() throws -> PropertyMergeAlgorithm? {
-        let propertyAttribute = self.attributes.first { attribute in
-            attribute.as(AttributeSyntax.self)?.attributeName.trimmedDescription == "ForkedProperty"
-        }
-        guard let propertyAttribute else { return nil }
-        
-        var propertyMergeAlgorithm: PropertyMergeAlgorithm = .mergable
-        if let argumentList = propertyAttribute.as(AttributeSyntax.self)?.arguments?.as(LabeledExprListSyntax.self) {
-            argloop: for argument in argumentList {
-                if argument.label?.text == "mergeWith",
-                   let expr = argument.expression.as(MemberAccessExprSyntax.self)?.declName.baseName.text {
-                    if let algorithm = PropertyMergeAlgorithm(rawValue: expr) {
-                        propertyMergeAlgorithm = algorithm
-                        break argloop
-                    } else {
-                        throw ForkedModelError.invalidPropertyMerge
-                    }
-                }
-            }
-        }
-        
-        return propertyMergeAlgorithm
-    }
-    
-}
