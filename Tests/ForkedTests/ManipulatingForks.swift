@@ -70,4 +70,20 @@ struct ManipulatingForksSuite {
             try resource.delete(Fork(name: "None"))
         }
     }
+    
+    @Test func quickFork() throws {
+        let fork = Fork(name: "Test")
+        let resource = QuickFork<Int>(forks: [fork])
+        try #require(resource.forks.count == 2)
+        #expect(resource.forks.contains(fork))
+        #expect(resource.forks.contains(.main))
+    }
+    
+    @Test func quickForkInitializesWithSyncedForks() throws {
+        let fork = Fork(name: "Test")
+        let resource = QuickFork<Int>(initialValue: 5, forks: [fork])
+        #expect(try resource.resource(of: .main) == 5)
+        #expect(try resource.resource(of: fork) == 5)
+        #expect(try resource.mainVersion(isSameAsVersionIn: fork))
+    }
 }

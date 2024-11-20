@@ -3,6 +3,7 @@ import Testing
 @testable import Forked
 
 struct RepositoriesSuite {
+    
     @Test func savingBasicAtomicRepository() throws {
         let repo = AtomicRepository<Int>()
         let _ = try ForkedResource(repository: repo)
@@ -31,4 +32,5 @@ struct RepositoriesSuite {
         #expect(try newResource.mostRecentVersionOfMain().count == 3)
         #expect(try newResource.resource(of: .main) == 4)
     }
+    
 }

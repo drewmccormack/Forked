@@ -20,13 +20,10 @@ struct Pair: Equatable, Mergable {
 }
 
 struct MergingMergableSuite {
-    typealias Repo = AtomicRepository<Pair>
-    let repo = AtomicRepository<Pair>()
-    let resource: ForkedResource<AtomicRepository<Pair>>
+    let resource = QuickFork<Pair>()
     let fork = Fork(name: "fork")
     
     init() throws {
-        resource = try ForkedResource(repository: repo)
         try resource.create(fork)
     }
     

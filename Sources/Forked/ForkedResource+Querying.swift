@@ -73,6 +73,11 @@ public extension ForkedResource {
         }
     }
     
+    /// Same as calling `resource(of:)`.
+    func value(in fork: Fork) throws -> ResourceType? {
+        try resource(of: fork)
+    }
+    
     /// Returns the most recent (current) commit of the `Fork`. Note that this may
     /// not actually be from the corresponding fork of the repository.
     /// In particular, if a repository fork is empty, it is considered to share the same
@@ -138,4 +143,9 @@ public extension ForkedResource {
         }
     }
     
+    func mainVersion(isSameAsVersionIn fork: Fork) throws -> Bool {
+        try serialize {
+            try !mainVersion(differsFromVersionIn: fork)
+        }
+    }
 }

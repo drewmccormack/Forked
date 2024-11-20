@@ -15,30 +15,30 @@ struct RegisterSuite {
         usleep(10) // Add this ensure no timestamp collision
     }
     
-    @Test func testInitialCreation() {
+    @Test func initialCreation() {
         #expect(a.value == 1)
     }
     
-    @Test mutating func testSettingValue() {
+    @Test mutating func settingValue() {
         a.value = 2
         #expect(a.value == 2)
         a.value = 3
         #expect(a.value == 3)
     }
     
-    @Test func testMergeOfInitiallyUnrelated() throws {
+    @Test func mergeOfInitiallyUnrelated() throws {
         let c = try a.merged(withOlderConflicting: b, commonAncestor: nil)
         #expect(c.value == b.value)
     }
     
-    @Test mutating func testLastChangeWins() async throws {
+    @Test mutating func lastChangeWins() async throws {
         try? await Task.sleep(for: .milliseconds(10)) // Add this ensure no timestamp collision
         a.value = 3
         let c = try a.merged(withOlderConflicting: b, commonAncestor: nil)
         #expect(c.value == a.value)
     }
     
-    @Test func testIdempotency() throws {
+    @Test func idempotency() throws {
         let c = try a.merged(withOlderConflicting: b, commonAncestor: nil)
         let d = try c.merged(withOlderConflicting: b, commonAncestor: nil)
         let e = try c.merged(withOlderConflicting: a, commonAncestor: nil)
@@ -46,26 +46,26 @@ struct RegisterSuite {
         #expect(c.value == e.value)
     }
     
-    @Test func testCommutativity() throws {
+    @Test func commutativity() throws {
         let c = try a.merged(withOlderConflicting: b, commonAncestor: nil)
         let d = try b.merged(withOlderConflicting: a, commonAncestor: nil)
         #expect(d.value == c.value)
     }
     
-    @Test func testAssociativity() throws {
+    @Test func associativity() throws {
         let c: Register<Int> = .init(3)
         let e = try a.merged(withOlderConflicting: b, commonAncestor: nil).merged(withOlderConflicting: c, commonAncestor: nil)
         let f = try a.merged(withOlderConflicting: try b.merged(withOlderConflicting: c, commonAncestor: nil), commonAncestor: nil)
         #expect(e.value == f.value)
     }
     
-    @Test func testCodable() throws {
+    @Test func codable() throws {
         let data = try! JSONEncoder().encode(a)
         let d = try! JSONDecoder().decode(Register<Int>.self, from: data)
         #expect(a.value == d.value)
     }
     
-    @Test func testMergeChoosesMostRecent() async throws {
+    @Test func mergeChoosesMostRecent() async throws {
         var r1: Register<Int> = .init(1)
         var r2: Register<Int> = r1
         try? await Task.sleep(for: .milliseconds(10)) // Add this ensure no timestamp collision
@@ -79,7 +79,7 @@ struct RegisterSuite {
         #expect(r5.value == 3)
     }
     
-    @Test func testThatCommonAncestorIsIgnored() async throws {
+    @Test func thatCommonAncestorIsIgnored() async throws {
         let r1: Register<Int> = .init(1)
         var r2: Register<Int> = r1
         try? await Task.sleep(for: .milliseconds(10)) // Add this ensure no timestamp collision

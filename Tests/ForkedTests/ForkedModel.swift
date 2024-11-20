@@ -24,13 +24,13 @@ struct Note {
 
 struct ForkedModelSuite {
     
-    @Test func testInitialCreation() {
+    @Test func initialCreation() {
         let user = User(name: "Alice", age: 30)
         #expect(user.name == "Alice")
         #expect(user.age == 30)
     }
     
-    @Test func testMergeDefault() throws {
+    @Test func mergeDefault() throws {
         let user1 = User(name: "Alice", age: 30)
         var user2 = user1
         user2.name = "Bob"
@@ -39,7 +39,7 @@ struct ForkedModelSuite {
         #expect(user3.age == 30)
     }
     
-    @Test func testConcurrentEditsToDefaultMergeRules() throws {
+    @Test func concurrentEditsToDefaultMergeRules() throws {
         let ancestor = User(name: "Alice", age: 30)
         var user1 = ancestor
         var user2 = ancestor
@@ -50,7 +50,7 @@ struct ForkedModelSuite {
         #expect(merged.age == 30)
     }
     
-    @Test func testPropertiesUsingDefaultMergeAreMergedIndependently() async throws {
+    @Test func propertiesUsingDefaultMergeAreMergedIndependently() async throws {
         let ancestor = User(name: "Alice", age: 30)
         var user1 = ancestor
         var user2 = ancestor
@@ -61,7 +61,7 @@ struct ForkedModelSuite {
         #expect(merged.age == 40)
     }
     
-    @Test func testDefaultMergeFavorsMoreRecentWhenConflicting() async throws {
+    @Test func defaultMergeFavorsMoreRecentWhenConflicting() async throws {
         let ancestor = User(name: "Alice", age: 30)
         var user1 = ancestor
         var user2 = ancestor
@@ -71,7 +71,7 @@ struct ForkedModelSuite {
         #expect(merged.name == "Tom")
     }
     
-    @Test func testDefaultMergeFavorsMoreRecentWhenNoCommonAncestor() async throws {
+    @Test func defaultMergeFavorsMoreRecentWhenNoCommonAncestor() async throws {
         let ancestor = User(name: "Alice", age: 30)
         var user1 = ancestor
         var user2 = ancestor
@@ -81,7 +81,7 @@ struct ForkedModelSuite {
         #expect(merged.name == "Tom")
     }
     
-    @Test func testDefaultMergeForNonEquatableAlwaysFavorsMostRecent() async throws {
+    @Test func defaultMergeForNonEquatableAlwaysFavorsMostRecent() async throws {
         let ancestor = User(name: "Alice", age: 30)
         var user1 = ancestor
         let user2 = ancestor
@@ -90,7 +90,7 @@ struct ForkedModelSuite {
         #expect(merged.notEquatableInt.value == 0)
     }
     
-    @Test func testConcurrentEditsToRegisterFavorsMostRecent() async throws {
+    @Test func concurrentEditsToRegisterFavorsMostRecent() async throws {
         var ancestor = Note()
         ancestor.title = "Title 1"
         var note1 = ancestor
@@ -102,7 +102,7 @@ struct ForkedModelSuite {
         #expect(merged.title == "Title 2")
     }
     
-    @Test func testConcurrentEditsToTextMergeMergesString() async throws {
+    @Test func concurrentEditsToTextMergeMergesString() async throws {
         var ancestor = Note()
         ancestor.text = "Text"
         var note1 = ancestor
@@ -113,7 +113,7 @@ struct ForkedModelSuite {
         #expect(merged.text == "More Text More")
     }
 
-    @Test func testValueArrayBacking() async throws {
+    @Test func valueArrayBacking() async throws {
         var ancestor = Note()
         ancestor.pageWordCounts = [1, 2, 3]
         var note1 = ancestor

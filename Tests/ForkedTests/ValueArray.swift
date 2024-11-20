@@ -8,25 +8,25 @@ struct ValueArraySuite {
     var a: ValueArray<Int> = []
     var b: ValueArray<Int> = []
     
-    @Test func testInitialCreation() {
+    @Test func initialCreation() {
         #expect(a.count == 0)
     }
     
-    @Test mutating func testAppending() {
+    @Test mutating func appending() {
         a.append(1)
         a.append(2)
         a.append(3)
         #expect(a.values == [1, 2, 3])
     }
     
-    @Test mutating func testInserting() {
+    @Test mutating func inserting() {
         a.insert(1, at: 0)
         a.insert(2, at: 0)
         a.insert(3, at: 0)
         #expect(a.values == [3, 2, 1])
     }
     
-    @Test mutating func testRemoving() {
+    @Test mutating func removing() {
         a.append(1)
         a.append(2)
         a.append(3)
@@ -35,7 +35,7 @@ struct ValueArraySuite {
         #expect(a.count == 2)
     }
     
-    @Test mutating func testInterleavedInsertAndRemove() {
+    @Test mutating func interleavedInsertAndRemove() {
         a.append(1)
         a.append(2)
         a.remove(at: 1) // [1]
@@ -48,7 +48,7 @@ struct ValueArraySuite {
         #expect(a.values == [3, 2, 3])
     }
     
-    @Test mutating func testMergeOfInitiallyUnrelated() {
+    @Test mutating func mergeOfInitiallyUnrelated() {
         a.append(1)
         a.append(2)
         a.append(3)
@@ -63,7 +63,7 @@ struct ValueArraySuite {
         #expect(c.values == [7, 8, 9, 1, 2, 3])
     }
     
-    @Test mutating func testMergeWithRemoves() {
+    @Test mutating func mergeWithRemoves() {
         a.append(1)
         a.append(2)
         a.append(3)
@@ -80,7 +80,7 @@ struct ValueArraySuite {
         #expect(d.values == [7, 9, 1, 3])
     }
     
-    @Test mutating func testMultipleMerges() {
+    @Test mutating func multipleMerges() {
         a.append(1)
         a.append(2)
         a.append(3)
@@ -98,7 +98,7 @@ struct ValueArraySuite {
         #expect(a.merged(with: b).values == [1, 1, 2, 3, 5, 6])
     }
     
-    @Test mutating func testIdempotency() {
+    @Test mutating func idempotency() {
         a.append(1)
         a.append(2)
         a.append(3)
@@ -118,7 +118,7 @@ struct ValueArraySuite {
         #expect(c.values == e.values)
     }
     
-    @Test mutating func testCommutivity() {
+    @Test mutating func commutivity() {
         a.append(1)
         a.append(2)
         a.append(3)
@@ -137,7 +137,7 @@ struct ValueArraySuite {
         #expect(d.values == c.values)
     }
     
-    @Test mutating func testAssociativity() {
+    @Test mutating func associativity() {
         a.append(1)
         a.append(2)
         a.remove(at: 1)
@@ -155,7 +155,7 @@ struct ValueArraySuite {
         #expect(e.values == f.values)
     }
     
-    @Test mutating func testCodable() throws {
+    @Test mutating func codable() throws {
         a.append(1)
         a.append(2)
         a.remove(at: 1)

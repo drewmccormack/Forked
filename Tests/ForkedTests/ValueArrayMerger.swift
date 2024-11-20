@@ -7,39 +7,39 @@ struct ValueArrayMergerSuite {
     let ancestor = [1, 2, 3]
     let merger = ValueArrayMerger<Int>()
     
-    @Test func testMergeOneSidedAppend() throws {
+    @Test func mergeOneSidedAppend() throws {
         let updated = [1, 2, 3, 4]
         let merged = try merger.merge(updated, withOlderConflicting: ancestor, commonAncestor: ancestor)
         #expect(merged == [1, 2, 3, 4])
     }
     
-    @Test func testMergeOneSidedRemove() throws {
+    @Test func mergeOneSidedRemove() throws {
         let updated = [1, 3]
         let merged = try merger.merge(updated, withOlderConflicting: ancestor, commonAncestor: ancestor)
         #expect(merged == [1, 3])
     }
     
-    @Test func testMergeOneSidedAddAndRemove() throws {
+    @Test func mergeOneSidedAddAndRemove() throws {
         let updated = [1, 3, 4]
         let merged = try merger.merge(updated, withOlderConflicting: ancestor, commonAncestor: ancestor)
         #expect(merged == [1, 3, 4])
     }
     
-    @Test func testMergeTwoSidedInsert() throws {
+    @Test func mergeTwoSidedInsert() throws {
         let updated1 = [1, 2, 4, 3]
         let updated2 = [1, 2, 3, 5]
         let merged = try merger.merge(updated2, withOlderConflicting: updated1, commonAncestor: ancestor)
         #expect(merged == [1, 2, 4, 3, 5])
     }
     
-    @Test func testMergeTwoSidedDeletes() throws {
+    @Test func mergeTwoSidedDeletes() throws {
         let updated1 = [1, 2]
         let updated2 = [1, 3]
         let merged = try merger.merge(updated2, withOlderConflicting: updated1, commonAncestor: ancestor)
         #expect(merged == [1])
     }
     
-    @Test func testMergeTwoSidedInsertAndDelete() throws {
+    @Test func mergeTwoSidedInsertAndDelete() throws {
         let updated1 = [1, 2, 4]
         let updated2 = [1, 5, 3]
         let merged = try merger.merge(updated2, withOlderConflicting: updated1, commonAncestor: ancestor)

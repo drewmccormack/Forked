@@ -189,7 +189,7 @@ public extension ForkedResource {
             // Merge back into other forks to fast-forward them to main version
             for fork in forks where fork != .main {
                 let action = try mergeFromMain(into: fork)
-                assert(action == .fastForward)
+                assert(action == .fastForward || action == .none)
             }
         }
     }
