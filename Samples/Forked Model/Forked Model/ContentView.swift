@@ -9,26 +9,29 @@ struct ContentView: View {
                 .font(.largeTitle)
             TextEditor(text: $store.displayedText1)
                 .border(Color.secondary)
-                .frame(height: 200)
+                .frame(height: 100)
             CounterView(count: $store.displayedCount1)
             
-            Spacer().frame(height: 20)
+            Spacer().frame(height: 40)
 
-            Text("There...")
+            Text("...There...")
                 .font(.largeTitle)
             TextEditor(text: $store.displayedText2)
                 .border(Color.secondary)
-                .frame(height: 200)
+                .frame(height: 100)
             CounterView(count: $store.displayedCount2)
             
-            Spacer().frame(height: 20)
+            Spacer().frame(height: 40)
             
             Button {
                 store.merge()
             } label: {
-                Text("Everywhere")
+                Text("...Everywhere")
                     .font(.largeTitle)
+                    .padding(.horizontal)
             }
+            .buttonStyle(.borderedProminent)
+            .buttonBorderShape(.capsule)
             .padding(.vertical)
         }
         .padding()
