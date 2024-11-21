@@ -23,7 +23,7 @@ public extension QuickFork {
                 try? create(fork)
             }
             
-            try mergeAllForks()
+            try syncAllForks()
         } catch {
             fatalError("Failed to create ForkedResource: \(error)")
         }

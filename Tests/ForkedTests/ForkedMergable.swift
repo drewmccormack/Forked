@@ -47,7 +47,7 @@ struct MergingMergableSuite {
     @Test func mergeWithTwoValues() throws {
         let p1 = Pair(a: 1, b: 2)
         try resource.update(.main, with: p1)
-        try resource.mergeAllForks()
+        try resource.syncAllForks()
         let p2 = Pair(a: 2, b: 2)
         try resource.update(.main, with: p2)
         let p3 = Pair(a: 1, b: 3)
@@ -61,7 +61,7 @@ struct MergingMergableSuite {
     func syncingForksWithMergable() throws {
         let p1 = Pair(a: 1, b: 2)
         try resource.update(.main, with: p1)
-        try resource.mergeAllForks()
+        try resource.syncAllForks()
         let p2 = Pair(a: 2, b: 2)
         try resource.update(.main, with: p2)
         let p3 = Pair(a: 1, b: 3)

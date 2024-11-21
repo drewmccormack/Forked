@@ -136,7 +136,7 @@ public struct ForkedModelMacro: ExtensionMacro {
         let declSyntax: DeclSyntax
         if expressions.isEmpty {
             declSyntax = """
-                extension \(type.trimmed): ForkedModel.Mergable {
+                extension \(type.trimmed): Forked.Mergable {
                     public func merged(withOlderConflicting other: Self, commonAncestor: Self?) throws -> Self {
                         return self
                     }
@@ -144,7 +144,7 @@ public struct ForkedModelMacro: ExtensionMacro {
                 """
         } else {
             declSyntax = """
-                extension \(type.trimmed): ForkedModel.Mergable {
+                extension \(type.trimmed): Forked.Mergable {
                     public func merged(withOlderConflicting other: Self, commonAncestor: Self?) throws -> Self {
                         var merged = self
                         \(raw: expressions.joined(separator: "\n"))
