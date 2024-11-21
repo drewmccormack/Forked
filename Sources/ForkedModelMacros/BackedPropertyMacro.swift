@@ -76,14 +76,7 @@ public struct BackedPropertyMacro: PeerMacro, AccessorMacro {
             setter =
                 """
                 set {
-                    for diff in newValue.difference(from: \(backingPropertyName).values) {
-                        switch diff {
-                        case let .insert(offset, element, _):
-                            \(backingPropertyName).insert(element, at: offset)
-                        case let .remove(offset, _, _):
-                            \(backingPropertyName).remove(at: offset)
-                        }
-                    }
+                    \(backingPropertyName).values = newValue
                 }
                 """
         }

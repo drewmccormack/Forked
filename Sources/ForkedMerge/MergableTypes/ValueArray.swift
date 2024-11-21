@@ -37,7 +37,10 @@ public struct ValueArray<Element> {
     private var valueContainers: Array<ValueContainer> = []
     private var tombstones: Array<ValueContainer> = []
     
-    public var values: Array<Element> { valueContainers.map { $0.value } }
+    public var values: Array<Element> {
+        valueContainers.map { $0.value }
+    }
+    
     public var count: UInt64 { UInt64(valueContainers.count) }
     
     private var lamportTimestamp: UInt64 = 0
@@ -77,6 +80,26 @@ public extension ValueArray {
         tombstones.append(tombstone)
         valueContainers.remove(at: index)
         return tombstone.value
+    }
+    
+}
+
+public extension ValueArray where Element: Equatable {
+    
+    var values: Array<Element> {
+        get {
+            valueContainers.map { $0.value }
+        }
+        set {
+            for diff in newValue.difference(from: values) {
+                switch diff {
+                case let .insert(offset, element, _):
+                    insert(element, at: offset)
+                case let .remove(offset, _, _):
+                    remove(at: offset)
+                }
+            }
+        }
     }
     
 }

@@ -126,14 +126,7 @@ final class ForkedModelMacrosSuite: XCTestCase {
                         return _forked_backedproperty_ints.values
                     }
                     set {
-                        for diff in newValue.difference(from: _forked_backedproperty_ints.values) {
-                            switch diff {
-                            case let .insert(offset, element, _):
-                                _forked_backedproperty_ints.insert(element, at: offset)
-                            case let .remove(offset, _, _):
-                                _forked_backedproperty_ints.remove(at: offset)
-                            }
-                        }
+                        _forked_backedproperty_ints.values = newValue
                     }
                 }
 
