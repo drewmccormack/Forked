@@ -96,7 +96,7 @@ public struct ForkedModelMacro: ExtensionMacro {
                 expr =
                     """
                     do {
-                        let merger = ValueArrayMerger<\(elementType)>()
+                        let merger = MergableArrayMerger<\(elementType)>()
                         merged.\(varName) = try merger.merge(self.\(varName), withOlderConflicting: other.\(varName), commonAncestor: commonAncestor?.\(varName))
                     }
                     """
@@ -122,7 +122,7 @@ public struct ForkedModelMacro: ExtensionMacro {
             let varName = varSyntax.bindings.first!.pattern.as(IdentifierPatternSyntax.self)!.identifier.text
             let expr: String
             switch propertyInfo.backing {
-            case .mergableValue, .valueArray:
+            case .mergableValue, .mergableArray:
                 expr =
                     """
                     merged.\(BackedPropertyMacro.backingPropertyPrefix + varName) = try self.\(BackedPropertyMacro.backingPropertyPrefix + varName).merged(withOlderConflicting: other.\(BackedPropertyMacro.backingPropertyPrefix + varName), commonAncestor: commonAncestor?.\(BackedPropertyMacro.backingPropertyPrefix + varName))

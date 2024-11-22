@@ -18,7 +18,7 @@ private struct User {
 @ForkedModel
 struct Note {
     @Backed(by: .mergableValue) var title: String = ""
-    @Backed(by: .valueArray) var pageWordCounts: [Int] = []
+    @Backed(by: .mergableArray) var pageWordCounts: [Int] = []
     @Merged(using: .textMerge) var text: String = ""
 }
 
@@ -113,7 +113,7 @@ struct ForkedModelSuite {
         #expect(merged.text == "More Text More")
     }
 
-    @Test func valueArrayBacking() async throws {
+    @Test func mergableArrayBacking() async throws {
         var ancestor = Note()
         ancestor.pageWordCounts = [1, 2, 3]
         var note1 = ancestor

@@ -7,8 +7,8 @@ public struct TextMerger: Merger {
         let valueChars = Array(value)
         let otherChars = Array(other)
         let commonAncestorChars = commonAncestor.flatMap { Array($0) }
-        let valueArrayMerger = ValueArrayMerger<String.Element>()
-        let mergedChars = try valueArrayMerger.merge(valueChars, withOlderConflicting: otherChars, commonAncestor: commonAncestorChars)
+        let mergableArrayMerger = MergableArrayMerger<String.Element>()
+        let mergedChars = try mergableArrayMerger.merge(valueChars, withOlderConflicting: otherChars, commonAncestor: commonAncestorChars)
         return String(mergedChars)
     }
     

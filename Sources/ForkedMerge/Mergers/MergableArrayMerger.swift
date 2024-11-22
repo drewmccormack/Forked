@@ -1,13 +1,13 @@
 import Foundation
 
 /// Merges an array by treating the contained elements as values.
-public struct ValueArrayMerger<Element: Equatable>: Merger {
+public struct MergableArrayMerger<Element: Equatable>: Merger {
     
     public init() {}
 
     public func merge(_ value: [Element], withOlderConflicting other: [Element], commonAncestor: [Element]?) throws -> [Element] {
         guard let commonAncestor else { return value }
-        var v1: ValueArray<Element> = .init(commonAncestor)
+        var v1: MergableArray<Element> = .init(commonAncestor)
         var v2 = v1
         
         for diff in value.difference(from: commonAncestor) {

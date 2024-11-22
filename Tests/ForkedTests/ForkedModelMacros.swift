@@ -59,7 +59,7 @@ final class ForkedModelMacrosSuite: XCTestCase {
                 public func merged(withOlderConflicting other: Self, commonAncestor: Self?) throws -> Self {
                     var merged = self
                     do {
-                let merger = ValueArrayMerger<String.Element>()
+                let merger = MergableArrayMerger<String.Element>()
                 merged.text = try merger.merge(self.text, withOlderConflicting: other.text, commonAncestor: commonAncestor?.text)
                     }
                     return merged
@@ -105,7 +105,7 @@ final class ForkedModelMacrosSuite: XCTestCase {
             @ForkedModel
             struct TestModel {
                 @Backed var text: String = ""
-                @Backed(by: .valueArray) var ints: [Int] = [1,2,3]
+                @Backed(by: .mergableArray) var ints: [Int] = [1,2,3]
             }
             """,
             expandedSource:
@@ -130,7 +130,7 @@ final class ForkedModelMacrosSuite: XCTestCase {
                     }
                 }
 
-                public var _ints = ForkedMerge.ValueArray<Int>([1, 2, 3])
+                public var _ints = ForkedMerge.MergableArray<Int>([1, 2, 3])
             }
 
             extension TestModel: Forked.Mergable {

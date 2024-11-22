@@ -3,9 +3,9 @@ import Foundation
 import Forked
 @testable import ForkedMerge
 
-struct ValueArrayMergerSuite {
+struct MergableArrayMergerSuite {
     let ancestor = [1, 2, 3]
-    let merger = ValueArrayMerger<Int>()
+    let merger = MergableArrayMerger<Int>()
     
     @Test func mergeOneSidedAppend() throws {
         let updated = [1, 2, 3, 4]

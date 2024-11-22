@@ -8,6 +8,6 @@ public enum PropertyBacking: String {
     /// A merge will choose the most recent updated value.
     case mergableValue
     
-    /// Uses a `ValueArray` type as the backing of the variable.
-    case valueArray
+    /// Uses a `MergableArray` type as the backing of the variable.
+    case mergableArray
 }

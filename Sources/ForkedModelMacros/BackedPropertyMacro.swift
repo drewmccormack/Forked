@@ -25,14 +25,14 @@ public struct BackedPropertyMacro: PeerMacro, AccessorMacro {
                 """
                 public var \(raw: backingPropertyPrefix + propertyName) = ForkedMerge.MergableValue<\(raw: originalType)>(\(raw: defaultValue))
                 """
-        case .valueArray:
+        case .mergableArray:
             guard originalType.hasPrefix("[") && originalType.hasSuffix("]") else {
                 throw ForkedModelError.propertyBackingAndTypeAreIncompatible
             }
             let elementType = originalType.dropFirst().dropLast()
             backingProperty =
                 """
-                public var \(raw: backingPropertyPrefix + propertyName) = ForkedMerge.ValueArray<\(raw: elementType)>(\(raw: defaultValue))
+                public var \(raw: backingPropertyPrefix + propertyName) = ForkedMerge.MergableArray<\(raw: elementType)>(\(raw: defaultValue))
                 """
         }
         
@@ -66,7 +66,7 @@ public struct BackedPropertyMacro: PeerMacro, AccessorMacro {
                     \(backingPropertyName).value = newValue
                 }
                 """
-        case .valueArray:
+        case .mergableArray:
             getter =
                 """
                 get {

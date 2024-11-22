@@ -3,10 +3,10 @@ import Foundation
 import Forked
 @testable import ForkedMerge
 
-struct ValueArraySuite {
+struct MergableArraySuite {
     
-    var a: ValueArray<Int> = []
-    var b: ValueArray<Int> = []
+    var a: MergableArray<Int> = []
+    var b: MergableArray<Int> = []
     
     @Test func initialCreation() {
         #expect(a.count == 0)
@@ -147,7 +147,7 @@ struct ValueArraySuite {
         b.append(6)
         b.append(7)
 
-        var c: ValueArray<Int> = [10, 11, 12]
+        var c: MergableArray<Int> = [10, 11, 12]
         c.remove(at: 0)
 
         let e = a.merged(with: b).merged(with: c)
@@ -162,7 +162,7 @@ struct ValueArraySuite {
         a.append(3)
         
         let data = try JSONEncoder().encode(a)
-        let d = try JSONDecoder().decode(ValueArray<Int>.self, from: data)
+        let d = try JSONDecoder().decode(MergableArray<Int>.self, from: data)
         #expect(d.values == a.values)
     }
 }
