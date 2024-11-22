@@ -40,9 +40,9 @@ public struct Register<T> {
     
 }
 
-extension Register: Mergable {
+extension Register: ConflictFreeMergable {
     
-    public func merged(withOlderConflicting other: Register<T>, commonAncestor: Register<T>?) throws -> Register<T> {
+    public func merged(with other: Self) throws -> Self {
         entry.isOrdered(after: other.entry) ? self : other
     }
     

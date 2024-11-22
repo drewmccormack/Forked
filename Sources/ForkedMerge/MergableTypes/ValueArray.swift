@@ -104,16 +104,7 @@ public extension ValueArray where Element: Equatable {
     
 }
 
-extension ValueArray: Mergable {
-    
-    /// Common ancestor is ignored, because the complete history is stored in the type
-    public func merged(withOlderConflicting other: ValueArray<Element>, commonAncestor: ValueArray<Element>?) throws -> ValueArray<Element> {
-        merged(with: other)
-    }
-    
-}
-
-extension ValueArray {
+extension ValueArray: ConflictFreeMergable {
     
     /// Merges two versions of the array. No common ancestor is needed, because the complete history is stored in the type.
     public func merged(with other: Self) -> Self {
@@ -134,6 +125,10 @@ extension ValueArray {
         result.lamportTimestamp = Swift.max(self.lamportTimestamp, other.lamportTimestamp)
         return result
     }
+    
+}
+
+extension ValueArray {
     
     /// Not just sorted, but ordered according to a preorder traversal of the tree.
     /// For each element, we insert the element itself first, then the child (anchored) subtrees from left to right.
