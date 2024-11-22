@@ -113,31 +113,31 @@ final class ForkedModelMacrosSuite: XCTestCase {
             struct TestModel {
                 var text: String = "" {
                     get {
-                        return _forked_backedproperty_text.value
+                        return _text.value
                     }
                     set {
-                        _forked_backedproperty_text.value = newValue
+                        _text.value = newValue
                     }
                 }
 
-                private var _forked_backedproperty_text = ForkedMerge.Register<String>("")
+                public var _text = ForkedMerge.Register<String>("")
                 var ints: [Int] = [1,2,3] {
                     get {
-                        return _forked_backedproperty_ints.values
+                        return _ints.values
                     }
                     set {
-                        _forked_backedproperty_ints.values = newValue
+                        _ints.values = newValue
                     }
                 }
 
-                private var _forked_backedproperty_ints = ForkedMerge.ValueArray<Int>([1, 2, 3])
+                public var _ints = ForkedMerge.ValueArray<Int>([1, 2, 3])
             }
 
             extension TestModel: Forked.Mergable {
                 public func merged(withOlderConflicting other: Self, commonAncestor: Self?) throws -> Self {
                     var merged = self
-                    merged._forked_backedproperty_text = try self._forked_backedproperty_text.merged(withOlderConflicting: other._forked_backedproperty_text, commonAncestor: commonAncestor?._forked_backedproperty_text)
-                    merged._forked_backedproperty_ints = try self._forked_backedproperty_ints.merged(withOlderConflicting: other._forked_backedproperty_ints, commonAncestor: commonAncestor?._forked_backedproperty_ints)
+                    merged._text = try self._text.merged(withOlderConflicting: other._text, commonAncestor: commonAncestor?._text)
+                    merged._ints = try self._ints.merged(withOlderConflicting: other._ints, commonAncestor: commonAncestor?._ints)
                     return merged
                 }
             }
@@ -170,14 +170,14 @@ final class ForkedModelMacrosSuite: XCTestCase {
             private struct Note {
                 var title: String = "" {
                     get {
-                        return _forked_backedproperty_title.value
+                        return _title.value
                     }
                     set {
-                        _forked_backedproperty_title.value = newValue
+                        _title.value = newValue
                     }
                 }
 
-                private var _forked_backedproperty_title = ForkedMerge.Register<String>("")
+                public var _title = ForkedMerge.Register<String>("")
                 var text: String = ""
             }
 
@@ -207,7 +207,7 @@ final class ForkedModelMacrosSuite: XCTestCase {
                 let merger = TextMerger()
                 merged.text = try merger.merge(self.text, withOlderConflicting: other.text, commonAncestor: commonAncestor?.text)
                     }
-                    merged._forked_backedproperty_title = try self._forked_backedproperty_title.merged(withOlderConflicting: other._forked_backedproperty_title, commonAncestor: commonAncestor?._forked_backedproperty_title)
+                    merged._title = try self._title.merged(withOlderConflicting: other._title, commonAncestor: commonAncestor?._title)
                     return merged
                 }
             }

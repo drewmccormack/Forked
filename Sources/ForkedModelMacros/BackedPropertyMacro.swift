@@ -4,7 +4,7 @@ import ForkedMerge
 
 public struct BackedPropertyMacro: PeerMacro, AccessorMacro {
     
-    public static let backingPropertyPrefix = "_forked_backedproperty_"
+    public static let backingPropertyPrefix = "_"
     
     public static func expansion(of node: AttributeSyntax, providingPeersOf declaration: some DeclSyntaxProtocol, in context: some MacroExpansionContext) throws -> [DeclSyntax] {
         guard let variableDecl = declaration.as(VariableDeclSyntax.self) else {
@@ -23,7 +23,7 @@ public struct BackedPropertyMacro: PeerMacro, AccessorMacro {
         case .register:
             backingProperty =
                 """
-                private var \(raw: backingPropertyPrefix + propertyName) = ForkedMerge.Register<\(raw: originalType)>(\(raw: defaultValue))
+                public var \(raw: backingPropertyPrefix + propertyName) = ForkedMerge.Register<\(raw: originalType)>(\(raw: defaultValue))
                 """
         case .valueArray:
             guard originalType.hasPrefix("[") && originalType.hasSuffix("]") else {
@@ -32,7 +32,7 @@ public struct BackedPropertyMacro: PeerMacro, AccessorMacro {
             let elementType = originalType.dropFirst().dropLast()
             backingProperty =
                 """
-                private var \(raw: backingPropertyPrefix + propertyName) = ForkedMerge.ValueArray<\(raw: elementType)>(\(raw: defaultValue))
+                public var \(raw: backingPropertyPrefix + propertyName) = ForkedMerge.ValueArray<\(raw: elementType)>(\(raw: defaultValue))
                 """
         }
         
