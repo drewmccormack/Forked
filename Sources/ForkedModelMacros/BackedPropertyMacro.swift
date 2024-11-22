@@ -20,10 +20,10 @@ public struct BackedPropertyMacro: PeerMacro, AccessorMacro {
         
         let backingProperty: DeclSyntax
         switch backing {
-        case .register:
+        case .mergableValue:
             backingProperty =
                 """
-                public var \(raw: backingPropertyPrefix + propertyName) = ForkedMerge.Register<\(raw: originalType)>(\(raw: defaultValue))
+                public var \(raw: backingPropertyPrefix + propertyName) = ForkedMerge.MergableValue<\(raw: originalType)>(\(raw: defaultValue))
                 """
         case .valueArray:
             guard originalType.hasPrefix("[") && originalType.hasSuffix("]") else {
@@ -53,7 +53,7 @@ public struct BackedPropertyMacro: PeerMacro, AccessorMacro {
 
         let getter: String, setter: String
         switch backing {
-        case .register:
+        case .mergableValue:
             getter =
                 """
                 get {

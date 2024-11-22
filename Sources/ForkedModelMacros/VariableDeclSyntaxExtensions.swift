@@ -40,7 +40,7 @@ extension VariableDeclSyntax {
         }
         guard let propertyAttribute else { return nil }
         
-        var propertyBacking: PropertyBacking = .register
+        var propertyBacking: PropertyBacking = .mergableValue
         if let argumentList = propertyAttribute.as(AttributeSyntax.self)?.arguments?.as(LabeledExprListSyntax.self) {
             argloop: for argument in argumentList {
                 if argument.label?.text == backingTypeLabel,

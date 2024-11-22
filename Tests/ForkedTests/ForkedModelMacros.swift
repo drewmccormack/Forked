@@ -120,7 +120,7 @@ final class ForkedModelMacrosSuite: XCTestCase {
                     }
                 }
 
-                public var _text = ForkedMerge.Register<String>("")
+                public var _text = ForkedMerge.MergableValue<String>("")
                 var ints: [Int] = [1,2,3] {
                     get {
                         return _ints.values
@@ -157,7 +157,7 @@ final class ForkedModelMacrosSuite: XCTestCase {
             
             @ForkedModel
             private struct Note {
-                @Backed(by: .register) var title: String = ""
+                @Backed(by: .mergableValue) var title: String = ""
                 @Merged(using: .textMerge) var text: String = ""
             }
             """,
@@ -177,7 +177,7 @@ final class ForkedModelMacrosSuite: XCTestCase {
                     }
                 }
 
-                public var _title = ForkedMerge.Register<String>("")
+                public var _title = ForkedMerge.MergableValue<String>("")
                 var text: String = ""
             }
 

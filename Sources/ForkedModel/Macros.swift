@@ -12,4 +12,4 @@ public macro Merged(using: PropertyMerge = .mergableProtocol) = #externalMacro(m
 
 @attached(peer, names: arbitrary)
 @attached(accessor, names: named(get), named(set))
-public macro Backed(by: PropertyBacking = .register) = #externalMacro(module: "ForkedModelMacros", type: "BackedPropertyMacro")
+public macro Backed(by: PropertyBacking = .mergableValue) = #externalMacro(module: "ForkedModelMacros", type: "BackedPropertyMacro")

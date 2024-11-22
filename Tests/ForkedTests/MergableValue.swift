@@ -3,10 +3,10 @@ import Foundation
 import Forked
 @testable import ForkedMerge
 
-struct RegisterSuite {
+struct MergableValueSuite {
     
-    var a: Register<Int>
-    var b: Register<Int>
+    var a: MergableValue<Int>
+    var b: MergableValue<Int>
     
     init() {
         a = .init(1)
@@ -53,7 +53,7 @@ struct RegisterSuite {
     }
     
     @Test func associativity() throws {
-        let c: Register<Int> = .init(3)
+        let c: MergableValue<Int> = .init(3)
         let e = try a.merged(withOlderConflicting: b, commonAncestor: nil).merged(withOlderConflicting: c, commonAncestor: nil)
         let f = try a.merged(withOlderConflicting: try b.merged(withOlderConflicting: c, commonAncestor: nil), commonAncestor: nil)
         #expect(e.value == f.value)
@@ -61,13 +61,13 @@ struct RegisterSuite {
     
     @Test func codable() throws {
         let data = try! JSONEncoder().encode(a)
-        let d = try! JSONDecoder().decode(Register<Int>.self, from: data)
+        let d = try! JSONDecoder().decode(MergableValue<Int>.self, from: data)
         #expect(a.value == d.value)
     }
     
     @Test func mergeChoosesMostRecent() async throws {
-        var r1: Register<Int> = .init(1)
-        var r2: Register<Int> = r1
+        var r1: MergableValue<Int> = .init(1)
+        var r2: MergableValue<Int> = r1
         try? await Task.sleep(for: .milliseconds(10)) // Add this ensure no timestamp collision
         r2.value = 2
         let r3 = try r2.merged(withOlderConflicting: r1, commonAncestor: r1)
@@ -80,8 +80,8 @@ struct RegisterSuite {
     }
     
     @Test func thatCommonAncestorIsIgnored() async throws {
-        let r1: Register<Int> = .init(1)
-        var r2: Register<Int> = r1
+        let r1: MergableValue<Int> = .init(1)
+        var r2: MergableValue<Int> = r1
         try? await Task.sleep(for: .milliseconds(10)) // Add this ensure no timestamp collision
         r2.value = 2
         let r3 = try r2.merged(withOlderConflicting: r1, commonAncestor: r1)
