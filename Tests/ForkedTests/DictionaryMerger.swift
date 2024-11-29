@@ -46,4 +46,15 @@ struct DictionaryMergerSuite {
         #expect(result == ["a": 1, "b": 2, "c": 3, "d": 4])
     }
     
+    @Test func mergingWithMergableValues() throws {
+        let merger = DictionaryMerger<Int, MergeableArray<Int>>()
+        let ancestor: [Int:MergeableArray<Int>] = [0 : MergeableArray<Int>([1, 2, 3])]
+        var dict1 = ancestor
+        dict1[0]!.append(4)
+        var dict2 = ancestor
+        dict2[0]!.append(5)
+        let newDict = try merger.merge(dict1, withOlderConflicting: dict2, commonAncestor: ancestor)
+        #expect(newDict[0]!.values == [1, 2, 3, 4, 5])
+    }
+    
 }

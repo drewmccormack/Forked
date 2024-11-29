@@ -178,13 +178,6 @@ struct MergingDictionarySuite {
     }
     
     @Test mutating func mergingOfNonConflictFreeMergeableValues() async throws {
-        struct AccumulatingInt: Mergeable {
-            var value: Int
-            func merged(withOlderConflicting other: AccumulatingInt, commonAncestor: AccumulatingInt?) throws -> AccumulatingInt {
-                return AccumulatingInt(value: self.value + other.value - (commonAncestor?.value ?? 0))
-            }
-        }
-        
         var a: MergeableDictionary<String, AccumulatingInt> = [:]
         
         a["1"] = .init(value: 1)
