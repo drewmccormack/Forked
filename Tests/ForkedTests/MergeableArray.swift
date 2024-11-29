@@ -95,7 +95,7 @@ struct MergeableArraySuite {
         
         a.append(6) // [1,2,3,6]
         
-        #expect(a.merged(with: b).values == [1, 1, 2, 3, 5, 6])
+        #expect(a.merged(with: b).values == [1, 1, 2, 3, 6, 5])
     }
     
     @Test mutating func idempotency() {

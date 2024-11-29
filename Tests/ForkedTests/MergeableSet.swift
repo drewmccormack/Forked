@@ -60,7 +60,6 @@ struct MergingSetSuite {
         a.insert(2)
         a.insert(3)
         
-        // Force the lamport of b higher, so it comes first
         b.insert(10)
         b.remove(10)
         b.insert(7)
@@ -93,7 +92,6 @@ struct MergingSetSuite {
         
         b = try b.merged(with: a)
         
-        // Force b lamport higher
         b.insert(10)
         b.remove(10)
         
@@ -217,7 +215,7 @@ struct MergingSetSuite {
         b.insert(3) // 1,3
 
         let c = try a.merged(with: b)
-        #expect(c.values == Set([2,3]))
+        #expect(c.values == Set([1,2,3]))
     }
 
     @Test mutating func largeSetMerge() throws {

@@ -7,16 +7,16 @@ public struct MergeableSet<T: Hashable> {
     
     fileprivate struct Metadata {
         var isDeleted: Bool
-        var lamportTimestamp: LamportTimestamp
+        var timestamp: StableTimestamp
         
-        init(lamportTimestamp: LamportTimestamp) {
+        init(timestamp: StableTimestamp) {
             self.isDeleted = false
-            self.lamportTimestamp = lamportTimestamp
+            self.timestamp = timestamp
         }
     }
     
     private var metadataByValue: [T:Metadata]
-    private var currentTimestamp: LamportTimestamp
+    private var currentTimestamp: StableTimestamp
     
     public var values: Set<T> {
         get {
@@ -56,7 +56,7 @@ public struct MergeableSet<T: Hashable> {
     @discardableResult public mutating func insert(_ value: T) -> Bool {
         currentTimestamp.tick()
         
-        let metadata = Metadata(lamportTimestamp: currentTimestamp)
+        let metadata = Metadata(timestamp: currentTimestamp)
         let isNewInsert: Bool
         
         if let oldMetadata = metadataByValue[value] {
@@ -74,7 +74,7 @@ public struct MergeableSet<T: Hashable> {
     
         if let oldMetadata = metadataByValue[value], !oldMetadata.isDeleted {
             currentTimestamp.tick()
-            var metadata = Metadata(lamportTimestamp: currentTimestamp)
+            var metadata = Metadata(timestamp: currentTimestamp)
             metadata.isDeleted = true
             metadataByValue[value] = metadata
             returnValue = value
@@ -98,7 +98,7 @@ extension MergeableSet: ConflictFreeMergeable {
             let firstMetadata = result[entry.key]
             let secondMetadata = entry.value
             if let firstMetadata {
-                result[entry.key] = firstMetadata.lamportTimestamp > secondMetadata.lamportTimestamp ? firstMetadata : secondMetadata
+                result[entry.key] = firstMetadata.timestamp > secondMetadata.timestamp ? firstMetadata : secondMetadata
             } else {
                 result[entry.key] = secondMetadata
             }

@@ -19,18 +19,18 @@ public struct MergeableArray<Element> {
     fileprivate struct ValueContainer: Identifiable {
         var anchor: ID?
         var value: Element
-        var lamportTimestamp: UInt64
+        var timestamp: StableTimestamp
         var id: UUID = UUID()
         var isDeleted: Bool = false
         
-        init(anchor: ValueContainer.ID?, value: Element, lamportTimestamp: UInt64) {
+        init(anchor: ValueContainer.ID?, value: Element, timestamp: StableTimestamp) {
             self.anchor = anchor
             self.value = value
-            self.lamportTimestamp = lamportTimestamp
+            self.timestamp = timestamp
         }
         
         func ordered(beforeSibling other: ValueContainer) -> Bool {
-            (lamportTimestamp, id.uuidString) > (other.lamportTimestamp, other.id.uuidString)
+            timestamp > other.timestamp
         }
     }
     
@@ -43,8 +43,8 @@ public struct MergeableArray<Element> {
     
     public var count: UInt64 { UInt64(valueContainers.count) }
     
-    private var lamportTimestamp: UInt64 = 0
-    private mutating func tick() { lamportTimestamp += 1 }
+    private var timestamp: StableTimestamp = .init()
+    private mutating func tick() { timestamp.tick() }
         
     public init() {}
     
@@ -67,7 +67,7 @@ public extension MergeableArray {
     
     private func makeValueContainer(withValue value: Element, forInsertingAtIndex index: Int) -> ValueContainer {
         let anchor = index > 0 ? valueContainers[index-1].id : nil
-        let new = ValueContainer(anchor: anchor, value: value, lamportTimestamp: lamportTimestamp)
+        let new = ValueContainer(anchor: anchor, value: value, timestamp: timestamp)
         return new
     }
 }
@@ -122,7 +122,7 @@ extension MergeableArray: ConflictFreeMergeable {
         var result = self
         result.valueContainers = resultValueContainers
         result.tombstones = resultTombstones
-        result.lamportTimestamp = Swift.max(self.lamportTimestamp, other.lamportTimestamp)
+        result.timestamp = Swift.max(self.timestamp, other.timestamp)
         return result
     }
     
