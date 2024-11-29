@@ -10,8 +10,8 @@ public protocol Merger {
     func merge(_ value: T, withOlderConflicting other: T, commonAncestor: T?) throws -> T
 }
 
-/// A Mergable type knows how to merge itself, so we just pass on the request and let it take care of it.
-public struct MergableMerger<T: Mergable>: Merger {
+/// A Mergeable type knows how to merge itself, so we just pass on the request and let it take care of it.
+public struct MergeableMerger<T: Mergeable>: Merger {
     public func merge(_ value: T, withOlderConflicting other: T, commonAncestor: T?) throws -> T {
         try value.merged(withOlderConflicting: other, commonAncestor: commonAncestor)
     }

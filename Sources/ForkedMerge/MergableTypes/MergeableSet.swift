@@ -1,16 +1,9 @@
-//
-//  MergingSet.swift
-//  Forked
-//
-//  Created by Drew McCormack on 22/11/2024.
-//
-
 import Foundation
 import Forked
 
 /// Observed-Remove Set. Can add and remove like a normal set.
 /// Based on Convergent and commutative replicated data types by M Shapiro, N Preguiça, C Baquero, M Zawirski - 2011 - hal.inria.fr
-public struct MergableSet<T: Hashable> {
+public struct MergeableSet<T: Hashable> {
     
     fileprivate struct Metadata {
         var isDeleted: Bool
@@ -55,6 +48,11 @@ public struct MergableSet<T: Hashable> {
         elements.forEach { self.insert($0) }
     }
     
+    public init(_ elements: Set<T>) {
+        self = .init()
+        elements.forEach { self.insert($0) }
+    }
+    
     @discardableResult public mutating func insert(_ value: T) -> Bool {
         currentTimestamp.tick()
         
@@ -92,7 +90,7 @@ public struct MergableSet<T: Hashable> {
     }
 }
 
-extension MergableSet: ConflictFreeMergable {
+extension MergeableSet: ConflictFreeMergeable {
     
     public func merged(with other: Self) throws -> Self {
         var result = self
@@ -111,16 +109,16 @@ extension MergableSet: ConflictFreeMergable {
     
 }
 
-extension MergableSet: Codable where T: Codable {}
-extension MergableSet.Metadata: Codable where T: Codable {}
+extension MergeableSet: Codable where T: Codable {}
+extension MergeableSet.Metadata: Codable where T: Codable {}
 
-extension MergableSet: Equatable where T: Equatable {}
-extension MergableSet.Metadata: Equatable where T: Equatable {}
+extension MergeableSet: Equatable where T: Equatable {}
+extension MergeableSet.Metadata: Equatable where T: Equatable {}
 
-extension MergableSet: Hashable where T: Hashable {}
-extension MergableSet.Metadata: Hashable where T: Hashable {}
+extension MergeableSet: Hashable where T: Hashable {}
+extension MergeableSet.Metadata: Hashable where T: Hashable {}
 
-extension MergableSet: ExpressibleByArrayLiteral {
+extension MergeableSet: ExpressibleByArrayLiteral {
     public init(arrayLiteral elements: T...) {
         self = .init(array: elements)
     }

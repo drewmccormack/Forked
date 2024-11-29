@@ -6,7 +6,7 @@ public extension ForkedResource {
     /// A `MergeAction` is returned to indicate the type of merge that took place.
     /// After this operation, the main fork may be updated. The version of the other fork will be unchanged.
     /// Note that this may change the commits stored in unrelated forks, in order to preserve common ancestors.
-    /// This particular overload handles merges of non-`Mergable` resources.
+    /// This particular overload handles merges of non-`Mergeable` resources.
     @discardableResult func mergeIntoMain(from fromFork: Fork) throws -> MergeAction {
         try performMergeIntoMain(from: fromFork, mergedContent: mergedContent)
     }
@@ -14,14 +14,14 @@ public extension ForkedResource {
     /// Merges from the main fork into another fork. May perform a 3-way merge.
     /// A `MergeAction` is returned to indicate the type of merge that took place.
     /// After this operation, the fork may be updated, with the version of the main fork unchanged.
-    /// This particular overload handles merges of non-`Mergable` resources.
+    /// This particular overload handles merges of non-`Mergeable` resources.
     @discardableResult func mergeFromMain(into toFork: Fork) throws -> MergeAction {
         try performMergeFromMain(into: toFork, mergedContent: mergedContent)
     }
     
     /// Brings main and the other fork to the same version by first merging from
     /// the other fork into main, and then merging from main into the other fork (fast forward).
-    /// This particular overload handles merges of  `Mergable` resources.
+    /// This particular overload handles merges of  `Mergeable` resources.
     /// To sync up all forks, just pass all forks to this func, including .main. The main fork is ignored
     /// when merging.
     func syncMain(with forks: [Fork]) throws {
@@ -40,22 +40,22 @@ public extension ForkedResource {
         try performSyncAllForks(mergedContent: mergedContent)
     }
     
-    /// If the Resource is not Mergable, fallback to last-write-wins approach. Most recent commit is chosen.
+    /// If the Resource is not Mergeable, fallback to last-write-wins approach. Most recent commit is chosen.
     func mergedContent(forConflicting commits: ConflictingCommits<ResourceType>, withCommonAncestor ancestorCommit: Commit<ResourceType>) throws -> CommitContent<ResourceType> {
         return commits.newer.content
     }
     
 }
 
-/// These methods handle the special case that the Resource is Mergable. We need to do that here, so that
+/// These methods handle the special case that the Resource is Mergeable. We need to do that here, so that
 /// the compiler can properly choose the appropriate overload.
-public extension ForkedResource where RepositoryType.Resource: Mergable {
+public extension ForkedResource where RepositoryType.Resource: Mergeable {
     
     /// Merges from one fork into the main fork. May perform a 3-way merge.
     /// A `MergeAction` is returned to indicate the type of merge that took place.
     /// After this operation, the main fork may be updated. The version of the other fork will be unchanged.
     /// Note that this may change the commits stored in unrelated forks, in order to preserve common ancestors.
-    /// This particular overload handles merges of `Mergable` resources.
+    /// This particular overload handles merges of `Mergeable` resources.
     @discardableResult func mergeIntoMain(from fromFork: Fork) throws -> MergeAction {
         try performMergeIntoMain(from: fromFork, mergedContent: mergedContent)
     }
@@ -63,14 +63,14 @@ public extension ForkedResource where RepositoryType.Resource: Mergable {
     /// Merges from the main fork into another fork. May perform a 3-way merge.
     /// A `MergeAction` is returned to indicate the type of merge that took place.
     /// After this operation, the fork may be updated, with the version of the main fork unchanged.
-    /// This particular overload handles merges of `Mergable` resources.
+    /// This particular overload handles merges of `Mergeable` resources.
     @discardableResult func mergeFromMain(into toFork: Fork) throws -> MergeAction {
         try performMergeFromMain(into: toFork, mergedContent: mergedContent)
     }
     
     /// Brings main and the other fork to the same version by first merging from
     /// the other fork into main, and then merging from main into the other fork (fast forward).
-    /// This particular overload handles merges of  `Mergable` resources.
+    /// This particular overload handles merges of  `Mergeable` resources.
     /// To sync up all forks, just pass all forks to this func, including .main. The main fork is ignored
     /// when merging.
     func syncMain(with forks: [Fork]) throws {
@@ -79,19 +79,19 @@ public extension ForkedResource where RepositoryType.Resource: Mergable {
     
     /// Merges other forks into main, and then main into the target fork, so it has up-to-date data from all other forks.
     /// You can pass in `.main` if you want to merge all other forks into `.main`.
-    /// This particular overload handles merges of  `Mergable` resources.
+    /// This particular overload handles merges of  `Mergeable` resources.
     func mergeAllForks(into toFork: Fork) throws {
         try performMergeAllForks(into: toFork, mergedContent: mergedContent)
     }
     
     /// Merges all forks so they are all at the same version. This involves merging all forks into the main fork
     /// first, and then merging the main fork into all other forks.
-    /// This particular overload handles merges of  `Mergable` resources.
+    /// This particular overload handles merges of  `Mergeable` resources.
     func syncAllForks() throws {
         try performSyncAllForks(mergedContent: mergedContent)
     }
     
-    /// For `Mergable` types, we ask the `Resource` to do the merging itself
+    /// For `Mergeable` types, we ask the `Resource` to do the merging itself
     func mergedContent(forConflicting commits: ConflictingCommits<ResourceType>, withCommonAncestor ancestorCommit: Commit<ResourceType>) throws -> CommitContent<ResourceType>  {
         switch (commits.newer.content, commits.older.content) {
         case (.none, .none):

@@ -4,8 +4,8 @@ import Testing
 
 struct MergingSetSuite {
     
-    var a: MergableSet<Int> = []
-    var b: MergableSet<Int> = []
+    var a: MergeableSet<Int> = []
+    var b: MergeableSet<Int> = []
     
     @Test func initialCreation() {
         #expect(a.count == 0)
@@ -154,7 +154,7 @@ struct MergingSetSuite {
         b.insert(6)
         b.insert(7)
 
-        var c: MergableSet<Int> = [10,11,12]
+        var c: MergeableSet<Int> = [10,11,12]
         c.remove(10)
 
         let e = try a.merged(with: b).merged(with: c)
@@ -169,7 +169,65 @@ struct MergingSetSuite {
         a.insert(3)
         
         let data = try JSONEncoder().encode(a)
-        let d = try JSONDecoder().decode(MergableSet<Int>.self, from: data)
+        let d = try JSONDecoder().decode(MergeableSet<Int>.self, from: data)
         #expect(d.values == a.values)
+    }
+    
+    @Test mutating func mergingWithEmptySet() throws {
+        a.insert(1)
+        a.insert(2)
+        let c = try a.merged(with: b) // b is empty
+        #expect(c.values == Set([1,2]))
+    }
+
+    @Test mutating func mergingEmptySetWithPopulatedSet() throws {
+        b.insert(5)
+        b.insert(6)
+        let c = try a.merged(with: b) // a is empty
+        #expect(c.values == Set([5,6]))
+    }
+
+    @Test mutating func duplicateInserts() {
+        a.insert(1)
+        a.insert(1) // Duplicate insert
+        #expect(a.count == 1)
+        #expect(a.values == Set([1]))
+    }
+
+    @Test mutating func mergingWithSelf() throws {
+        a.insert(1)
+        a.insert(2)
+        let c = try a.merged(with: a) // Merging with itself
+        #expect(c.values == a.values)
+    }
+
+    @Test mutating func removingNonExistentElement() {
+        a.insert(1)
+        a.insert(2)
+        a.remove(3) // Attempt to remove a non-existent element
+        #expect(a.values == Set([1,2]))
+    }
+
+    @Test mutating func mergeWithConflictingChanges() throws {
+        a.insert(1)
+        a.insert(2)
+        a.remove(1) // 2
+        
+        b.insert(1)
+        b.insert(3) // 1,3
+
+        let c = try a.merged(with: b)
+        #expect(c.values == Set([2,3]))
+    }
+
+    @Test mutating func largeSetMerge() throws {
+        for i in 1...1000 {
+            a.insert(i)
+        }
+        for i in 500...1500 {
+            b.insert(i)
+        }
+        let c = try a.merged(with: b)
+        #expect(c.values == Set((1...1500)))
     }
 }

@@ -5,7 +5,7 @@ import Forked
 /// This allows the type to automatically merge simply by choosing the value that was written later.
 /// Because there is a chance of timestamp collisions, a UUID is included to make collisions extremely unlikely.
 /// Based on Convergent and commutative replicated data types by M Shapiro, N Preguiça, C Baquero, M Zawirski - 2011 - hal.inria.fr
-public struct MergableValue<T> {
+public struct MergeableValue<T> {
     
     fileprivate struct Entry: Identifiable {
         var value: T
@@ -40,7 +40,7 @@ public struct MergableValue<T> {
     
 }
 
-extension MergableValue: ConflictFreeMergable {
+extension MergeableValue: ConflictFreeMergeable {
     
     public func merged(with other: Self) throws -> Self {
         entry.isOrdered(after: other.entry) ? self : other
@@ -48,11 +48,11 @@ extension MergableValue: ConflictFreeMergable {
     
 }
 
-extension MergableValue: Codable where T: Codable {}
-extension MergableValue.Entry: Codable where T: Codable {}
+extension MergeableValue: Codable where T: Codable {}
+extension MergeableValue.Entry: Codable where T: Codable {}
 
-extension MergableValue: Equatable where T: Equatable {}
-extension MergableValue.Entry: Equatable where T: Equatable {}
+extension MergeableValue: Equatable where T: Equatable {}
+extension MergeableValue.Entry: Equatable where T: Equatable {}
 
-extension MergableValue: Hashable where T: Hashable {}
-extension MergableValue.Entry: Hashable where T: Hashable {}
+extension MergeableValue: Hashable where T: Hashable {}
+extension MergeableValue.Entry: Hashable where T: Hashable {}

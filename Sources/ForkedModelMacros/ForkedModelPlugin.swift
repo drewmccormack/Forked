@@ -5,7 +5,7 @@ import SwiftCompilerPlugin
 struct ForkedModelPlugin: CompilerPlugin {
     var providingMacros: [Macro.Type] = [
         ForkedModelMacro.self,
-        MergablePropertyMacro.self,
+        MergeablePropertyMacro.self,
         BackedPropertyMacro.self,
     ]
 }

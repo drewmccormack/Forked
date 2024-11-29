@@ -16,7 +16,7 @@ extension VariableDeclSyntax {
         }
         guard let propertyAttribute else { return nil }
         
-        var propertyMerge: PropertyMerge = .mergableProtocol
+        var propertyMerge: PropertyMerge = .mergeableProtocol
         if let argumentList = propertyAttribute.as(AttributeSyntax.self)?.arguments?.as(LabeledExprListSyntax.self) {
             argloop: for argument in argumentList {
                 if argument.label?.text == mergeAlgorithmLabel,
@@ -40,7 +40,7 @@ extension VariableDeclSyntax {
         }
         guard let propertyAttribute else { return nil }
         
-        var propertyBacking: PropertyBacking = .mergableValue
+        var propertyBacking: PropertyBacking = .mergeableValue
         if let argumentList = propertyAttribute.as(AttributeSyntax.self)?.arguments?.as(LabeledExprListSyntax.self) {
             argloop: for argument in argumentList {
                 if argument.label?.text == backingTypeLabel,

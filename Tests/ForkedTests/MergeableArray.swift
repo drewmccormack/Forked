@@ -3,10 +3,10 @@ import Foundation
 import Forked
 @testable import ForkedMerge
 
-struct MergableArraySuite {
+struct MergeableArraySuite {
     
-    var a: MergableArray<Int> = []
-    var b: MergableArray<Int> = []
+    var a: MergeableArray<Int> = []
+    var b: MergeableArray<Int> = []
     
     @Test func initialCreation() {
         #expect(a.count == 0)
@@ -147,7 +147,7 @@ struct MergableArraySuite {
         b.append(6)
         b.append(7)
 
-        var c: MergableArray<Int> = [10, 11, 12]
+        var c: MergeableArray<Int> = [10, 11, 12]
         c.remove(at: 0)
 
         let e = a.merged(with: b).merged(with: c)
@@ -162,7 +162,48 @@ struct MergableArraySuite {
         a.append(3)
         
         let data = try JSONEncoder().encode(a)
-        let d = try JSONDecoder().decode(MergableArray<Int>.self, from: data)
+        let d = try JSONDecoder().decode(MergeableArray<Int>.self, from: data)
         #expect(d.values == a.values)
     }
+    
+    @Test mutating func mergeWithEmptyArray() {
+        a.append(1)
+        a.append(2)
+        let c = a.merged(with: b) // b is empty
+        #expect(c.values == [1, 2])
+    }
+
+    @Test mutating func mergeEmptyArrayWithPopulatedArray() {
+        b.append(5)
+        b.append(6)
+        let c = a.merged(with: b) // a is empty
+        #expect(c.values == [5, 6])
+    }
+
+    @Test mutating func mergingWithSelf() {
+        a.append(1)
+        a.append(2)
+        let c = a.merged(with: a) // Merging with itself
+        #expect(c.values == a.values)
+    }
+
+    @Test mutating func duplicateInsertions() {
+        a.append(1)
+        a.append(1) // Duplicate insertions
+        #expect(a.values == [1, 1])
+    }
+
+    @Test mutating func mergeWithInterleaving() {
+        a.append(1)
+        a.append(2)
+        a.append(3)
+        
+        b.append(4)
+        b.append(5)
+        b.append(6)
+        
+        let c = a.merged(with: b)
+        #expect(c.values == [1, 2, 3, 4, 5, 6] || c.values == [4, 5, 6, 1, 2, 3])
+    }
+
 }

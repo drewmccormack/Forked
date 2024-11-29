@@ -19,15 +19,15 @@ public struct Resolver<Resource> {
     
     public init() {}
     
-    /// If the Resource is not Mergable, fallback to last-write-wins approach. Most recent commit is chosen.
+    /// If the Resource is not Mergeable, fallback to last-write-wins approach. Most recent commit is chosen.
     /// Commits are ordered from newest to oldest
     public func mergedContent(forConflicting commits: ConflictingCommits<Resource>, withCommonAncestor ancestorCommit: Commit<Resource>) throws -> CommitContent<Resource> {
         return commits.newer.content
     }
     
-    /// For `Mergable` types, we ask the resource to do the merging itself
+    /// For `Mergeable` types, we ask the resource to do the merging itself
     /// Commits are ordered from newest to oldest
-    public func mergedContent(forConflicting commits: ConflictingCommits<Resource>, withCommonAncestor ancestorCommit: Commit<Resource>) throws -> CommitContent<Resource> where Resource: Mergable {
+    public func mergedContent(forConflicting commits: ConflictingCommits<Resource>, withCommonAncestor ancestorCommit: Commit<Resource>) throws -> CommitContent<Resource> where Resource: Mergeable {
         switch (commits.newer.content, commits.older.content) {
         case (.none, .none):
             return .none

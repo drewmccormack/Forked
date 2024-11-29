@@ -1,7 +1,7 @@
 import Testing
 @testable import Forked
 
-struct Pair: Equatable, Mergable {
+struct Pair: Equatable, Mergeable {
     var a: Int
     var b: Int
 
@@ -19,7 +19,7 @@ struct Pair: Equatable, Mergable {
     
 }
 
-struct MergingMergableSuite {
+struct MergingMergeableSuite {
     let resource = QuickFork<Pair>()
     let fork = Fork(name: "fork")
     
@@ -58,7 +58,7 @@ struct MergingMergableSuite {
     }
     
     @Test
-    func syncingForksWithMergable() throws {
+    func syncingForksWithMergeable() throws {
         let p1 = Pair(a: 1, b: 2)
         try resource.update(.main, with: p1)
         try resource.syncAllForks()

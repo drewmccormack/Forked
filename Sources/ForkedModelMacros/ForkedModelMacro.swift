@@ -19,14 +19,14 @@ public struct ForkedModelMacro: ExtensionMacro {
             throw ForkedModelError.appliedToNonStruct
         }
         
-        // Check if the struct already conforms to Mergable
+        // Check if the struct already conforms to Mergeable
         let alreadyConformsToCodable = structDecl.inheritanceClause?.inheritedTypes.contains {
-            $0.type.trimmedDescription == "Mergable" || $0.type.trimmedDescription == "Forked.Mergable"
+            $0.type.trimmedDescription == "Mergeable" || $0.type.trimmedDescription == "Forked.Mergeable"
         } ?? false
         
-        // If it already conforms to Mergable, throw an error
+        // If it already conforms to Mergeable, throw an error
         guard !alreadyConformsToCodable else {
-            throw ForkedModelError.conformsToMergable
+            throw ForkedModelError.conformsToMergeable
         }
         
         // Make sure the struct has defaults for all properties that are stored and non-optional
@@ -40,7 +40,7 @@ public struct ForkedModelMacro: ExtensionMacro {
             return varSyntax
         }
         
-        // Gather names of all mergable properties
+        // Gather names of all mergeable properties
         let mergePropertyVars: [MergePropertyVar] = try structDecl.memberBlock.members.compactMap { member -> MergePropertyVar? in
             guard let varSyntax = member.decl.as(VariableDeclSyntax.self),
                   let propertyMerge = try varSyntax.propertyMerge()
@@ -83,7 +83,7 @@ public struct ForkedModelMacro: ExtensionMacro {
             let varType = varSyntax.bindings.first!.typeAnnotation!.type.trimmedDescription
             let expr: String
             switch propertyInfo.merge {
-            case .mergableProtocol:
+            case .mergeableProtocol:
                 expr =
                     """
                     merged.\(varName) = try self.\(varName).merged(withOlderConflicting: other.\(varName), commonAncestor: commonAncestor?.\(varName))
@@ -96,7 +96,19 @@ public struct ForkedModelMacro: ExtensionMacro {
                 expr =
                     """
                     do {
-                        let merger = MergableArrayMerger<\(elementType)>()
+                        let merger = ArrayMerger<\(elementType)>()
+                        merged.\(varName) = try merger.merge(self.\(varName), withOlderConflicting: other.\(varName), commonAncestor: commonAncestor?.\(varName))
+                    }
+                    """
+            case .setMerge:
+                guard varType.hasPrefix("Set<") else {
+                    throw ForkedModelError.propertyMergeAndTypeAreIncompatible
+                }
+                let elementType = varType.dropFirst(4).dropLast()
+                expr =
+                    """
+                    do {
+                        let merger = SetMerger<\(elementType)>()
                         merged.\(varName) = try merger.merge(self.\(varName), withOlderConflicting: other.\(varName), commonAncestor: commonAncestor?.\(varName))
                     }
                     """
@@ -122,7 +134,7 @@ public struct ForkedModelMacro: ExtensionMacro {
             let varName = varSyntax.bindings.first!.pattern.as(IdentifierPatternSyntax.self)!.identifier.text
             let expr: String
             switch propertyInfo.backing {
-            case .mergableValue, .mergableArray:
+            case .mergeableValue, .mergeableArray, .mergeableSet:
                 expr =
                     """
                     merged.\(BackedPropertyMacro.backingPropertyPrefix + varName) = try self.\(BackedPropertyMacro.backingPropertyPrefix + varName).merged(withOlderConflicting: other.\(BackedPropertyMacro.backingPropertyPrefix + varName), commonAncestor: commonAncestor?.\(BackedPropertyMacro.backingPropertyPrefix + varName))
@@ -136,7 +148,7 @@ public struct ForkedModelMacro: ExtensionMacro {
         let declSyntax: DeclSyntax
         if expressions.isEmpty {
             declSyntax = """
-                extension \(type.trimmed): Forked.Mergable {
+                extension \(type.trimmed): Forked.Mergeable {
                     public func merged(withOlderConflicting other: Self, commonAncestor: Self?) throws -> Self {
                         return self
                     }
@@ -144,7 +156,7 @@ public struct ForkedModelMacro: ExtensionMacro {
                 """
         } else {
             declSyntax = """
-                extension \(type.trimmed): Forked.Mergable {
+                extension \(type.trimmed): Forked.Mergeable {
                     public func merged(withOlderConflicting other: Self, commonAncestor: Self?) throws -> Self {
                         var merged = self
                         \(raw: expressions.joined(separator: "\n"))

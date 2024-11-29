@@ -14,7 +14,7 @@ import Forked
 /// of conflicting versions. You could use this as the basis of a basic collaborative editor.
 /// Note that it contains a complete history of changes, including deletions, so it grows over time.
 /// If you need a more compact representation, consider using a merger instead.
-public struct MergableArray<Element> {
+public struct MergeableArray<Element> {
     
     fileprivate struct ValueContainer: Identifiable {
         var anchor: ID?
@@ -53,7 +53,7 @@ public struct MergableArray<Element> {
     }
 }
 
-public extension MergableArray {
+public extension MergeableArray {
         
     mutating func insert(_ newValue: Element, at index: Int) {
         tick()
@@ -72,7 +72,7 @@ public extension MergableArray {
     }
 }
 
-public extension MergableArray {
+public extension MergeableArray {
         
     @discardableResult mutating func remove(at index: Int) -> Element {
         var tombstone = valueContainers[index]
@@ -84,7 +84,7 @@ public extension MergableArray {
     
 }
 
-public extension MergableArray where Element: Equatable {
+public extension MergeableArray where Element: Equatable {
     
     var values: Array<Element> {
         get {
@@ -104,7 +104,7 @@ public extension MergableArray where Element: Equatable {
     
 }
 
-extension MergableArray: ConflictFreeMergable {
+extension MergeableArray: ConflictFreeMergeable {
     
     /// Merges two versions of the array. No common ancestor is needed, because the complete history is stored in the type.
     public func merged(with other: Self) -> Self {
@@ -116,7 +116,7 @@ extension MergableArray: ConflictFreeMergable {
             !tombstoneIds.contains($0.id) && encounteredIds.insert($0.id).inserted
         }
         
-        let resultValueContainersWithTombstones = MergableArray.ordered(fromUnordered: unorderedValueContainers + resultTombstones)
+        let resultValueContainersWithTombstones = MergeableArray.ordered(fromUnordered: unorderedValueContainers + resultTombstones)
         let resultValueContainers = resultValueContainersWithTombstones.filter { !$0.isDeleted }
         
         var result = self
@@ -128,7 +128,7 @@ extension MergableArray: ConflictFreeMergable {
     
 }
 
-extension MergableArray {
+extension MergeableArray {
     
     /// Not just sorted, but ordered according to a preorder traversal of the tree.
     /// For each element, we insert the element itself first, then the child (anchored) subtrees from left to right.
@@ -153,7 +153,7 @@ extension MergableArray {
 }
 
 
-extension MergableArray: ExpressibleByArrayLiteral {
+extension MergeableArray: ExpressibleByArrayLiteral {
     
     public init(arrayLiteral elements: Element...) {
         elements.forEach { self.append($0) }
@@ -161,7 +161,7 @@ extension MergableArray: ExpressibleByArrayLiteral {
     
 }
 
-extension MergableArray: Collection, RandomAccessCollection {
+extension MergeableArray: Collection, RandomAccessCollection {
 
     public var startIndex: Int { return valueContainers.startIndex }
     public var endIndex: Int { return valueContainers.endIndex }
@@ -189,11 +189,11 @@ private extension Array {
 
 }
 
-extension MergableArray: Codable where Element: Codable {}
-extension MergableArray.ValueContainer: Codable where Element: Codable {}
+extension MergeableArray: Codable where Element: Codable {}
+extension MergeableArray.ValueContainer: Codable where Element: Codable {}
 
-extension MergableArray: Equatable where Element: Equatable {}
-extension MergableArray.ValueContainer: Equatable where Element: Equatable {}
+extension MergeableArray: Equatable where Element: Equatable {}
+extension MergeableArray.ValueContainer: Equatable where Element: Equatable {}
 
-extension MergableArray: Hashable where Element: Hashable {}
-extension MergableArray.ValueContainer: Hashable where Element: Hashable {}
+extension MergeableArray: Hashable where Element: Hashable {}
+extension MergeableArray.ValueContainer: Hashable where Element: Hashable {}

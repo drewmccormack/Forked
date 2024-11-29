@@ -17,8 +17,8 @@ private struct User {
 
 @ForkedModel
 struct Note {
-    @Backed(by: .mergableValue) var title: String = ""
-    @Backed(by: .mergableArray) var pageWordCounts: [Int] = []
+    @Backed(by: .mergeableValue) var title: String = ""
+    @Backed(by: .mergeableArray) var pageWordCounts: [Int] = []
     @Merged(using: .textMerge) var text: String = ""
 }
 
@@ -90,7 +90,7 @@ struct ForkedModelSuite {
         #expect(merged.notEquatableInt.value == 0)
     }
     
-    @Test func concurrentEditsToMergableValueFavorsMostRecent() async throws {
+    @Test func concurrentEditsToMergeableValueFavorsMostRecent() async throws {
         var ancestor = Note()
         ancestor.title = "Title 1"
         var note1 = ancestor
@@ -113,7 +113,7 @@ struct ForkedModelSuite {
         #expect(merged.text == "More Text More")
     }
 
-    @Test func mergableArrayBacking() async throws {
+    @Test func mergeableArrayBacking() async throws {
         var ancestor = Note()
         ancestor.pageWordCounts = [1, 2, 3]
         var note1 = ancestor

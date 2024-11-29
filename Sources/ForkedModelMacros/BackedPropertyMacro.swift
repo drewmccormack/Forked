@@ -20,19 +20,28 @@ public struct BackedPropertyMacro: PeerMacro, AccessorMacro {
         
         let backingProperty: DeclSyntax
         switch backing {
-        case .mergableValue:
+        case .mergeableValue:
             backingProperty =
                 """
-                public var \(raw: backingPropertyPrefix + propertyName) = ForkedMerge.MergableValue<\(raw: originalType)>(\(raw: defaultValue))
+                public var \(raw: backingPropertyPrefix + propertyName) = ForkedMerge.MergeableValue<\(raw: originalType)>(\(raw: defaultValue))
                 """
-        case .mergableArray:
+        case .mergeableArray:
             guard originalType.hasPrefix("[") && originalType.hasSuffix("]") else {
                 throw ForkedModelError.propertyBackingAndTypeAreIncompatible
             }
             let elementType = originalType.dropFirst().dropLast()
             backingProperty =
                 """
-                public var \(raw: backingPropertyPrefix + propertyName) = ForkedMerge.MergableArray<\(raw: elementType)>(\(raw: defaultValue))
+                public var \(raw: backingPropertyPrefix + propertyName) = ForkedMerge.MergeableArray<\(raw: elementType)>(\(raw: defaultValue))
+                """
+        case .mergeableSet:
+            guard originalType.hasPrefix("Set<") && originalType.hasSuffix(">") else {
+                throw ForkedModelError.propertyBackingAndTypeAreIncompatible
+            }
+            let elementType = originalType.dropFirst(4).dropLast()
+            backingProperty =
+                """
+                public var \(raw: backingPropertyPrefix + propertyName) = ForkedMerge.MergeableSet<\(raw: elementType)>(\(raw: defaultValue))
                 """
         }
         
@@ -53,7 +62,7 @@ public struct BackedPropertyMacro: PeerMacro, AccessorMacro {
 
         let getter: String, setter: String
         switch backing {
-        case .mergableValue:
+        case .mergeableValue:
             getter =
                 """
                 get {
@@ -66,7 +75,7 @@ public struct BackedPropertyMacro: PeerMacro, AccessorMacro {
                     \(backingPropertyName).value = newValue
                 }
                 """
-        case .mergableArray:
+        case .mergeableArray, .mergeableSet:
             getter =
                 """
                 get {

@@ -5,7 +5,7 @@ import ForkedModel
 import SwiftUI
 
 /// Mergeable type that accumulates the changes to each fork.
-struct AccumulatingInt: Mergable {
+struct AccumulatingInt: Mergeable {
     var value: Int = 0
     func merged(withOlderConflicting other: AccumulatingInt, commonAncestor: AccumulatingInt?) throws -> AccumulatingInt {
         return AccumulatingInt(value: self.value + other.value - (commonAncestor?.value ?? 0))

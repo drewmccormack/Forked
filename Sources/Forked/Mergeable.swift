@@ -1,14 +1,14 @@
 import Foundation
 
-public protocol Mergable {
+public protocol Mergeable {
     func merged(withOlderConflicting other: Self, commonAncestor: Self?) throws -> Self
 }
 
-public protocol ConflictFreeMergable: Mergable {
+public protocol ConflictFreeMergeable: Mergeable {
     func merged(with other: Self) throws -> Self
 }
 
-public extension ConflictFreeMergable {
+public extension ConflictFreeMergeable {
     func merged(withOlderConflicting other: Self, commonAncestor: Self?) throws -> Self {
         try merged(with: other)
     }
