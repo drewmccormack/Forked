@@ -8,7 +8,7 @@ public struct SetMerger<Element: Hashable>: Merger {
     public func merge(_ value: Set<Element>, withOlderConflicting other: Set<Element>, commonAncestor: Set<Element>?) throws -> Set<Element> {
         guard let commonAncestor else { return value }
         
-        func mergeableSet(for newSet: Set<Element>, mergeableSet: inout MergeableSet<Element>) {
+        func update(with newSet: Set<Element>, mergeableSet: inout MergeableSet<Element>) {
             let inserted = newSet.subtracting(commonAncestor)
             let removed = commonAncestor.subtracting(newSet)
             for value in inserted {
@@ -17,15 +17,15 @@ public struct SetMerger<Element: Hashable>: Merger {
             for value in removed {
                 mergeableSet.remove(value)
             }
-            return
         }
 
+        // Update v1 last so it gets newer timestamps and is prioritized.
         var v1: MergeableSet<Element> = .init(commonAncestor)
         var v2 = v1
-        mergeableSet(for: value, mergeableSet: &v1)
-        mergeableSet(for: other, mergeableSet: &v2)
-        
-        return try v1.merged(with: v1).values
+        update(with: other, mergeableSet: &v2)
+        update(with: value, mergeableSet: &v1)
+
+        return try v1.merged(with: v2).values
     }
     
 }
