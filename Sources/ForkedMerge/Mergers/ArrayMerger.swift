@@ -9,26 +9,8 @@ public struct ArrayMerger<Element: Equatable>: Merger {
         guard let commonAncestor else { return value }
         var v1: MergeableArray<Element> = .init(commonAncestor)
         var v2 = v1
-        
-        for diff in other.difference(from: commonAncestor) {
-            switch diff {
-            case let .insert(offset, element, _):
-                v2.insert(element, at: offset)
-            case let .remove(offset, _, _):
-                v2.remove(at: offset)
-            }
-        }
-
-        // Update v1 last, so it gets newer timestamps
-        for diff in value.difference(from: commonAncestor) {
-            switch diff {
-            case let .insert(offset, element, _):
-                v1.insert(element, at: offset)
-            case let .remove(offset, _, _):
-                v1.remove(at: offset)
-            }
-        }
-        
+        v2.values = other
+        v1.values = value
         return v1.merged(with: v2).values
     }
     

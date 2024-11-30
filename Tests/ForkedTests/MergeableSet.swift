@@ -206,10 +206,12 @@ struct MergingSetSuite {
         #expect(a.values == Set([1,2]))
     }
 
-    @Test mutating func mergeWithConflictingChanges() throws {
+    @Test mutating func mergeWithConflictingChanges() async throws {
         a.insert(1)
         a.insert(2)
         a.remove(1) // 2
+        
+        try await Task.sleep(for: .milliseconds(1))
         
         b.insert(1)
         b.insert(3) // 1,3

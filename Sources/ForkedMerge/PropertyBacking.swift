@@ -13,4 +13,7 @@ public enum PropertyBacking: String {
     
     /// Uses a `MergeableSet` type as the backing of the variable.
     case mergeableSet
+    
+    /// Uses a `MergeableDictionary` type as the backing of the variable.
+    case mergeableDictionary
 }

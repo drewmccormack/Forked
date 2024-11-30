@@ -3,7 +3,7 @@ import Forked
 
 /// Represents a mergable type for a dictionary of values.
 /// Uses a CRDT algorithm.
-public struct MergeableDictionary<Key, Value> where Key: Hashable {
+public struct MergeableDictionary<Key, Value> where Key: Hashable, Value: Equatable {
     
     fileprivate struct ValueContainer {
         var isDeleted: Bool
@@ -35,8 +35,27 @@ public struct MergeableDictionary<Key, Value> where Key: Hashable {
     }
     
     public var dictionary: [Key : Value] {
-        existingKeyValuePairs.reduce(into: [:]) { result, pair in
-            result[pair.key] = pair.value.value
+        get {
+            existingKeyValuePairs.reduce(into: [:]) { result, pair in
+                result[pair.key] = pair.value.value
+            }
+        }
+        set {
+            let oldValue = dictionary
+            let oldKeys = Set(keys)
+            let newKeys = Set(newValue.keys)
+            let inserted = newKeys.subtracting(oldKeys)
+            let removed = Set(oldKeys).subtracting(newKeys)
+            let updated = newKeys.intersection(oldKeys).filter { newValue[$0] != oldValue[$0] }
+            for key in inserted {
+                self[key] = newValue[key]
+            }
+            for key in removed {
+                self[key] = nil
+            }
+            for key in updated {
+                self[key] = newValue[key]
+            }
         }
     }
     

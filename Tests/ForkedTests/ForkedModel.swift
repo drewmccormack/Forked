@@ -19,7 +19,12 @@ private struct User {
 struct Note {
     @Backed(by: .mergeableValue) var title: String = ""
     @Backed(by: .mergeableArray) var pageWordCounts: [Int] = []
-    @Merged(using: .textMerge) var text: String = ""
+    @Backed(by: .mergeableSet) var tags: Set<String> = []
+    @Backed(by: .mergeableDictionary) var counts: [String: Int] = [:]
+    @Merged(using: .textMerge) var description: String = ""
+    @Merged(using: .arrayMerge) var aliases: [String] = []
+    @Merged(using: .setMerge) var categories: Set<String> = []
+    @Merged(using: .dictionaryMerge) var metadata: [String:String] = [:]
 }
 
 struct ForkedModelSuite {
@@ -104,13 +109,13 @@ struct ForkedModelSuite {
     
     @Test func concurrentEditsToTextMergeMergesString() async throws {
         var ancestor = Note()
-        ancestor.text = "Text"
+        ancestor.description = "Text"
         var note1 = ancestor
         var note2 = ancestor
-        note2.text = "More Text"
-        note1.text = "Text More"
+        note2.description = "More Text"
+        note1.description = "Text More"
         let merged = try note2.merged(withOlderConflicting: note1, commonAncestor: ancestor)
-        #expect(merged.text == "More Text More")
+        #expect(merged.description == "More Text More")
     }
 
     @Test func mergeableArrayBacking() async throws {
@@ -122,5 +127,60 @@ struct ForkedModelSuite {
         note2.pageWordCounts = [1, 2, 3, 4]
         let merged = try note2.merged(withOlderConflicting: note1, commonAncestor: ancestor)
         #expect(merged.pageWordCounts == [1, 3, 4, 4])
+    }
+    
+    @Test func arrayMerging() async throws {
+        var ancestor = Note()
+        ancestor.aliases = ["one", "two", "three"]
+        var note1 = ancestor
+        var note2 = ancestor
+        note1.aliases = ["one"]
+        note2.aliases = ["one", "four"]
+        let merged = try note2.merged(withOlderConflicting: note1, commonAncestor: ancestor)
+        #expect(merged.aliases == ["one", "four"])
+    }
+    
+    @Test func mergeableSetBacking() async throws {
+        var ancestor = Note()
+        ancestor.tags = ["Tag1", "Tag2", "Tag3"]
+        var note1 = ancestor
+        var note2 = ancestor
+        note1.tags = ["Tag1", "Tag4"]
+        note2.tags = ["Tag1", "Tag2", "Tag3", "Tag5"]
+        let merged = try note2.merged(withOlderConflicting: note1, commonAncestor: ancestor)
+        #expect(merged.tags == ["Tag1", "Tag4", "Tag5"])
+    }
+    
+    @Test func setMerging() async throws {
+        var ancestor = Note()
+        ancestor.categories = ["A", "B", "C"]
+        var note1 = ancestor
+        var note2 = ancestor
+        note1.categories = ["A", "D"]
+        note2.categories = ["C", "E"]
+        let merged = try note2.merged(withOlderConflicting: note1, commonAncestor: ancestor)
+        #expect(merged.categories == ["D", "E"])
+    }
+
+    @Test func mergeableDictionaryBacked() async throws {
+        var ancestor = Note()
+        ancestor.counts = ["key1": 1, "key2": 2]
+        var note1 = ancestor
+        var note2 = ancestor
+        note1.counts = ["key1": 1]
+        note2.counts = ["key2": 5, "key3": 6]
+        let merged = try note2.merged(withOlderConflicting: note1, commonAncestor: ancestor)
+        #expect(merged.counts == ["key2": 5, "key3": 6])
+    }
+    
+    @Test func dictionaryMerging() async throws {
+        var ancestor = Note()
+        ancestor.metadata = ["key1": "value1", "key2": "value2"]
+        var note1 = ancestor
+        var note2 = ancestor
+        note1.metadata = ["key1": "value3"]
+        note2.metadata = ["key2": "value4", "key3": "value5"]
+        let merged = try note2.merged(withOlderConflicting: note1, commonAncestor: ancestor)
+        #expect(merged.metadata == ["key2": "value4", "key3": "value5"])
     }
 }

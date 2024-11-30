@@ -21,6 +21,11 @@ public enum PropertyMerge: String {
     /// it using a MergeableSet for each set of changes.
     case setMerge
     
+    /// Merges dictionaries. When there is a conflict, it will merge using
+    /// a MergeableDictionary for each dictionary. If the value type is
+    /// `Mergeable`, the dictionary will be merged recursing into the values.
+    case dictionaryMerge
+    
     /// Applies the `array` merge algorithm to the characters in a string.
     /// This is suitable for any type of shared text, which may
     /// have conflicting edits, like a collaborative editor.

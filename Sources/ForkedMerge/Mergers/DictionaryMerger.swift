@@ -48,25 +48,10 @@ extension DictionaryMerger {
         let v0: MergeableDictionary<Key, Value> = .init(commonAncestor)
         var v1 = v0
         var v2 = v0
-        update(mergeableDictionary: &v2, withDiffBetween: other, andAncestor: commonAncestor)
-        update(mergeableDictionary: &v1, withDiffBetween: value, andAncestor: commonAncestor)
+        v2.dictionary = other
+        v1.dictionary = value
         
         return try mergeFunc(v1,v2,v0).dictionary
-    }
-    
-    private func update(mergeableDictionary: inout MergeableDictionary<Key, Value>, withDiffBetween dict: Dictionary<Key, Value>, andAncestor commonAncestor: Dictionary<Key, Value>) {
-        let inserted = Set(dict.keys).subtracting(commonAncestor.keys)
-        let removed = Set(commonAncestor.keys).subtracting(dict.keys)
-        let updated = Set(dict.keys).intersection(commonAncestor.keys).filter { dict[$0] != commonAncestor[$0] }
-        for key in inserted {
-            mergeableDictionary[key] = dict[key]
-        }
-        for key in removed {
-            mergeableDictionary[key] = nil
-        }
-        for key in updated {
-            mergeableDictionary[key] = dict[key]
-        }
     }
     
 }

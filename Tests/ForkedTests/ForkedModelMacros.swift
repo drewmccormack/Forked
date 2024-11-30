@@ -99,6 +99,35 @@ final class ForkedModelMacrosSuite: XCTestCase {
         )
     }
     
+    func testDictionaryPropertyMerge() {
+        assertMacroExpansion(
+            """
+            @ForkedModel
+            struct TestModel {
+                @Merged(using: .dictionaryMerge) var ints: Dictionary<String, Int> = [:]
+            }
+            """,
+            expandedSource:
+            """
+            struct TestModel {
+                var ints: Dictionary<String, Int> = [:]
+            }
+
+            extension TestModel: Forked.Mergeable {
+                public func merged(withOlderConflicting other: Self, commonAncestor: Self?) throws -> Self {
+                    var merged = self
+                    do {
+                let merger = DictionaryMerger<String, Int>()
+                merged.ints = try merger.merge(self.ints, withOlderConflicting: other.ints, commonAncestor: commonAncestor?.ints)
+                    }
+                    return merged
+                }
+            }
+            """,
+            macros: Self.testMacros
+        )
+    }
+    
     func testStringPropertyMerge() {
         assertMacroExpansion(
             """

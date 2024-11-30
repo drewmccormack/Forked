@@ -43,6 +43,14 @@ public struct BackedPropertyMacro: PeerMacro, AccessorMacro {
                 """
                 public var \(raw: backingPropertyPrefix + propertyName) = ForkedMerge.MergeableSet<\(raw: elementType)>(\(raw: defaultValue))
                 """
+        case .mergeableDictionary:
+            guard let (keyType, valueType) = extractKeyAndValueTypes(from: originalType) else {
+                throw ForkedModelError.propertyBackingAndTypeAreIncompatible
+            }
+            backingProperty =
+                """
+                public var \(raw: backingPropertyPrefix + propertyName) = ForkedMerge.MergeableDictionary<\(raw: keyType), \(raw: valueType)>(\(raw: defaultValue))
+                """
         }
         
         return [backingProperty]
@@ -86,6 +94,19 @@ public struct BackedPropertyMacro: PeerMacro, AccessorMacro {
                 """
                 set {
                     \(backingPropertyName).values = newValue
+                }
+                """
+        case .mergeableDictionary:
+            getter =
+                """
+                get {
+                    return \(backingPropertyName).dictionary
+                }
+                """
+            setter =
+                """
+                set {
+                    \(backingPropertyName).dictionary = newValue
                 }
                 """
         }

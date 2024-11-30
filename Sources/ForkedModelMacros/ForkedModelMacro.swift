@@ -112,6 +112,17 @@ public struct ForkedModelMacro: ExtensionMacro {
                         merged.\(varName) = try merger.merge(self.\(varName), withOlderConflicting: other.\(varName), commonAncestor: commonAncestor?.\(varName))
                     }
                     """
+            case .dictionaryMerge:
+                guard let (key, value) = extractKeyAndValueTypes(from: varType) else {
+                    throw ForkedModelError.propertyMergeAndTypeAreIncompatible
+                }
+                expr =
+                    """
+                    do {
+                        let merger = DictionaryMerger<\(key), \(value)>()
+                        merged.\(varName) = try merger.merge(self.\(varName), withOlderConflicting: other.\(varName), commonAncestor: commonAncestor?.\(varName))
+                    }
+                    """
             case .textMerge:
                 guard varType == "String" else {
                     throw ForkedModelError.propertyMergeAndTypeAreIncompatible
@@ -134,7 +145,7 @@ public struct ForkedModelMacro: ExtensionMacro {
             let varName = varSyntax.bindings.first!.pattern.as(IdentifierPatternSyntax.self)!.identifier.text
             let expr: String
             switch propertyInfo.backing {
-            case .mergeableValue, .mergeableArray, .mergeableSet:
+            case .mergeableValue, .mergeableArray, .mergeableSet, .mergeableDictionary:
                 expr =
                     """
                     merged.\(BackedPropertyMacro.backingPropertyPrefix + varName) = try self.\(BackedPropertyMacro.backingPropertyPrefix + varName).merged(withOlderConflicting: other.\(BackedPropertyMacro.backingPropertyPrefix + varName), commonAncestor: commonAncestor?.\(BackedPropertyMacro.backingPropertyPrefix + varName))
