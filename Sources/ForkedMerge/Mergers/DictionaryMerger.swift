@@ -14,10 +14,23 @@ public struct DictionaryMerger<Key: Hashable, Value: Equatable>: Merger {
 
 }
 
+extension DictionaryMerger where Value: ConflictFreeMergeable {
+    
+    /// This overload is used when the value of the dictionary is `ConflictFreeMergeable`, and ensures that the contained values get merged properly.
+    /// Without this, the contained values would be merged atomically.
+    public func merge(_ value: Dictionary<Key, Value>, withOlderConflicting other: Dictionary<Key, Value>, commonAncestor: Dictionary<Key, Value>?) throws -> Dictionary<Key, Value> {
+        try merge(value, withOlderConflicting: other, commonAncestor: commonAncestor) { mergeableDict1, mergeableDict2 in
+            try mergeableDict1.merged(with: mergeableDict2)
+        }
+    }
+    
+}
+
 extension DictionaryMerger where Value: Mergeable {
     
     /// This overload is used when the value of the dictionary is `Mergeable`, and ensures that the contained values get merged properly.
     /// Without this, the contained values would be merged atomically.
+    /// This looks the same as the func for `Mergeable` types, but we need it so that the correct overload is chosen in `MergeableDictionary`
     public func merge(_ value: Dictionary<Key, Value>, withOlderConflicting other: Dictionary<Key, Value>, commonAncestor: Dictionary<Key, Value>?) throws -> Dictionary<Key, Value> {
         try merge(value, withOlderConflicting: other, commonAncestor: commonAncestor) { mergeableDict1, mergeableDict2 in
             try mergeableDict1.merged(with: mergeableDict2)

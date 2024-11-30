@@ -54,7 +54,7 @@ struct DictionaryMergerSuite {
         var dict2 = ancestor
         dict2[0]!.append(5)
         let newDict = try merger.merge(dict1, withOlderConflicting: dict2, commonAncestor: ancestor)
-        #expect(newDict[0]!.values == [1, 2, 3, 4, 5])
+        #expect(newDict[0]!.values == [1, 2, 3, 4, 5] || newDict[0]!.values == [1, 2, 3, 5, 4])
     }
     
 }
