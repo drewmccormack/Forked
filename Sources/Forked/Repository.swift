@@ -20,11 +20,12 @@ public protocol Repository: AnyObject {
     /// Delete an existing fork. Throws if it isn't present.
     func delete(_ fork: Fork) throws
     
-    /// All versions stored in a given fork. There can be 0, 1 or 2.
+    /// All versions stored in a given fork. There will usually be 0, 1 or 2,
+    /// though there may be temporaily more.
     /// Note that this is just the versions stored for the fork. The interpretation
     /// of the stored versions is handled by the `ForkedResource`. For example,
     /// if there are no versions in the fork of the repo, the `ForkedResource`
-    /// will assume it is at the version stored in the main fork.
+    /// will assume it is at the same version as stored in the main fork.
     func versions(storedIn fork: Fork) throws -> Set<Version>
     
     /// Get the content from the repo with the version passed. If not found,
@@ -42,7 +43,7 @@ public protocol Repository: AnyObject {
     /// If needed, the repo can store data persistently at this point (or do nothing)
     func persist() throws
     
-    /// Loads repo from storage
+    /// Loads repo from storage, if this is supported. Otherwise, does nothing.
     func load() throws
 }
 
