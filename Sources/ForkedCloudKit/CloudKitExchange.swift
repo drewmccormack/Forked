@@ -24,7 +24,7 @@ extension CKRecord {
 }
 
 @available(iOS 17.0, tvOS 17.0, watchOS 10.0, macOS 14.0, *)
-public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.Resource: Codable {
+public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.Resource: Codable & Sendable {
     let id: String
     let forkedResource: ForkedResource<R>
     let cloudKitContainer: CKContainer

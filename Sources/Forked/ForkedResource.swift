@@ -3,7 +3,7 @@ import Synchronization
 
 /// This manages forks of a resource. It facilitiates concurrent changes to a single resource, and
 /// provides a systematic approach for merging changes, with support for 3-way merging.
-public final class ForkedResource<RepositoryType: Repository>: @unchecked Sendable {
+public final class ForkedResource<RepositoryType: Repository>: @unchecked Sendable where RepositoryType.Resource: Sendable {
     public typealias ResourceType = RepositoryType.Resource
     
     /// The repository used to store data for the forked resource.
