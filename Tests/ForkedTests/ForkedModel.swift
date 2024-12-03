@@ -9,10 +9,15 @@ struct NotEquatableInt {
 }
 
 @ForkedModel
-private struct User {
+struct User: Identifiable {
+    var id: String = UUID().uuidString
     var name: String = ""
     var age: Int = 0
     var notEquatableInt = NotEquatableInt(value: 0)
+}
+
+struct NoteItem: Equatable, Identifiable {
+    var id: String
 }
 
 @ForkedModel
@@ -23,6 +28,7 @@ struct Note {
     @Backed(by: .mergeableDictionary) var counts: [String: Int] = [:]
     @Merged(using: .textMerge) var description: String = ""
     @Merged(using: .arrayMerge) var aliases: [String] = []
+    @Merged(using: .arrayOfIdentifiableMerge) var items: [NoteItem] = []
     @Merged(using: .setMerge) var categories: Set<String> = []
     @Merged(using: .dictionaryMerge) var metadata: [String:String] = [:]
 }
@@ -138,6 +144,17 @@ struct ForkedModelSuite {
         note2.aliases = ["one", "four"]
         let merged = try note2.merged(withOlderConflicting: note1, commonAncestor: ancestor)
         #expect(merged.aliases == ["one", "four"])
+    }
+    
+    @Test func arrayOfIdentifiableMerging() async throws {
+        var ancestor = Note()
+        ancestor.items = [NoteItem(id: "1"), NoteItem(id: "2")]
+        var note1 = ancestor
+        var note2 = ancestor
+        note1.items = [NoteItem(id: "1"), NoteItem(id: "3")]
+        note2.items = [NoteItem(id: "3"), NoteItem(id: "1")]
+        let merged = try note2.merged(withOlderConflicting: note1, commonAncestor: ancestor)
+        #expect(merged.items.map({ $0.id }) == ["3", "1"])
     }
     
     @Test func mergeableSetBacking() async throws {

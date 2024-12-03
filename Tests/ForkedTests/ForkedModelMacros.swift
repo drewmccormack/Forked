@@ -70,6 +70,35 @@ final class ForkedModelMacrosSuite: XCTestCase {
         )
     }
     
+    func testArrayOfIdentifiablePropertyMerge() {
+        assertMacroExpansion(
+            """
+            @ForkedModel
+            struct TestModel {
+                @Merged(using: .arrayOfIdentifiableMerge) var text: [String.Element] = []
+            }
+            """,
+            expandedSource:
+            """
+            struct TestModel {
+                var text: [String.Element] = []
+            }
+
+            extension TestModel: Forked.Mergeable {
+                public func merged(withOlderConflicting other: Self, commonAncestor: Self?) throws -> Self {
+                    var merged = self
+                    do {
+                let merger = ArrayOfIdentifiableMerger<String.Element>()
+                merged.text = try merger.merge(self.text, withOlderConflicting: other.text, commonAncestor: commonAncestor?.text)
+                    }
+                    return merged
+                }
+            }
+            """,
+            macros: Self.testMacros
+        )
+    }
+    
     func testSetPropertyMerge() {
         assertMacroExpansion(
             """

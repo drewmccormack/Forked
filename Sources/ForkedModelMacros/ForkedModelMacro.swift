@@ -100,6 +100,18 @@ public struct ForkedModelMacro: ExtensionMacro {
                         merged.\(varName) = try merger.merge(self.\(varName), withOlderConflicting: other.\(varName), commonAncestor: commonAncestor?.\(varName))
                     }
                     """
+            case .arrayOfIdentifiableMerge:
+                guard varType.hasPrefix("[") && varType.hasSuffix("]") else {
+                    throw ForkedModelError.propertyMergeAndTypeAreIncompatible
+                }
+                let elementType = varType.dropFirst().dropLast()
+                expr =
+                    """
+                    do {
+                        let merger = ArrayOfIdentifiableMerger<\(elementType)>()
+                        merged.\(varName) = try merger.merge(self.\(varName), withOlderConflicting: other.\(varName), commonAncestor: commonAncestor?.\(varName))
+                    }
+                    """
             case .setMerge:
                 guard varType.hasPrefix("Set<") else {
                     throw ForkedModelError.propertyMergeAndTypeAreIncompatible

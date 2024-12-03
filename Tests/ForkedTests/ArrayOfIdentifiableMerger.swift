@@ -3,9 +3,21 @@ import Foundation
 import Forked
 @testable import ForkedMerge
 
+
+struct Item: Identifiable, Equatable {
+    let id: String
+    let value: Int
+}
+
+extension Array where Element == Int {
+    var itemsArray: [Item] {
+        map { .init(id: "\($0)", value: $0) }
+    }
+}
+
 struct ArrayOfIdentifiableMergerSuite {
     let ancestor: [Item] = [1, 2, 3].itemsArray
-    let merger = ArrayOfIdentifiablesMerger<Item>()
+    let merger = ArrayOfIdentifiableMerger<Item>()
     
     @Test func mergeOneSidedAppend() throws {
         let updated = [1, 2, 3, 3, 4].itemsArray
@@ -45,17 +57,4 @@ struct ArrayOfIdentifiableMergerSuite {
         let merged = try merger.merge(updated2, withOlderConflicting: updated1, commonAncestor: ancestor)
         #expect(merged.map({ $0.value }) == [1, 5, 4])
     }
-}
-
-struct Item: Identifiable, Equatable {
-    let id: String
-    let value: Int
-}
-
-extension Array where Element == Int {
-    
-    var itemsArray: [Item] {
-        map { .init(id: "\($0)", value: $0) }
-    }
-    
 }

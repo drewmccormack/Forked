@@ -9,13 +9,24 @@ public enum PropertyMerge: String {
     /// algorithm stated.
     case mergeableProtocol
     
-    /// Will merge as an array of values. When there is a conflict, it will
+    /// Will merge as an array of values. Elements must be Equatable.
+    /// When there is a conflict, it will
     /// determine the changes made to each version, and merge with an
     /// algorithm that keeps related changes together (eg editing a word).
     /// Does not guarantee uniqueness of elements after merge:
     /// there can be duplicates created, so it is more suitable to value types
     /// like characters in a string. than it is to identifiable types.
     case arrayMerge
+    
+    /// Will merge as an array of values. Elements must be Equatable and
+    /// Identifiable. It will ensure that there are no duplicated identifiers following
+    /// a merge. When there is a conflict, it will
+    /// determine the changes made to each version, and merge with an
+    /// algorithm that keeps related changes together (eg editing a word).
+    /// Guarantees uniqueness of identifiers after merge, but does not
+    /// enforce uniqueness of identifiers through updates made directly to the
+    /// property.
+    case arrayOfIdentifiableMerge
     
     /// Will merge sets of values. When there is a conflict, it will handle
     /// it using a MergeableSet for each set of changes.

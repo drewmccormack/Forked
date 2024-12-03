@@ -1,7 +1,7 @@
 import Foundation
 
 /// Merges an array, ensuring that the result has elements with unqiue identifiers.
-public struct ArrayOfIdentifiablesMerger<Element: Identifiable & Equatable>: Merger {
+public struct ArrayOfIdentifiableMerger<Element: Identifiable & Equatable>: Merger {
     
     public init() {}
 
