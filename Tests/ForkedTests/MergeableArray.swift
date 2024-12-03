@@ -206,4 +206,57 @@ struct MergeableArraySuite {
         #expect(c.values == [1, 2, 3, 4, 5, 6] || c.values == [4, 5, 6, 1, 2, 3])
     }
 
+    @Test func entriesUniquelyIdentified() {
+        struct Item: Identifiable, Equatable {
+            let id: String
+            let value: Int
+        }
+        
+        var array = MergeableArray<Item>()
+        
+        // Add items in a specific order
+        array.append(Item(id: "a", value: 1))
+        array.append(Item(id: "b", value: 1))
+        array.append(Item(id: "a", value: 2))  // Duplicate id, newer timestamp
+        array.append(Item(id: "c", value: 1))
+        array.append(Item(id: "b", value: 2))  // Duplicate id, newer timestamp
+        
+        let uniqued = array.entriesUniquelyIdentified()
+        
+        // Should keep most recent version of each id
+        #expect(uniqued.count == 3)
+        #expect(uniqued[0].id == "a")  // From position 2
+        #expect(uniqued[1].id == "c")  // From position 3
+        #expect(uniqued[2].id == "b")  // From position 4
+        
+        // Original array should be unchanged
+        #expect(array.count == 5)
+    }
+
+    @Test func uniquelyIdentifiedFollowingMerge() {
+        struct Item: Identifiable, Equatable {
+            let id: String
+            let value: Int
+        }
+        
+        var array1 = MergeableArray<Item>()
+        array1.append(Item(id: "a", value: 1))
+        array1.append(Item(id: "b", value: 1))
+        array1.append(Item(id: "c", value: 1))
+        
+        var array2 = array1
+        array2.append(Item(id: "a", value: 2))  // Update 'a'
+        array2.append(Item(id: "d", value: 1))  // Add new item
+        
+        let merged = array1.merged(with: array2)
+        let uniqued = merged.entriesUniquelyIdentified()
+        
+        // Should have 4 items with most recent values
+        #expect(uniqued.count == 4)
+        #expect(uniqued[0].id == "b" && uniqued[0].value == 1)  // Updated value
+        #expect(uniqued[1].id == "c" && uniqued[1].value == 1)  // Original value
+        #expect(uniqued[2].id == "a" && uniqued[2].value == 2)  // Original value
+        #expect(uniqued[3].id == "d" && uniqued[3].value == 1)  // New value
+    }
+
 }

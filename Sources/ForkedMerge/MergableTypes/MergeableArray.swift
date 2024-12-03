@@ -128,6 +128,51 @@ extension MergeableArray: ConflictFreeMergeable {
     
 }
 
+extension MergeableArray where Element: Identifiable {
+
+    /// Returns a new array with entries uniquely identified, keeping only the most recently modified instance of each uniquely identified element.
+    /// The relative order of the remaining elements is preserved.
+    public func entriesUniquelyIdentified() -> Self {
+        var result = self
+        var seen = Set<Element.ID>()
+        var mostRecentContainerByID: [Element.ID: ValueContainer] = [:]
+        
+        // First pass: find the most recent container for each ID
+        for container in result.valueContainers {
+            let id = container.value.id
+            if let existing = mostRecentContainerByID[id] {
+                if container.timestamp > existing.timestamp {
+                    mostRecentContainerByID[id] = container
+                }
+            } else {
+                mostRecentContainerByID[id] = container
+            }
+        }
+        
+        // Second pass: keep most recent versions and create tombstones for others
+        var newValueContainers: [ValueContainer] = []
+        var newTombstones = result.tombstones
+        
+        for container in result.valueContainers {
+            let id = container.value.id
+            guard let mostRecent = mostRecentContainerByID[id] else { continue }
+            
+            if container.id == mostRecent.id && seen.insert(id).inserted {
+                newValueContainers.append(container)
+            } else {
+                var tombstone = container
+                tombstone.isDeleted = true
+                newTombstones.append(tombstone)
+            }
+        }
+        
+        result.valueContainers = newValueContainers
+        result.tombstones = newTombstones
+        return result
+    }
+    
+}
+
 extension MergeableArray {
     
     /// Not just sorted, but ordered according to a preorder traversal of the tree.
