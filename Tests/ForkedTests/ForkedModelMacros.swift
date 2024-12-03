@@ -20,13 +20,13 @@ final class ForkedModelMacrosSuite: XCTestCase {
             """
             @ForkedModel
             struct TestModel {
-                @Merged var text: String = ""
+                @Merged var text: Elephant = ""
             }
             """,
             expandedSource:
             """
             struct TestModel {
-                var text: String = ""
+                var text: Elephant = ""
             }
 
             extension TestModel: Forked.Mergeable {
@@ -41,12 +41,70 @@ final class ForkedModelMacrosSuite: XCTestCase {
         )
     }
     
+    func testTextDefault() {
+        assertMacroExpansion(
+            """
+            @ForkedModel
+            struct TestModel {
+                @Merged var text: String = ""
+            }
+            """,
+            expandedSource:
+            """
+            struct TestModel {
+                var text: String = ""
+            }
+
+            extension TestModel: Forked.Mergeable {
+                public func merged(withOlderConflicting other: Self, commonAncestor: Self?) throws -> Self {
+                    var merged = self
+                    do {
+                let merger = TextMerger()
+                merged.text = try merger.merge(self.text, withOlderConflicting: other.text, commonAncestor: commonAncestor?.text)
+                    }
+                    return merged
+                }
+            }
+            """,
+            macros: Self.testMacros
+        )
+    }
+    
     func testArrayPropertyMerge() {
         assertMacroExpansion(
             """
             @ForkedModel
             struct TestModel {
                 @Merged(using: .arrayMerge) var text: [String.Element] = []
+            }
+            """,
+            expandedSource:
+            """
+            struct TestModel {
+                var text: [String.Element] = []
+            }
+
+            extension TestModel: Forked.Mergeable {
+                public func merged(withOlderConflicting other: Self, commonAncestor: Self?) throws -> Self {
+                    var merged = self
+                    do {
+                let merger = ArrayMerger<String.Element>()
+                merged.text = try merger.merge(self.text, withOlderConflicting: other.text, commonAncestor: commonAncestor?.text)
+                    }
+                    return merged
+                }
+            }
+            """,
+            macros: Self.testMacros
+        )
+    }
+    
+    func testDefaultPropertyMergeOfArray() {
+        assertMacroExpansion(
+            """
+            @ForkedModel
+            struct TestModel {
+                @Merged var text: [String.Element] = []
             }
             """,
             expandedSource:

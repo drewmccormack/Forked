@@ -2,9 +2,35 @@ import SwiftSyntax
 import SwiftSyntaxMacros
 import ForkedMerge
 
+enum PropertyVariety {
+    case singleValue
+    case array
+    case dictionary
+    case set
+    case text
+    
+    var defaultPropertyMerge: PropertyMerge {
+        let defaultMerge: PropertyMerge
+        switch self {
+        case .singleValue:
+            defaultMerge = .mergeableProtocol
+        case .array:
+            defaultMerge = .arrayMerge
+        case .dictionary:
+            defaultMerge = .dictionaryMerge
+        case .set:
+            defaultMerge = .setMerge
+        case .text:
+            defaultMerge = .textMerge
+        }
+        return defaultMerge
+    }
+}
+
 private struct MergePropertyVar {
     var varSyntax: VariableDeclSyntax
-    var merge: PropertyMerge
+    var merge: PropertyMerge?
+    var propertyVariety: PropertyVariety
 }
 
 private struct BackedPropertyVar {
@@ -42,10 +68,10 @@ public struct ForkedModelMacro: ExtensionMacro {
         
         // Gather names of all mergeable properties
         let mergePropertyVars: [MergePropertyVar] = try structDecl.memberBlock.members.compactMap { member -> MergePropertyVar? in
-            guard let varSyntax = member.decl.as(VariableDeclSyntax.self),
-                  let propertyMerge = try varSyntax.propertyMerge()
+            guard let varSyntax = member.decl.as(VariableDeclSyntax.self), varSyntax.isMerged()
                 else { return nil }
-            return MergePropertyVar(varSyntax: varSyntax, merge: propertyMerge)
+            let propertyMerge = try varSyntax.propertyMerge()
+            return MergePropertyVar(varSyntax: varSyntax, merge: propertyMerge, propertyVariety: varSyntax.propertyVariety())
         }
         
         // Gather names of all backed properties
@@ -82,7 +108,10 @@ public struct ForkedModelMacro: ExtensionMacro {
             let varName = varSyntax.bindings.first!.pattern.as(IdentifierPatternSyntax.self)!.identifier.text
             let varType = varSyntax.bindings.first!.typeAnnotation!.type.trimmedDescription
             let expr: String
-            switch propertyInfo.merge {
+            
+            // If no merge given, fall back on default for variety
+            let defaultMerge = propertyInfo.propertyVariety.defaultPropertyMerge
+            switch propertyInfo.merge ?? defaultMerge {
             case .mergeableProtocol:
                 expr =
                     """
