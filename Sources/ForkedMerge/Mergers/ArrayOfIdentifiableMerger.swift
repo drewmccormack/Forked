@@ -4,49 +4,65 @@ import Forked
 /// Merges an array, ensuring that the result has elements with unqiue identifiers.
 public struct ArrayOfIdentifiableMerger<Element: Identifiable & Equatable>: Merger {
     public init() {}
-    
-    public func merge(_ value: [Element], withOlderConflicting other: [Element], commonAncestor: [Element]?) throws -> [Element] {
-        try merge(value, withOlderConflicting: other, commonAncestor: commonAncestor) { mergeableArray1, mergeableArray2, _ in
-            try mergeableArray1.merged(with: mergeableArray2)
-        }
-    }
 }
 
 extension ArrayOfIdentifiableMerger where Element: ConflictFreeMergeable {
     
-    /// This overload is used when the value of the array element is `ConflictFreeMergeable`, and ensures that the contained values get merged properly.
-    /// Without this, the contained values would be merged atomically.
     public func merge(_ value: [Element], withOlderConflicting other: [Element], commonAncestor: [Element]?) throws -> [Element] {
-        try merge(value, withOlderConflicting: other, commonAncestor: commonAncestor) { mergeableArray1, mergeableArray2, _ in
-            try mergeableArray1.merged(with: mergeableArray2)
-        }
+        try performMerge(value, withOlderConflicting: other, commonAncestor: commonAncestor, elementMerge: mergeElement)
+    }
+    
+    private func mergeElement(_ element: Element, _ otherElement: Element, _ commonAncestor: Element?) throws -> Element {
+        try element.merged(with: otherElement)
     }
     
 }
 
 extension ArrayOfIdentifiableMerger where Element: Mergeable {
     
-    /// This overload is used when the elements are `Mergeable`, and ensures that the contained values get merged properly.
-    /// Without this, the contained values would be merged atomically.
-    /// This looks the same as the func for `ConflictFreeMergeable` types, but we need it so that the correct overload is chosen in `MergeableArray`
     public func merge(_ value: [Element], withOlderConflicting other: [Element], commonAncestor: [Element]?) throws -> [Element] {
-        try merge(value, withOlderConflicting: other, commonAncestor: commonAncestor) { mergeableArray1, mergeableArray2, mergeableArrayAncestor  in
-            try mergeableArray1.merged(withOlderConflicting: mergeableArray2, commonAncestor: mergeableArrayAncestor)
-        }
+        try performMerge(value, withOlderConflicting: other, commonAncestor: commonAncestor, elementMerge: mergeElement)
     }
     
+    private func mergeElement(_ element: Element, _ otherElement: Element, _ commonAncestor: Element?) throws -> Element {
+        try element.merged(withOlderConflicting: otherElement, commonAncestor: commonAncestor)
+    }
+
 }
 
 extension ArrayOfIdentifiableMerger {
-
-    public func merge(_ value: [Element], withOlderConflicting other: [Element], commonAncestor: [Element]?, mergeFunc: (_ value: MergeableArray<Element>, _ other: MergeableArray<Element>, _ ancestor: MergeableArray<Element>) throws -> MergeableArray<Element>) throws -> [Element] {
+    
+    public func merge(_ value: [Element], withOlderConflicting other: [Element], commonAncestor: [Element]?) throws -> [Element] {
+        try performMerge(value, withOlderConflicting: other, commonAncestor: commonAncestor, elementMerge: mergeElement)
+    }
+    
+    private func performMerge(_ value: [Element], withOlderConflicting other: [Element], commonAncestor: [Element]?, elementMerge: (Element, Element, Element?) throws -> Element) throws -> [Element] {
         guard let commonAncestor else { return value }
-        let v0: MergeableArray<Element> = .init(commonAncestor)
+        let v0: MergeableArray<Element.ID> = .init(commonAncestor.map(\.id))
         var v2 = v0
         var v1 = v0
-        v2.values = other
-        v1.values = value
-        return try mergeFunc(v1,v2,v0).entriesUniquelyIdentified().values
+        v2.values = other.map(\.id)
+        v1.values = value.map(\.id)
+        let resultIds = try v1.merged(with: v2).values.filterDuplicates { $0 }
+        
+        let idToElement: [Element.ID:Element] = .init(uniqueKeysWithValues: value.filterDuplicates(identifyingWith: { $0.id }).map { ($0.id, $0) })
+        let idToOtherElement: [Element.ID:Element] = .init(uniqueKeysWithValues: other.filterDuplicates(identifyingWith: { $0.id }).map { ($0.id, $0) })
+        let idToAncestorElement: [Element.ID:Element] = .init(uniqueKeysWithValues: commonAncestor.filterDuplicates(identifyingWith: { $0.id }).map { ($0.id, $0) })
+        let result = try resultIds.map { id in
+            switch (idToElement[id], idToOtherElement[id]) {
+            case let (element?, otherElement?):
+                return try elementMerge(element, otherElement, idToAncestorElement[id])
+            case let (element?, nil), let (nil, element?):
+                return element
+            case (nil, nil):
+                fatalError("Missing element with id \(id)")
+            }
+        }
+        return result
+    }
+    
+    private func mergeElement(_ element: Element, _ otherElement: Element, _ commonAncestor: Element?) throws -> Element {
+        element == commonAncestor ? otherElement : element
     }
     
 }

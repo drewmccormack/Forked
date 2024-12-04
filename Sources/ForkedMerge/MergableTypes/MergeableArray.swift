@@ -225,13 +225,12 @@ extension MergeableArray: Collection, RandomAccessCollection {
     }
 }
 
-private extension Array {
+extension Array {
     
     func filterDuplicates(identifyingWith block: (Element)->AnyHashable) -> Self {
         var encountered: Set<AnyHashable> = []
         return filter { encountered.insert(block($0)).inserted }
     }
-
 }
 
 extension MergeableArray: Codable where Element: Codable {}
