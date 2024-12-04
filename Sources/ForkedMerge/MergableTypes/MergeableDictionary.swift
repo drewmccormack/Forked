@@ -110,7 +110,7 @@ extension MergeableDictionary: ExpressibleByDictionaryLiteral {
 
 extension MergeableDictionary: ConflictFreeMergeable {
     
-    public func merged(with other: MergeableDictionary) throws -> MergeableDictionary {
+    public func merged(with other: Self) throws -> Self {
         try mergedNonRecursively(with: other)
     }
     
@@ -184,7 +184,7 @@ private extension MergeableDictionary {
         return resultDictionary
     }
     
-    func mergedNonRecursively(with other: MergeableDictionary) throws -> MergeableDictionary {
+    func mergedNonRecursively(with other: Self) throws -> Self {
         var result = self
         result.valueContainersByKey = other.valueContainersByKey.reduce(into: valueContainersByKey) { result, entry in
             let firstValueContainer = result[entry.key]

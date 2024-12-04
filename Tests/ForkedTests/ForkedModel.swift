@@ -4,16 +4,11 @@ import Forked
 import ForkedMerge
 @testable import ForkedModel
 
-struct NotEquatableInt {
-    var value: Int
-}
-
 @ForkedModel
-struct User: Identifiable {
+struct User: Identifiable, Equatable {
     var id: String = UUID().uuidString
     var name: String = ""
     var age: Int = 0
-    var notEquatableInt = NotEquatableInt(value: 0)
 }
 
 struct NoteItem: Equatable, Identifiable {
@@ -90,15 +85,6 @@ struct ForkedModelSuite {
         user2.name = "Tom"
         let merged = try user2.merged(withOlderConflicting: user1, commonAncestor: nil)
         #expect(merged.name == "Tom")
-    }
-    
-    @Test func defaultMergeForNonEquatableAlwaysFavorsMostRecent() async throws {
-        let ancestor = User(name: "Alice", age: 30)
-        var user1 = ancestor
-        let user2 = ancestor
-        user1.notEquatableInt = NotEquatableInt(value: 1)
-        let merged = try user2.merged(withOlderConflicting: user1, commonAncestor: ancestor)
-        #expect(merged.notEquatableInt.value == 0)
     }
     
     @Test func concurrentEditsToMergeableValueFavorsMostRecent() async throws {

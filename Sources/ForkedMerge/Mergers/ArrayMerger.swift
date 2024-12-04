@@ -11,7 +11,7 @@ public struct ArrayMerger<Element: Equatable>: Merger {
         var v2 = v1
         v2.values = other
         v1.values = value
-        return v1.merged(with: v2).values
+        return try v1.merged(with: v2).values
     }
     
 }
