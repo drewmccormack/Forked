@@ -107,7 +107,7 @@ public extension MergeableArray where Element: Equatable {
 extension MergeableArray: ConflictFreeMergeable {
     
     /// Merges two versions of the array. No common ancestor is needed, because the complete history is stored in the type.
-    public func merged(with other: Self) -> Self {
+    public func merged(with other: Self) throws -> Self {
         let resultTombstones = (tombstones + other.tombstones).filterDuplicates { $0.id }
         let tombstoneIds = resultTombstones.map { $0.id }
         

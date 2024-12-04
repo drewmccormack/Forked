@@ -48,7 +48,7 @@ struct MergeableArraySuite {
         #expect(a.values == [3, 2, 3])
     }
     
-    @Test mutating func mergeOfInitiallyUnrelated() {
+    @Test mutating func mergeOfInitiallyUnrelated() throws {
         a.append(1)
         a.append(2)
         a.append(3)
@@ -59,11 +59,11 @@ struct MergeableArraySuite {
         b.append(8)
         b.append(9)
         
-        let c = a.merged(with: b)
+        let c = try a.merged(with: b)
         #expect(c.values == [7, 8, 9, 1, 2, 3])
     }
     
-    @Test mutating func mergeWithRemoves() {
+    @Test mutating func mergeWithRemoves() throws {
         a.append(1)
         a.append(2)
         a.append(3)
@@ -76,16 +76,16 @@ struct MergeableArraySuite {
         b.append(9)
         b.remove(at: 1)
         
-        let d = b.merged(with: a)
+        let d = try b.merged(with: a)
         #expect(d.values == [7, 9, 1, 3])
     }
     
-    @Test mutating func multipleMerges() {
+    @Test mutating func multipleMerges() throws {
         a.append(1)
         a.append(2)
         a.append(3)
         
-        b = b.merged(with: a)
+        b = try b.merged(with: a)
         
         b.insert(1, at: 0)
         b.remove(at: 0)
@@ -95,10 +95,10 @@ struct MergeableArraySuite {
         
         a.append(6) // [1,2,3,6]
         
-        #expect(a.merged(with: b).values == [1, 1, 2, 3, 6, 5])
+        #expect(try a.merged(with: b).values == [1, 1, 2, 3, 6, 5])
     }
     
-    @Test mutating func idempotency() {
+    @Test mutating func idempotency() throws {
         a.append(1)
         a.append(2)
         a.append(3)
@@ -111,14 +111,14 @@ struct MergeableArraySuite {
         b.append(9)
         b.remove(at: 1)
         
-        let c = a.merged(with: b)
-        let d = c.merged(with: b)
-        let e = c.merged(with: a)
+        let c = try a.merged(with: b)
+        let d = try c.merged(with: b)
+        let e = try c.merged(with: a)
         #expect(c.values == d.values)
         #expect(c.values == e.values)
     }
     
-    @Test mutating func commutivity() {
+    @Test mutating func commutivity() throws {
         a.append(1)
         a.append(2)
         a.append(3)
@@ -131,13 +131,13 @@ struct MergeableArraySuite {
         b.append(9)
         b.remove(at: 1)
         
-        let c = a.merged(with: b)
-        let d = b.merged(with: a)
+        let c = try a.merged(with: b)
+        let d = try b.merged(with: a)
         #expect(d.values == [7, 9, 1, 3])
         #expect(d.values == c.values)
     }
     
-    @Test mutating func associativity() {
+    @Test mutating func associativity() throws {
         a.append(1)
         a.append(2)
         a.remove(at: 1)
@@ -150,8 +150,8 @@ struct MergeableArraySuite {
         var c: MergeableArray<Int> = [10, 11, 12]
         c.remove(at: 0)
 
-        let e = a.merged(with: b).merged(with: c)
-        let f = a.merged(with: b.merged(with: c))
+        let e = try a.merged(with: b).merged(with: c)
+        let f = try a.merged(with: b.merged(with: c))
         #expect(e.values == f.values)
     }
     
@@ -166,24 +166,24 @@ struct MergeableArraySuite {
         #expect(d.values == a.values)
     }
     
-    @Test mutating func mergeWithEmptyArray() {
+    @Test mutating func mergeWithEmptyArray() throws {
         a.append(1)
         a.append(2)
-        let c = a.merged(with: b) // b is empty
+        let c = try a.merged(with: b) // b is empty
         #expect(c.values == [1, 2])
     }
 
-    @Test mutating func mergeEmptyArrayWithPopulatedArray() {
+    @Test mutating func mergeEmptyArrayWithPopulatedArray() throws {
         b.append(5)
         b.append(6)
-        let c = a.merged(with: b) // a is empty
+        let c = try a.merged(with: b) // a is empty
         #expect(c.values == [5, 6])
     }
 
-    @Test mutating func mergingWithSelf() {
+    @Test mutating func mergingWithSelf() throws {
         a.append(1)
         a.append(2)
-        let c = a.merged(with: a) // Merging with itself
+        let c = try a.merged(with: a) // Merging with itself
         #expect(c.values == a.values)
     }
 
@@ -193,7 +193,7 @@ struct MergeableArraySuite {
         #expect(a.values == [1, 1])
     }
 
-    @Test mutating func mergeWithInterleaving() {
+    @Test mutating func mergeWithInterleaving() throws {
         a.append(1)
         a.append(2)
         a.append(3)
@@ -202,7 +202,7 @@ struct MergeableArraySuite {
         b.append(5)
         b.append(6)
         
-        let c = a.merged(with: b)
+        let c = try a.merged(with: b)
         #expect(c.values == [1, 2, 3, 4, 5, 6] || c.values == [4, 5, 6, 1, 2, 3])
     }
 
@@ -233,7 +233,7 @@ struct MergeableArraySuite {
         #expect(array.count == 5)
     }
 
-    @Test func uniquelyIdentifiedFollowingMerge() {
+    @Test func uniquelyIdentifiedFollowingMerge() throws {
         struct Item: Identifiable, Equatable {
             let id: String
             let value: Int
@@ -248,7 +248,7 @@ struct MergeableArraySuite {
         array2.append(Item(id: "a", value: 2))  // Update 'a'
         array2.append(Item(id: "d", value: 1))  // Add new item
         
-        let merged = array1.merged(with: array2)
+        let merged = try array1.merged(with: array2)
         let uniqued = merged.entriesUniquelyIdentified()
         
         // Should have 4 items with most recent values
