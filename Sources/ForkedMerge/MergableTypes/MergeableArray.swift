@@ -14,9 +14,9 @@ import Forked
 /// of conflicting versions. You could use this as the basis of a basic collaborative editor.
 /// Note that it contains a complete history of changes, including deletions, so it grows over time.
 /// If you need a more compact representation, consider using a merger instead.
-public struct MergeableArray<Element> {
+public struct MergeableArray<Element: Equatable>: Equatable {
     
-    fileprivate struct ValueContainer: Identifiable {
+    fileprivate struct ValueContainer: Identifiable, Equatable {
         var anchor: ID?
         var value: Element
         var timestamp: StableTimestamp
@@ -38,7 +38,19 @@ public struct MergeableArray<Element> {
     private var tombstones: Array<ValueContainer> = []
     
     public var values: Array<Element> {
-        valueContainers.map { $0.value }
+        get {
+            valueContainers.map { $0.value }
+        }
+        set {
+            for diff in newValue.difference(from: values) {
+                switch diff {
+                case let .insert(offset, element, _):
+                    insert(element, at: offset)
+                case let .remove(offset, _, _):
+                    remove(at: offset)
+                }
+            }
+        }
     }
     
     public var count: UInt64 { UInt64(valueContainers.count) }
@@ -84,30 +96,14 @@ public extension MergeableArray {
     
 }
 
-public extension MergeableArray where Element: Equatable {
-    
-    var values: Array<Element> {
-        get {
-            valueContainers.map { $0.value }
-        }
-        set {
-            for diff in newValue.difference(from: values) {
-                switch diff {
-                case let .insert(offset, element, _):
-                    insert(element, at: offset)
-                case let .remove(offset, _, _):
-                    remove(at: offset)
-                }
-            }
-        }
-    }
-    
-}
-
 extension MergeableArray: Mergeable {
     
-    /// Merges two versions of the array. No common ancestor is needed, because the complete history is stored in the type.
+    /// Default merge, when elements are not mergeable. Eg chars in a string
     public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
+        try mergedNonrecursively(with: other)
+    }
+    
+    private func mergedNonrecursively(with other: Self) throws -> Self {
         let resultTombstones = (tombstones + other.tombstones).filterDuplicates { $0.id }
         let tombstoneIds = resultTombstones.map { $0.id }
         
@@ -125,10 +121,53 @@ extension MergeableArray: Mergeable {
         result.timestamp = Swift.max(self.timestamp, other.timestamp)
         return result
     }
-    
 }
 
+extension MergeableArray where Element: Identifiable & Mergeable {
+    
+    /// Merge when elements are mergeable and identifiable. More object-like.
+    /// Will ensure uniqueness of identifiers, and merge together elements with the same identifier.
+    public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
+        try mergedRecursively(with: other, commonAncestor: commonAncestor, mergeElementFunc: mergeElement)
+    }
+    
+    private func mergeElement(_ element: Element, _ otherElement: Element, _ commonAncestor: Element) throws -> Element {
+        try element.merged(withSubordinate: otherElement, commonAncestor: commonAncestor)
+    }
+    
+}
+    
 extension MergeableArray where Element: Identifiable {
+    
+    /// For non-mergeables that are identifiable and equatable. Here we can at least see
+    /// which branch has changed, and choose that branch, even if we can't "fuse" the elements.
+    public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
+        try mergedRecursively(with: other, commonAncestor: commonAncestor, mergeElementFunc: mergeElement)
+    }
+    
+    private func mergeElement(_ element: Element, _ otherElement: Element, _ commonAncestor: Element) throws -> Element {
+        element == commonAncestor ? otherElement : element
+    }
+    
+    private func mergedRecursively(with other: Self, commonAncestor: Self, mergeElementFunc: (Element, _ other: Element, _ ancestor: Element) throws -> Element) throws -> Self {
+        var result = try mergedNonrecursively(with: other).entriesUniquelyIdentified()
+        let idToElement: [Element.ID:Element] = .init(uniqueKeysWithValues: self.values.filterDuplicates(identifyingWith: { $0.id }).map { ($0.id, $0) })
+        let idToOtherElement: [Element.ID:Element] = .init(uniqueKeysWithValues: other.values.filterDuplicates(identifyingWith: { $0.id }).map { ($0.id, $0) })
+        let idToAncestorElement: [Element.ID:Element] = .init(uniqueKeysWithValues: commonAncestor.values.filterDuplicates(identifyingWith: { $0.id }).map { ($0.id, $0) })
+        let resultIds = result.values.map(\.id)
+        let resultElements = try resultIds.map { id in
+            switch (idToElement[id], idToOtherElement[id], idToAncestorElement[id]) {
+            case let (element?, otherElement?, ancestorElement?):
+                return try mergeElementFunc(element, otherElement, ancestorElement)
+            case let (element?, _, _), let (nil, element?, _):
+                return element
+            case (nil, nil, _):
+                fatalError("Missing element with id \(id)")
+            }
+        }
+        result.values = resultElements
+        return result
+    }
 
     /// Returns a new array with entries uniquely identified, keeping only the most recently modified instance of each uniquely identified element.
     /// The relative order of the remaining elements is preserved.
@@ -235,9 +274,6 @@ extension Array {
 
 extension MergeableArray: Codable where Element: Codable {}
 extension MergeableArray.ValueContainer: Codable where Element: Codable {}
-
-extension MergeableArray: Equatable where Element: Equatable {}
-extension MergeableArray.ValueContainer: Equatable where Element: Equatable {}
 
 extension MergeableArray: Hashable where Element: Hashable {}
 extension MergeableArray.ValueContainer: Hashable where Element: Hashable {}

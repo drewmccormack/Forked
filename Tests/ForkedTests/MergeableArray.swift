@@ -248,15 +248,37 @@ struct MergeableArraySuite {
         array2.append(Item(id: "a", value: 2))  // Update 'a'
         array2.append(Item(id: "d", value: 1))  // Add new item
         
-        let merged = try array1.merged(withSubordinate: array2, commonAncestor: array1)
+        let merged = try array2.merged(withSubordinate: array1, commonAncestor: array1)
         let uniqued = merged.entriesUniquelyIdentified()
         
         // Should have 4 items with most recent values
         #expect(uniqued.count == 4)
         #expect(uniqued[0].id == "b" && uniqued[0].value == 1)  // Updated value
         #expect(uniqued[1].id == "c" && uniqued[1].value == 1)  // Original value
-        #expect(uniqued[2].id == "a" && uniqued[2].value == 2)  // Original value
+        #expect(uniqued[2].id == "a" && uniqued[2].value == 1)  // Original value, since values earlier in the array are favored when there are dupes
         #expect(uniqued[3].id == "d" && uniqued[3].value == 1)  // New value
     }
 
+    @Test func mergingMergeableIdentifiableElements() throws {
+        struct Item: Identifiable, Equatable, Mergeable {
+            let id: String
+            let value: Int
+            func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
+                Self(id: id, value: value + other.value - commonAncestor.value)
+            }
+        }
+        
+        let ancestor = MergeableArray<Item>([.init(id: "a", value: 1), .init(id: "b", value: 2), .init(id: "c", value: 3)])
+        var a = ancestor
+        var b = ancestor
+        
+        a.append(.init(id: "d", value: 1))
+        a[0] = .init(id: "a", value: 2)
+        b[0] = .init(id: "a", value: 4)
+        
+        let merged = try a.merged(withSubordinate: b, commonAncestor: ancestor)
+        let reverseMerged = try a.merged(withSubordinate: b, commonAncestor: ancestor)
+        #expect(merged.values == reverseMerged.values)
+        #expect(merged.values.map(\.value) == [5, 2, 3, 1])
+    }
 }
