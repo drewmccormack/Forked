@@ -1,7 +1,7 @@
 
 # Sample: A Race of Actors
 
-Q: What do you call a group of Swift actors?
+Q: What do you call a group of many Swift actors?
 A: A race of actors.
 
 Joking aside, this sample is a rather contrived example of how you can quite easily
@@ -16,7 +16,7 @@ experiences race conditions, and is unlikely to get the right answer.
 
 The `ForkedContestant` actor, on the other hand, uses a `ForkedResource` to manage the integer, and
 protects it by creating a fork to handle changes during each call. This isolates the updates from
-concurrent calls. Only the call that created the fork can update it. Merging of each fork into `.main`
+concurrent calls — only the call that created the fork can update it. Merging of each fork into `.main`
 ensures that the correct result is returned at the end.
 
 Obviously this is a trivially simple case, and removing the pause in `addOne` would fix the issue, but
