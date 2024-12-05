@@ -95,7 +95,7 @@ public struct ForkedModelMacro: ExtensionMacro {
             let expr =
                 """
                 if  let anyEquatableSelf = ForkedEquatable(self.\(varName)),
-                    case let anyEquatableCommon = commonAncestor.flatMap({ ForkedEquatable($0.\(varName)) }) {
+                    case let anyEquatableCommon = ForkedEquatable(commonAncestor.\(varName)) {
                     merged.\(varName) = anyEquatableSelf != anyEquatableCommon ? self.\(varName) : other.\(varName)
                 }
                 """
@@ -115,7 +115,7 @@ public struct ForkedModelMacro: ExtensionMacro {
             case .mergeableProtocol:
                 expr =
                     """
-                    merged.\(varName) = try self.\(varName).merged(withOlderConflicting: other.\(varName), commonAncestor: commonAncestor?.\(varName))
+                    merged.\(varName) = try self.\(varName).merged(withSubordinate: other.\(varName), commonAncestor: commonAncestor.\(varName))
                     """
             case .arrayMerge:
                 guard varType.hasPrefix("[") && varType.hasSuffix("]") else {
@@ -126,7 +126,7 @@ public struct ForkedModelMacro: ExtensionMacro {
                     """
                     do {
                         let merger = ArrayMerger<\(elementType)>()
-                        merged.\(varName) = try merger.merge(self.\(varName), withOlderConflicting: other.\(varName), commonAncestor: commonAncestor?.\(varName))
+                        merged.\(varName) = try merger.merge(self.\(varName), withSubordinate: other.\(varName), commonAncestor: commonAncestor.\(varName))
                     }
                     """
             case .arrayOfIdentifiableMerge:
@@ -138,7 +138,7 @@ public struct ForkedModelMacro: ExtensionMacro {
                     """
                     do {
                         let merger = ArrayOfIdentifiableMerger<\(elementType)>()
-                        merged.\(varName) = try merger.merge(self.\(varName), withOlderConflicting: other.\(varName), commonAncestor: commonAncestor?.\(varName))
+                        merged.\(varName) = try merger.merge(self.\(varName), withSubordinate: other.\(varName), commonAncestor: commonAncestor.\(varName))
                     }
                     """
             case .setMerge:
@@ -150,7 +150,7 @@ public struct ForkedModelMacro: ExtensionMacro {
                     """
                     do {
                         let merger = SetMerger<\(elementType)>()
-                        merged.\(varName) = try merger.merge(self.\(varName), withOlderConflicting: other.\(varName), commonAncestor: commonAncestor?.\(varName))
+                        merged.\(varName) = try merger.merge(self.\(varName), withSubordinate: other.\(varName), commonAncestor: commonAncestor.\(varName))
                     }
                     """
             case .dictionaryMerge:
@@ -161,7 +161,7 @@ public struct ForkedModelMacro: ExtensionMacro {
                     """
                     do {
                         let merger = DictionaryMerger<\(key), \(value)>()
-                        merged.\(varName) = try merger.merge(self.\(varName), withOlderConflicting: other.\(varName), commonAncestor: commonAncestor?.\(varName))
+                        merged.\(varName) = try merger.merge(self.\(varName), withSubordinate: other.\(varName), commonAncestor: commonAncestor.\(varName))
                     }
                     """
             case .textMerge:
@@ -172,7 +172,7 @@ public struct ForkedModelMacro: ExtensionMacro {
                     """
                     do {
                         let merger = TextMerger()
-                        merged.\(varName) = try merger.merge(self.\(varName), withOlderConflicting: other.\(varName), commonAncestor: commonAncestor?.\(varName))
+                        merged.\(varName) = try merger.merge(self.\(varName), withSubordinate: other.\(varName), commonAncestor: commonAncestor.\(varName))
                     }
                     """
             }
@@ -189,7 +189,7 @@ public struct ForkedModelMacro: ExtensionMacro {
             case .mergeableValue, .mergeableArray, .mergeableSet, .mergeableDictionary:
                 expr =
                     """
-                    merged.\(BackedPropertyMacro.backingPropertyPrefix + varName) = try self.\(BackedPropertyMacro.backingPropertyPrefix + varName).merged(withOlderConflicting: other.\(BackedPropertyMacro.backingPropertyPrefix + varName), commonAncestor: commonAncestor?.\(BackedPropertyMacro.backingPropertyPrefix + varName))
+                    merged.\(BackedPropertyMacro.backingPropertyPrefix + varName) = try self.\(BackedPropertyMacro.backingPropertyPrefix + varName).merged(withSubordinate: other.\(BackedPropertyMacro.backingPropertyPrefix + varName), commonAncestor: commonAncestor.\(BackedPropertyMacro.backingPropertyPrefix + varName))
                     """
             }
             
@@ -201,7 +201,7 @@ public struct ForkedModelMacro: ExtensionMacro {
         if expressions.isEmpty {
             declSyntax = """
                 extension \(type.trimmed): Forked.Mergeable {
-                    public func merged(withOlderConflicting other: Self, commonAncestor: Self?) throws -> Self {
+                    public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
                         return self
                     }
                 }
@@ -209,7 +209,7 @@ public struct ForkedModelMacro: ExtensionMacro {
         } else {
             declSyntax = """
                 extension \(type.trimmed): Forked.Mergeable {
-                    public func merged(withOlderConflicting other: Self, commonAncestor: Self?) throws -> Self {
+                    public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
                         var merged = self
                         \(raw: expressions.joined(separator: "\n"))
                         return merged

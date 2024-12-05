@@ -66,7 +66,7 @@ struct MergingSetSuite {
         b.insert(8)
         b.insert(9)
         
-        let c = try a.merged(with: b)
+        let c = try a.merged(withSubordinate: b, commonAncestor: a)
         #expect(c.values == Set([7,8,9,1,2,3]))
     }
     
@@ -83,14 +83,14 @@ struct MergingSetSuite {
         b.insert(9)
         b.remove(1) // 7,8,9
         
-        let d = try b.merged(with: a)
+        let d = try b.merged(withSubordinate: a, commonAncestor: a)
         #expect(d.values == Set([2,3,7,8,9]))
     }
 
     @Test mutating func multipleMerges() throws {
         a.values = [1,2,3]
         
-        b = try b.merged(with: a)
+        b = try b.merged(withSubordinate: a, commonAncestor: a)
         
         b.insert(10)
         b.remove(10)
@@ -100,7 +100,7 @@ struct MergingSetSuite {
         
         a.insert(6) // [1,2,3,6]
         
-        #expect(try a.merged(with: b).values == Set([1,2,3,5,6]))
+        #expect(try a.merged(withSubordinate: b, commonAncestor: a).values == Set([1,2,3,5,6]))
     }
     
     @Test mutating func idempotency() throws {
@@ -116,9 +116,9 @@ struct MergingSetSuite {
         b.insert(9)
         b.remove(8)
         
-        let c = try a.merged(with: b)
-        let d = try c.merged(with: b)
-        let e = try c.merged(with: a)
+        let c = try a.merged(withSubordinate: b, commonAncestor: a)
+        let d = try c.merged(withSubordinate: b, commonAncestor: a)
+        let e = try c.merged(withSubordinate: a, commonAncestor: a)
         #expect(c.values == d.values)
         #expect(c.values == e.values)
     }
@@ -136,8 +136,8 @@ struct MergingSetSuite {
         b.insert(9)
         b.remove(8)
         
-        let c = try a.merged(with: b)
-        let d = try b.merged(with: a)
+        let c = try a.merged(withSubordinate: b, commonAncestor: a)
+        let d = try b.merged(withSubordinate: a, commonAncestor: a)
         #expect(d.values == Set([7,9,1,3]))
         #expect(d.values == c.values)
     }
@@ -155,8 +155,8 @@ struct MergingSetSuite {
         var c: MergeableSet<Int> = [10,11,12]
         c.remove(10)
 
-        let e = try a.merged(with: b).merged(with: c)
-        let f = try a.merged(with: b.merged(with: c))
+        let e = try a.merged(withSubordinate: b, commonAncestor: a).merged(withSubordinate: c, commonAncestor: a)
+        let f = try a.merged(withSubordinate: b.merged(withSubordinate: c, commonAncestor: a), commonAncestor: a)
         #expect(e.values == f.values)
     }
     
@@ -174,14 +174,14 @@ struct MergingSetSuite {
     @Test mutating func mergingWithEmptySet() throws {
         a.insert(1)
         a.insert(2)
-        let c = try a.merged(with: b) // b is empty
+        let c = try a.merged(withSubordinate: b, commonAncestor: a) // b is empty
         #expect(c.values == Set([1,2]))
     }
 
     @Test mutating func mergingEmptySetWithPopulatedSet() throws {
         b.insert(5)
         b.insert(6)
-        let c = try a.merged(with: b) // a is empty
+        let c = try a.merged(withSubordinate: b, commonAncestor: a) // a is empty
         #expect(c.values == Set([5,6]))
     }
 
@@ -195,7 +195,7 @@ struct MergingSetSuite {
     @Test mutating func mergingWithSelf() throws {
         a.insert(1)
         a.insert(2)
-        let c = try a.merged(with: a) // Merging with itself
+        let c = try a.merged(withSubordinate: a, commonAncestor: a) // Merging with itself
         #expect(c.values == a.values)
     }
 
@@ -216,7 +216,7 @@ struct MergingSetSuite {
         b.insert(1)
         b.insert(3) // 1,3
 
-        let c = try a.merged(with: b)
+        let c = try a.merged(withSubordinate: b, commonAncestor: a)
         #expect(c.values == Set([1,2,3]))
     }
 
@@ -227,7 +227,7 @@ struct MergingSetSuite {
         for i in 500...1500 {
             b.insert(i)
         }
-        let c = try a.merged(with: b)
+        let c = try a.merged(withSubordinate: b, commonAncestor: a)
         #expect(c.values == Set((1...1500)))
     }
 }

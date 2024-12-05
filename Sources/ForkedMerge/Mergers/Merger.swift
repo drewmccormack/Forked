@@ -7,5 +7,5 @@ import Forked
 /// diffing against a common ancestor.
 public protocol Merger {
     associatedtype T
-    func merge(_ value: T, withOlderConflicting other: T, commonAncestor: T?) throws -> T
+    func merge(_ value: T, withSubordinate other: T, commonAncestor: T) throws -> T
 }

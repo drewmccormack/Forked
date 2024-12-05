@@ -13,7 +13,7 @@ struct AccumulatingInt: Mergeable, Equatable {
     
     init() {}
     
-    func merged(withOlderConflicting other: AccumulatingInt, commonAncestor: AccumulatingInt?) throws -> AccumulatingInt {
-        AccumulatingInt(value: value + other.value - (commonAncestor?.value ?? 0))
+    func merged(withSubordinate other: AccumulatingInt, commonAncestor: AccumulatingInt) throws -> AccumulatingInt {
+        AccumulatingInt(value: value + other.value - commonAncestor.value)
     }
 }

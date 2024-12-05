@@ -30,9 +30,9 @@ final class ForkedModelMacrosSuite: XCTestCase {
             }
 
             extension TestModel: Forked.Mergeable {
-                public func merged(withOlderConflicting other: Self, commonAncestor: Self?) throws -> Self {
+                public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
                     var merged = self
-                    merged.text = try self.text.merged(withOlderConflicting: other.text, commonAncestor: commonAncestor?.text)
+                    merged.text = try self.text.merged(withSubordinate: other.text, commonAncestor: commonAncestor.text)
                     return merged
                 }
             }
@@ -56,11 +56,11 @@ final class ForkedModelMacrosSuite: XCTestCase {
             }
 
             extension TestModel: Forked.Mergeable {
-                public func merged(withOlderConflicting other: Self, commonAncestor: Self?) throws -> Self {
+                public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
                     var merged = self
                     do {
                 let merger = TextMerger()
-                merged.text = try merger.merge(self.text, withOlderConflicting: other.text, commonAncestor: commonAncestor?.text)
+                merged.text = try merger.merge(self.text, withSubordinate: other.text, commonAncestor: commonAncestor.text)
                     }
                     return merged
                 }
@@ -85,11 +85,11 @@ final class ForkedModelMacrosSuite: XCTestCase {
             }
 
             extension TestModel: Forked.Mergeable {
-                public func merged(withOlderConflicting other: Self, commonAncestor: Self?) throws -> Self {
+                public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
                     var merged = self
                     do {
                 let merger = ArrayMerger<String.Element>()
-                merged.text = try merger.merge(self.text, withOlderConflicting: other.text, commonAncestor: commonAncestor?.text)
+                merged.text = try merger.merge(self.text, withSubordinate: other.text, commonAncestor: commonAncestor.text)
                     }
                     return merged
                 }
@@ -114,11 +114,11 @@ final class ForkedModelMacrosSuite: XCTestCase {
             }
 
             extension TestModel: Forked.Mergeable {
-                public func merged(withOlderConflicting other: Self, commonAncestor: Self?) throws -> Self {
+                public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
                     var merged = self
                     do {
                 let merger = ArrayMerger<String.Element>()
-                merged.text = try merger.merge(self.text, withOlderConflicting: other.text, commonAncestor: commonAncestor?.text)
+                merged.text = try merger.merge(self.text, withSubordinate: other.text, commonAncestor: commonAncestor.text)
                     }
                     return merged
                 }
@@ -143,11 +143,11 @@ final class ForkedModelMacrosSuite: XCTestCase {
             }
 
             extension TestModel: Forked.Mergeable {
-                public func merged(withOlderConflicting other: Self, commonAncestor: Self?) throws -> Self {
+                public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
                     var merged = self
                     do {
                 let merger = ArrayOfIdentifiableMerger<String.Element>()
-                merged.text = try merger.merge(self.text, withOlderConflicting: other.text, commonAncestor: commonAncestor?.text)
+                merged.text = try merger.merge(self.text, withSubordinate: other.text, commonAncestor: commonAncestor.text)
                     }
                     return merged
                 }
@@ -172,11 +172,11 @@ final class ForkedModelMacrosSuite: XCTestCase {
             }
 
             extension TestModel: Forked.Mergeable {
-                public func merged(withOlderConflicting other: Self, commonAncestor: Self?) throws -> Self {
+                public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
                     var merged = self
                     do {
                 let merger = SetMerger<Int>()
-                merged.ints = try merger.merge(self.ints, withOlderConflicting: other.ints, commonAncestor: commonAncestor?.ints)
+                merged.ints = try merger.merge(self.ints, withSubordinate: other.ints, commonAncestor: commonAncestor.ints)
                     }
                     return merged
                 }
@@ -201,11 +201,11 @@ final class ForkedModelMacrosSuite: XCTestCase {
             }
 
             extension TestModel: Forked.Mergeable {
-                public func merged(withOlderConflicting other: Self, commonAncestor: Self?) throws -> Self {
+                public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
                     var merged = self
                     do {
                 let merger = DictionaryMerger<String, Int>()
-                merged.ints = try merger.merge(self.ints, withOlderConflicting: other.ints, commonAncestor: commonAncestor?.ints)
+                merged.ints = try merger.merge(self.ints, withSubordinate: other.ints, commonAncestor: commonAncestor.ints)
                     }
                     return merged
                 }
@@ -230,11 +230,11 @@ final class ForkedModelMacrosSuite: XCTestCase {
             }
 
             extension TestModel: Forked.Mergeable {
-                public func merged(withOlderConflicting other: Self, commonAncestor: Self?) throws -> Self {
+                public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
                     var merged = self
                     do {
                 let merger = TextMerger()
-                merged.text = try merger.merge(self.text, withOlderConflicting: other.text, commonAncestor: commonAncestor?.text)
+                merged.text = try merger.merge(self.text, withSubordinate: other.text, commonAncestor: commonAncestor.text)
                     }
                     return merged
                 }
@@ -279,10 +279,10 @@ final class ForkedModelMacrosSuite: XCTestCase {
             }
 
             extension TestModel: Forked.Mergeable {
-                public func merged(withOlderConflicting other: Self, commonAncestor: Self?) throws -> Self {
+                public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
                     var merged = self
-                    merged._text = try self._text.merged(withOlderConflicting: other._text, commonAncestor: commonAncestor?._text)
-                    merged._ints = try self._ints.merged(withOlderConflicting: other._ints, commonAncestor: commonAncestor?._ints)
+                    merged._text = try self._text.merged(withSubordinate: other._text, commonAncestor: commonAncestor._text)
+                    merged._ints = try self._ints.merged(withSubordinate: other._ints, commonAncestor: commonAncestor._ints)
                     return merged
                 }
             }
@@ -327,18 +327,14 @@ final class ForkedModelMacrosSuite: XCTestCase {
             }
 
             extension User: Forked.Mergeable {
-                public func merged(withOlderConflicting other: Self, commonAncestor: Self?) throws -> Self {
+                public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
                     var merged = self
                     if  let anyEquatableSelf = ForkedEquatable(self.name),
-                case let anyEquatableCommon = commonAncestor.flatMap({
-                            ForkedEquatable($0.name)
-                        }) {
+                case let anyEquatableCommon = ForkedEquatable(commonAncestor.name) {
                 merged.name = anyEquatableSelf != anyEquatableCommon ? self.name : other.name
                     }
                     if  let anyEquatableSelf = ForkedEquatable(self.age),
-                        case let anyEquatableCommon = commonAncestor.flatMap({
-                            ForkedEquatable($0.age)
-                        }) {
+                        case let anyEquatableCommon = ForkedEquatable(commonAncestor.age) {
                         merged.age = anyEquatableSelf != anyEquatableCommon ? self.age : other.age
                     }
                     return merged
@@ -346,13 +342,13 @@ final class ForkedModelMacrosSuite: XCTestCase {
             }
 
             extension Note: Forked.Mergeable {
-                public func merged(withOlderConflicting other: Self, commonAncestor: Self?) throws -> Self {
+                public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
                     var merged = self
                     do {
                 let merger = TextMerger()
-                merged.text = try merger.merge(self.text, withOlderConflicting: other.text, commonAncestor: commonAncestor?.text)
+                merged.text = try merger.merge(self.text, withSubordinate: other.text, commonAncestor: commonAncestor.text)
                     }
-                    merged._title = try self._title.merged(withOlderConflicting: other._title, commonAncestor: commonAncestor?._title)
+                    merged._title = try self._title.merged(withSubordinate: other._title, commonAncestor: commonAncestor._title)
                     return merged
                 }
             }

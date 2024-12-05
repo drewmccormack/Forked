@@ -90,9 +90,9 @@ public struct MergeableSet<T: Hashable> {
     }
 }
 
-extension MergeableSet: ConflictFreeMergeable {
+extension MergeableSet: Mergeable {
     
-    public func merged(with other: Self) throws -> Self {
+    public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
         var result = self
         result.metadataByValue = other.metadataByValue.reduce(into: metadataByValue) { result, entry in
             let firstMetadata = result[entry.key]

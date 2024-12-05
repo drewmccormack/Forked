@@ -108,83 +108,10 @@ extension MergeableDictionary: ExpressibleByDictionaryLiteral {
     
 }
 
-extension MergeableDictionary: ConflictFreeMergeable {
+extension MergeableDictionary: Mergeable {
     
-    public func merged(with other: Self) throws -> Self {
-        try mergedNonRecursively(with: other)
-    }
-    
-}
-
-extension MergeableDictionary where Value: ConflictFreeMergeable {
-    
-    /// If the values are themselves ConflictFreeMergeable, we don't have to merge values atomically.
-    /// Instead of just choosing one value or the other, we can merge the values themselves. This merge
-    /// method does exactly that.
-    /// You get a recursive merge, as the dictionary merges, but also the values in the dictionary
-    public func merged(with other: Self) throws -> Self {
-        try mergedRecursively(withOlderConflicting: other, commonAncestor: nil) { first, second, _ in
-            try first.merged(with: second)
-        }
-    }
-    
-    func merged(withOlderConflicting other: Self, commonAncestor: Self?) throws -> Self {
-        try merged(with: other)
-    }
-    
-}
-
-extension MergeableDictionary where Value: Mergeable {
-    
-    /// Even though the values contained are mergable, they don't support conflict-free merging.
-    /// This means they will be merged atomically. If you want the values themselves to be merged,
-    /// call the 3-way merge func, ie `merged(withOlderConflicting:commonAncestor:)`
-    public func merged(with other: Self) throws -> Self {
-        try mergedNonRecursively(with: other)
-    }
-    
-    /// If the values are themselves Mergeable, but not conflict-free, we can only use 3-way merge with common ancestor.
-    /// You get a recursive merge, as the dictionary merges, but also the values in the dictionary
-    public func merged(withOlderConflicting other: Self, commonAncestor: Self?) throws -> Self {
-        try mergedRecursively(withOlderConflicting: other, commonAncestor: commonAncestor) { first, second, ancestor in
-            try first.merged(withOlderConflicting: second, commonAncestor: ancestor)
-        }
-    }
-    
-}
-
-private extension MergeableDictionary {
-    
-    func mergedRecursively(withOlderConflicting other: Self, commonAncestor: Self?, mergeValueFunc: (_ first: Value, _ second: Value, _ ancestor: Value?) throws -> Value) throws -> Self {
-        var haveTicked = false
-        var resultDictionary = self
-        resultDictionary.currentTimestamp = max(self.currentTimestamp, other.currentTimestamp)
-        resultDictionary.valueContainersByKey = try other.valueContainersByKey.reduce(into: valueContainersByKey) { result, entry in
-            let first = result[entry.key]
-            let second = entry.value
-            if let first {
-                if !first.isDeleted, !second.isDeleted {
-                    // Merge the values
-                    if !haveTicked {
-                        resultDictionary.currentTimestamp.tick()
-                        haveTicked = true
-                    }
-                    let ancestor = commonAncestor?.valueContainersByKey[entry.key]
-                    let newValue = try mergeValueFunc(first.value, second.value, ancestor?.value)
-                    let newValueContainer = ValueContainer(value: newValue, timestamp: resultDictionary.currentTimestamp)
-                    result[entry.key] = newValueContainer
-                } else {
-                    // At least one deletion, so just revert to atomic merge
-                    result[entry.key] = first.timestamp > second.timestamp ? first : second
-                }
-            } else {
-                result[entry.key] = second
-            }
-        }
-        return resultDictionary
-    }
-    
-    func mergedNonRecursively(with other: Self) throws -> Self {
+    /// This is a non-recursive version used when the values are not mergeable.
+    public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
         var result = self
         result.valueContainersByKey = other.valueContainersByKey.reduce(into: valueContainersByKey) { result, entry in
             let firstValueContainer = result[entry.key]
@@ -197,6 +124,41 @@ private extension MergeableDictionary {
         }
         result.currentTimestamp = max(self.currentTimestamp, other.currentTimestamp)
         return result
+    }
+    
+}
+
+extension MergeableDictionary where Value: Mergeable {
+    
+    /// If the values are themselves Mergeable, but not conflict-free, we can only use 3-way merge with common ancestor.
+    /// You get a recursive merge, as the dictionary merges, but also the values in the dictionary
+    public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
+        var haveTicked = false
+        var resultDictionary = self
+        resultDictionary.currentTimestamp = max(self.currentTimestamp, other.currentTimestamp)
+        resultDictionary.valueContainersByKey = try other.valueContainersByKey.reduce(into: valueContainersByKey) { result, entry in
+            let first = result[entry.key]
+            let second = entry.value
+            let ancestor = commonAncestor.valueContainersByKey[entry.key]
+            if let first {
+                if !first.isDeleted, !second.isDeleted, let ancestor, !ancestor.isDeleted {
+                    // Merge the values
+                    if !haveTicked {
+                        resultDictionary.currentTimestamp.tick()
+                        haveTicked = true
+                    }
+                    let newValue = try first.value.merged(withSubordinate: second.value, commonAncestor: ancestor.value)
+                    let newValueContainer = ValueContainer(value: newValue, timestamp: resultDictionary.currentTimestamp)
+                    result[entry.key] = newValueContainer
+                } else {
+                    // At least one deletion, so just revert to atomic merge
+                    result[entry.key] = first.timestamp > second.timestamp ? first : second
+                }
+            } else {
+                result[entry.key] = second
+            }
+        }
+        return resultDictionary
     }
     
 }

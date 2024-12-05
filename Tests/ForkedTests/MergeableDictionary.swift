@@ -5,17 +5,19 @@ import Forked
 
 struct MergingDictionarySuite {
 
+    let ancestor = MergeableDictionary<String, Int>()
     var a: MergeableDictionary<String, Int>
     var b: MergeableDictionary<String, Int>
 
-    var dictOfSetsA: MergeableDictionary<String, MergeableSet<Int>> = [:]
-    var dictOfSetsB: MergeableDictionary<String, MergeableSet<Int>> = [:]
+    var dictOfSetsAncestor: MergeableDictionary<String, MergeableSet<Int>> = [:]
+    var dictOfSetsA: MergeableDictionary<String, MergeableSet<Int>>
+    var dictOfSetsB: MergeableDictionary<String, MergeableSet<Int>>
     
     init() {
-        a = [:]
-        b = a
-        dictOfSetsA = .init()
-        dictOfSetsB = dictOfSetsA
+        a = ancestor
+        b = ancestor
+        dictOfSetsA = dictOfSetsAncestor
+        dictOfSetsB = dictOfSetsAncestor
     }
 
     @Test func initialCreation() {
@@ -82,7 +84,7 @@ struct MergingDictionarySuite {
         b["3"] = 6
         b["4"] = 7
 
-        let c = try a.merged(with: b)
+        let c = try a.merged(withSubordinate: b, commonAncestor: ancestor)
         #expect(c.values.sorted() == [4, 5, 6, 7, 8])
     }
 
@@ -91,7 +93,7 @@ struct MergingDictionarySuite {
         a["2"] = 2
         a["3"] = 3
 
-        b = try b.merged(with: a)
+        b = try b.merged(withSubordinate: a, commonAncestor: ancestor)
 
         b["4"] = 4
         b["4"] = nil
@@ -102,7 +104,7 @@ struct MergingDictionarySuite {
         b["4"] = 12
         a["6"] = 12
 
-        let c = try a.merged(with: b)
+        let c = try a.merged(withSubordinate: b, commonAncestor: ancestor)
         #expect(c.values.sorted() == [2, 3, 10, 11, 12, 12])
         #expect(c.keys.sorted() == ["1", "2", "3", "4", "5", "6"])
         #expect(c["1"] == 10)
@@ -121,9 +123,9 @@ struct MergingDictionarySuite {
         b["1"] = 4
         b["3"] = 6
 
-        let c = try a.merged(with: b)
-        let d = try c.merged(with: b)
-        let e = try c.merged(with: a)
+        let c = try a.merged(withSubordinate: b, commonAncestor: ancestor)
+        let d = try c.merged(withSubordinate: b, commonAncestor: ancestor)
+        let e = try c.merged(withSubordinate: a, commonAncestor: ancestor)
         #expect(c.dictionary == d.dictionary)
         #expect(c.dictionary == e.dictionary)
     }
@@ -138,8 +140,8 @@ struct MergingDictionarySuite {
         b["1"] = nil
         b["3"] = 6
 
-        let c = try a.merged(with: b)
-        let d = try b.merged(with: a)
+        let c = try a.merged(withSubordinate: b, commonAncestor: ancestor)
+        let d = try b.merged(withSubordinate: a, commonAncestor: ancestor)
         #expect(c.dictionary == d.dictionary)
     }
 
@@ -156,12 +158,16 @@ struct MergingDictionarySuite {
         var c = a
         c["1"] = nil
 
-        let e = try a.merged(with: b).merged(with: c)
-        let f = try a.merged(with: b.merged(with: c))
+        let e = try a.merged(withSubordinate: b, commonAncestor: ancestor).merged(withSubordinate: c, commonAncestor: ancestor)
+        let f = try a.merged(withSubordinate: b.merged(withSubordinate: c, commonAncestor: ancestor), commonAncestor: ancestor)
         #expect(e.values == f.values)
     }
 
-    @Test mutating func mergingOfConflictFreeMergeableValues() throws {
+    @Test mutating func mergingOfMergeableSetValues() throws {
+        dictOfSetsAncestor["3"] = .init()
+        dictOfSetsA = dictOfSetsAncestor
+        dictOfSetsB = dictOfSetsAncestor
+        
         dictOfSetsA["1"] = .init(array: [1, 2, 3])
         dictOfSetsA["2"] = .init(array: [3, 4, 5])
         dictOfSetsA["3"] = .init(array: [1])
@@ -171,18 +177,19 @@ struct MergingDictionarySuite {
         dictOfSetsB["1"] = nil
         dictOfSetsB["3"]!.insert(6)
 
-        let dictOfSetC = try dictOfSetsA.merged(with: dictOfSetsB)
-        #expect(dictOfSetC["3"]!.values == [1, 3, 4, 5, 6])
+        let dictOfSetC = try dictOfSetsA.merged(withSubordinate: dictOfSetsB, commonAncestor: dictOfSetsAncestor)
+        #expect(dictOfSetC["3"]!.values == Set([1, 3, 4, 5, 6]))
         #expect(dictOfSetC["1"] == nil)
-        #expect(dictOfSetC["2"]!.values == [3, 4, 5])
+        #expect(dictOfSetC["2"]!.values == Set([3, 4, 5]))
     }
     
-    @Test mutating func mergingOfNonConflictFreeMergeableValues() async throws {
+    @Test mutating func mergingOfMergeableValues() async throws {
         var a: MergeableDictionary<String, AccumulatingInt> = [:]
         
         a["1"] = .init(value: 1)
         a["2"] = .init(value: 2)
         a["3"] = .init(value: 3)
+        a["4"] = .init(value: 0)
         
         let ancestor = a
         var b = a
@@ -195,18 +202,11 @@ struct MergingDictionarySuite {
         b["4"] = .init(value: 20)
 
         // Use mergable with common ancestor to merge values
-        let c = try a.merged(withOlderConflicting: b, commonAncestor: ancestor)
+        let c = try a.merged(withSubordinate: b, commonAncestor: ancestor)
         #expect(c["1"]!.value == 4)
         #expect(c["2"]!.value == 3)
         #expect(c["3"]!.value == 4)
         #expect(c["4"]!.value == 30)
-        
-        // Atomic merge of values
-        let d = try a.merged(with: b)
-        #expect(d["1"]!.value == 3)
-        #expect(d["2"]!.value == 3)
-        #expect(d["3"]!.value == 4)
-        #expect([10, 20].contains(d["4"]!.value))
     }
 
     @Test mutating func codable() throws {

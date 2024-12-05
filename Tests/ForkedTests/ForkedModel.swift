@@ -40,7 +40,7 @@ struct ForkedModelSuite {
         let user1 = User(name: "Alice", age: 30)
         var user2 = user1
         user2.name = "Bob"
-        let user3 = try user2.merged(withOlderConflicting: user1, commonAncestor: user1)
+        let user3 = try user2.merged(withSubordinate: user1, commonAncestor: user1)
         #expect(user3.name == "Bob")
         #expect(user3.age == 30)
     }
@@ -51,7 +51,7 @@ struct ForkedModelSuite {
         var user2 = ancestor
         user1.name = "Bob Alice"
         user2.name = "Alice Bob"
-        let merged = try user2.merged(withOlderConflicting: user1, commonAncestor: ancestor)
+        let merged = try user2.merged(withSubordinate: user1, commonAncestor: ancestor)
         #expect(merged.name == "Alice Bob")
         #expect(merged.age == 30)
     }
@@ -62,7 +62,7 @@ struct ForkedModelSuite {
         var user2 = ancestor
         user1.name = "Bob Alice"
         user2.age = 40
-        let merged = try user2.merged(withOlderConflicting: user1, commonAncestor: ancestor)
+        let merged = try user2.merged(withSubordinate: user1, commonAncestor: ancestor)
         #expect(merged.name == "Bob Alice")
         #expect(merged.age == 40)
     }
@@ -73,7 +73,7 @@ struct ForkedModelSuite {
         var user2 = ancestor
         user1.name = "Bob Alice"
         user2.name = "Tom"
-        let merged = try user2.merged(withOlderConflicting: user1, commonAncestor: ancestor)
+        let merged = try user2.merged(withSubordinate: user1, commonAncestor: ancestor)
         #expect(merged.name == "Tom")
     }
     
@@ -83,7 +83,7 @@ struct ForkedModelSuite {
         var user2 = ancestor
         user1.name = "Bob Alice"
         user2.name = "Tom"
-        let merged = try user2.merged(withOlderConflicting: user1, commonAncestor: nil)
+        let merged = try user2.merged(withSubordinate: user1, commonAncestor: ancestor)
         #expect(merged.name == "Tom")
     }
     
@@ -95,7 +95,7 @@ struct ForkedModelSuite {
         note2.title = "Title 3"
         try? await Task.sleep(for: .milliseconds(1))
         note1.title = "Title 2"
-        let merged = try note2.merged(withOlderConflicting: note1, commonAncestor: ancestor)
+        let merged = try note2.merged(withSubordinate: note1, commonAncestor: ancestor)
         #expect(merged.title == "Title 2")
     }
     
@@ -106,7 +106,7 @@ struct ForkedModelSuite {
         var note2 = ancestor
         note2.description = "More Text"
         note1.description = "Text More"
-        let merged = try note2.merged(withOlderConflicting: note1, commonAncestor: ancestor)
+        let merged = try note2.merged(withSubordinate: note1, commonAncestor: ancestor)
         #expect(merged.description == "More Text More")
     }
 
@@ -117,7 +117,7 @@ struct ForkedModelSuite {
         var note2 = ancestor
         note1.pageWordCounts = [1, 3, 4]
         note2.pageWordCounts = [1, 2, 3, 4]
-        let merged = try note2.merged(withOlderConflicting: note1, commonAncestor: ancestor)
+        let merged = try note2.merged(withSubordinate: note1, commonAncestor: ancestor)
         #expect(merged.pageWordCounts == [1, 3, 4, 4])
     }
     
@@ -128,7 +128,7 @@ struct ForkedModelSuite {
         var note2 = ancestor
         note1.aliases = ["one"]
         note2.aliases = ["one", "four"]
-        let merged = try note2.merged(withOlderConflicting: note1, commonAncestor: ancestor)
+        let merged = try note2.merged(withSubordinate: note1, commonAncestor: ancestor)
         #expect(merged.aliases == ["one", "four"])
     }
     
@@ -139,7 +139,7 @@ struct ForkedModelSuite {
         var note2 = ancestor
         note1.items = [NoteItem(id: "1"), NoteItem(id: "3")]
         note2.items = [NoteItem(id: "3"), NoteItem(id: "1")]
-        let merged = try note2.merged(withOlderConflicting: note1, commonAncestor: ancestor)
+        let merged = try note2.merged(withSubordinate: note1, commonAncestor: ancestor)
         #expect(merged.items.map({ $0.id }) == ["3", "1"])
     }
     
@@ -150,7 +150,7 @@ struct ForkedModelSuite {
         var note2 = ancestor
         note1.tags = ["Tag1", "Tag4"]
         note2.tags = ["Tag1", "Tag2", "Tag3", "Tag5"]
-        let merged = try note2.merged(withOlderConflicting: note1, commonAncestor: ancestor)
+        let merged = try note2.merged(withSubordinate: note1, commonAncestor: ancestor)
         #expect(merged.tags == ["Tag1", "Tag4", "Tag5"])
     }
     
@@ -161,7 +161,7 @@ struct ForkedModelSuite {
         var note2 = ancestor
         note1.categories = ["A", "D"]
         note2.categories = ["C", "E"]
-        let merged = try note2.merged(withOlderConflicting: note1, commonAncestor: ancestor)
+        let merged = try note2.merged(withSubordinate: note1, commonAncestor: ancestor)
         #expect(merged.categories == ["D", "E"])
     }
 
@@ -172,7 +172,7 @@ struct ForkedModelSuite {
         var note2 = ancestor
         note1.counts = ["key1": 1]
         note2.counts = ["key2": 5, "key3": 6]
-        let merged = try note2.merged(withOlderConflicting: note1, commonAncestor: ancestor)
+        let merged = try note2.merged(withSubordinate: note1, commonAncestor: ancestor)
         #expect(merged.counts == ["key2": 5, "key3": 6])
     }
     
@@ -183,7 +183,7 @@ struct ForkedModelSuite {
         var note2 = ancestor
         note1.metadata = ["key1": "value3"]
         note2.metadata = ["key2": "value4", "key3": "value5"]
-        let merged = try note2.merged(withOlderConflicting: note1, commonAncestor: ancestor)
+        let merged = try note2.merged(withSubordinate: note1, commonAncestor: ancestor)
         #expect(merged.metadata == ["key2": "value4", "key3": "value5"])
     }
 }

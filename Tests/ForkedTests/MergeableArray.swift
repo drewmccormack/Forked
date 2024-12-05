@@ -59,7 +59,7 @@ struct MergeableArraySuite {
         b.append(8)
         b.append(9)
         
-        let c = try a.merged(with: b)
+        let c = try a.merged(withSubordinate: b, commonAncestor: a)
         #expect(c.values == [7, 8, 9, 1, 2, 3])
     }
     
@@ -76,7 +76,7 @@ struct MergeableArraySuite {
         b.append(9)
         b.remove(at: 1)
         
-        let d = try b.merged(with: a)
+        let d = try b.merged(withSubordinate: a, commonAncestor: a)
         #expect(d.values == [7, 9, 1, 3])
     }
     
@@ -85,7 +85,7 @@ struct MergeableArraySuite {
         a.append(2)
         a.append(3)
         
-        b = try b.merged(with: a)
+        b = try b.merged(withSubordinate: a, commonAncestor: a)
         
         b.insert(1, at: 0)
         b.remove(at: 0)
@@ -95,7 +95,7 @@ struct MergeableArraySuite {
         
         a.append(6) // [1,2,3,6]
         
-        #expect(try a.merged(with: b).values == [1, 1, 2, 3, 6, 5])
+        #expect(try a.merged(withSubordinate: b, commonAncestor: a).values == [1, 1, 2, 3, 6, 5])
     }
     
     @Test mutating func idempotency() throws {
@@ -111,9 +111,9 @@ struct MergeableArraySuite {
         b.append(9)
         b.remove(at: 1)
         
-        let c = try a.merged(with: b)
-        let d = try c.merged(with: b)
-        let e = try c.merged(with: a)
+        let c = try a.merged(withSubordinate: b, commonAncestor: a)
+        let d = try c.merged(withSubordinate: b, commonAncestor: a)
+        let e = try c.merged(withSubordinate: a, commonAncestor: a)
         #expect(c.values == d.values)
         #expect(c.values == e.values)
     }
@@ -131,8 +131,8 @@ struct MergeableArraySuite {
         b.append(9)
         b.remove(at: 1)
         
-        let c = try a.merged(with: b)
-        let d = try b.merged(with: a)
+        let c = try a.merged(withSubordinate: b, commonAncestor: a)
+        let d = try b.merged(withSubordinate: a, commonAncestor: a)
         #expect(d.values == [7, 9, 1, 3])
         #expect(d.values == c.values)
     }
@@ -150,8 +150,8 @@ struct MergeableArraySuite {
         var c: MergeableArray<Int> = [10, 11, 12]
         c.remove(at: 0)
 
-        let e = try a.merged(with: b).merged(with: c)
-        let f = try a.merged(with: b.merged(with: c))
+        let e = try a.merged(withSubordinate: b, commonAncestor: a).merged(withSubordinate: c, commonAncestor: a)
+        let f = try a.merged(withSubordinate: b.merged(withSubordinate: c, commonAncestor: a), commonAncestor: a)
         #expect(e.values == f.values)
     }
     
@@ -169,21 +169,21 @@ struct MergeableArraySuite {
     @Test mutating func mergeWithEmptyArray() throws {
         a.append(1)
         a.append(2)
-        let c = try a.merged(with: b) // b is empty
+        let c = try a.merged(withSubordinate: b, commonAncestor: a) // b is empty
         #expect(c.values == [1, 2])
     }
 
     @Test mutating func mergeEmptyArrayWithPopulatedArray() throws {
         b.append(5)
         b.append(6)
-        let c = try a.merged(with: b) // a is empty
+        let c = try a.merged(withSubordinate: b, commonAncestor: a) // a is empty
         #expect(c.values == [5, 6])
     }
 
     @Test mutating func mergingWithSelf() throws {
         a.append(1)
         a.append(2)
-        let c = try a.merged(with: a) // Merging with itself
+        let c = try a.merged(withSubordinate: a, commonAncestor: a) // Merging with itself
         #expect(c.values == a.values)
     }
 
@@ -202,7 +202,7 @@ struct MergeableArraySuite {
         b.append(5)
         b.append(6)
         
-        let c = try a.merged(with: b)
+        let c = try a.merged(withSubordinate: b, commonAncestor: a)
         #expect(c.values == [1, 2, 3, 4, 5, 6] || c.values == [4, 5, 6, 1, 2, 3])
     }
 
@@ -248,7 +248,7 @@ struct MergeableArraySuite {
         array2.append(Item(id: "a", value: 2))  // Update 'a'
         array2.append(Item(id: "d", value: 1))  // Add new item
         
-        let merged = try array1.merged(with: array2)
+        let merged = try array1.merged(withSubordinate: array2, commonAncestor: array1)
         let uniqued = merged.entriesUniquelyIdentified()
         
         // Should have 4 items with most recent values

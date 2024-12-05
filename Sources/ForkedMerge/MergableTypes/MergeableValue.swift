@@ -40,9 +40,9 @@ public struct MergeableValue<T> {
     
 }
 
-extension MergeableValue: ConflictFreeMergeable {
+extension MergeableValue: Mergeable {
     
-    public func merged(with other: Self) throws -> Self {
+    public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
         entry.isOrdered(after: other.entry) ? self : other
     }
     

@@ -5,8 +5,7 @@ struct Pair: Equatable, Mergeable {
     var a: Int
     var b: Int
 
-    func merged(withOlderConflicting other: Pair, commonAncestor: Pair?) throws -> Pair {
-        guard let commonAncestor else { return self }
+    func merged(withSubordinate other: Pair, commonAncestor: Pair) throws -> Pair {
         var result = self
         if self.a == commonAncestor.a && other.a != commonAncestor.a {
             result.a = other.a
