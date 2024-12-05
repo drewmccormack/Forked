@@ -10,10 +10,12 @@
 		070038D92CCA6E9000015444 /* Forked in Frameworks */ = {isa = PBXBuildFile; productRef = 070038D82CCA6E9000015444 /* Forked */; };
 		070038DB2CCA6E9000015444 /* ForkedCloudKit in Frameworks */ = {isa = PBXBuildFile; productRef = 070038DA2CCA6E9000015444 /* ForkedCloudKit */; };
 		0716CE8F2CCBC0BF00A726BD /* AsyncAlgorithms in Frameworks */ = {isa = PBXBuildFile; productRef = 0716CE8E2CCBC0BF00A726BD /* AsyncAlgorithms */; };
+		07B9746B2D01E48800D59D02 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 07B9746A2D01E48200D59D02 /* README.md */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		070038C62CCA6E3200015444 /* Forking Simple iCloud.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Forking Simple iCloud.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		07B9746A2D01E48200D59D02 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -41,6 +43,7 @@
 		070038BD2CCA6E3200015444 = {
 			isa = PBXGroup;
 			children = (
+				07B9746A2D01E48200D59D02 /* README.md */,
 				070038C82CCA6E3200015444 /* Forking Simple iCloud */,
 				070038C72CCA6E3200015444 /* Products */,
 			);
@@ -125,6 +128,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				07B9746B2D01E48800D59D02 /* README.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

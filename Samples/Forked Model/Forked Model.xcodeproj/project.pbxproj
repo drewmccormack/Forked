@@ -9,10 +9,12 @@
 /* Begin PBXBuildFile section */
 		07147CD22CE76E2F00EBA2FD /* Forked in Frameworks */ = {isa = PBXBuildFile; productRef = 07147CD12CE76E2F00EBA2FD /* Forked */; };
 		07147CD42CE76E2F00EBA2FD /* ForkedModel in Frameworks */ = {isa = PBXBuildFile; productRef = 07147CD32CE76E2F00EBA2FD /* ForkedModel */; };
+		07B9747A2D01E61800D59D02 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 07B974792D01E61300D59D02 /* README.md */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		07147CBF2CE76DF500EBA2FD /* Forked Model.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Forked Model.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		07B974792D01E61300D59D02 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -39,6 +41,7 @@
 		07147CB62CE76DF500EBA2FD = {
 			isa = PBXGroup;
 			children = (
+				07B974792D01E61300D59D02 /* README.md */,
 				07147CC12CE76DF500EBA2FD /* Forked Model */,
 				07147CC02CE76DF500EBA2FD /* Products */,
 			);
@@ -121,6 +124,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				07B9747A2D01E61800D59D02 /* README.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
