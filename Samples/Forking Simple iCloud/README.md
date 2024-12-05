@@ -3,13 +3,13 @@
 
 This is about the simplest app you could make with the `ForkedCloudKit` package. It's a simple text editor that syncs with iCloud.
 
-This app simple stores a standard `Codable` struct (`Model`) in a record in CloudKit. 
+This app simply stores a standard `Codable` struct (`Model`) in a record in CloudKit. 
 
-The `ForkedCloudKit` package takes on a bunch on task so you don't have to...
+The `ForkedCloudKit` package takes on a bunch of tasks so you don't have to...
 
-1. It creates two branches in the `ForkedResource` which is uses to keep track of the state.
+1. It creates two branches in the `ForkedResource` which it uses to keep track of the state.
 2. It monitors changes in CloudKit, and will import new data into the `ForkedResource`.
-3. It will automatically upload new changes made to the `.main` fork.
+3. It will automatically upload new changes merged into to the `.main` fork.
 4. It automatically merges the CloudKit forks into and from `.main`.
 
 There are some other aspects of this sample that are interesting:
