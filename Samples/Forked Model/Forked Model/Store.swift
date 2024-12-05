@@ -8,13 +8,13 @@ import SwiftUI
 struct AccumulatingInt: Mergeable {
     var value: Int = 0
     func merged(withSubordinate other: AccumulatingInt, commonAncestor: AccumulatingInt) throws -> AccumulatingInt {
-        return AccumulatingInt(value: self.value + other.value - (commonAncestor?.value ?? 0))
+        return AccumulatingInt(value: self.value + other.value - commonAncestor.value)
     }
 }
 
 @ForkedModel
 struct Model {
-    @Merged(using: .textMerge) var text: String = "Change this text"
+    @Merged var text: String = "Change this text"
     @Merged var count: AccumulatingInt = .init()
 }
 
