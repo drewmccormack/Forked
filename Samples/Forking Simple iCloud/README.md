@@ -1,7 +1,8 @@
 
 # Sample: Forking Simple iCloud
 
-This is about the simplest app you could make with the `ForkedCloudKit` package. It's a simple text editor that syncs with iCloud.
+This is about the simplest app you could make with the `ForkedCloudKit` package. 
+It's a simple text editor that syncs with iCloud.
 
 This app simply stores a standard `Codable` struct (`Model`) in a record in CloudKit. 
 
@@ -24,3 +25,6 @@ If you want to use CloudKit with Forked, don't forget to setup the entitlements 
 2. Turn on background modes for background fetch and remote notifications.
 3. Configure the `CloudKitExchange` to use the `CKContainer` you have setup, and the record name (`id`).
 
+Once you have been testing in Xcode with a debug version for a while, and are ready to go to
+production, you should go to the [CloudKit Dashboard](https://icloud.developer.apple.com), and 
+promote the development schema to production.

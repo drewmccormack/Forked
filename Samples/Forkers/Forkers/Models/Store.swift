@@ -35,6 +35,7 @@ class Store {
             model.forkers = newValue
             try! forkedModel.update(.ui, with: model)
             self.displayedForkers = newValue
+            try! forkedModel.mergeIntoMain(from: .ui) // Merge to main so it uploads
         }
     }
     
@@ -62,6 +63,7 @@ class Store {
         // Setup streams to monitor changes
         setupStreams()
         
+        // Save if we initialized the repo
         if shouldSave {
             save()
         }
