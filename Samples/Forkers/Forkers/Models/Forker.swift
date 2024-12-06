@@ -4,6 +4,11 @@ import ForkedMerge
 import Forked
 
 @ForkedModel
+struct Forkers: Codable {
+    @Merged var forkers: [Forker] = []
+}
+
+@ForkedModel
 struct Forker: Identifiable, Codable, Hashable {
     var id: UUID = .init()
     var firstName: String = ""
