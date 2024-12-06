@@ -3,21 +3,24 @@ import SwiftUI
 struct ForkerDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(Store.self) private var store
-    let forker: Forker
-    var onSave: ((Forker) -> Void)?
     
-    @State private var editedForker: Forker
+    let existingForkerId: Forker.ID?
+    var forkerIsNew: Bool { existingForkerId == nil }
+            
+    @State private var editedForker: Forker = Forker()
     @State private var isEditing = false
     
-    private var isValid: Bool {
+    private var canSave: Bool {
         !editedForker.firstName.isEmpty || !editedForker.lastName.isEmpty
     }
     
-    init(forker: Forker, onSave: ((Forker) -> Void)? = nil) {
-        self.forker = forker
-        self.onSave = onSave
-        self._editedForker = State(initialValue: forker)
-        self._isEditing = State(initialValue: onSave != nil)
+    private func resetEditedForker() {
+        store.prepareForEdits()
+        if let existingForkerId {
+            editedForker = store.editingForker(withId: existingForkerId) ?? Forker()
+        } else {
+            editedForker = Forker()
+        }
     }
     
     var body: some View {
@@ -101,10 +104,14 @@ struct ForkerDetailView: View {
                 }
             }
         }
+        .onAppear {
+            resetEditedForker()
+            isEditing = forkerIsNew
+        }
         .navigationTitle(editedForker.firstName.isEmpty ? "New Forker" : "\(editedForker.firstName) \(editedForker.lastName)")
         .navigationBarBackButtonHidden(isEditing)
         .toolbar {
-            if onSave != nil {
+            if forkerIsNew {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") {
                         dismiss()
@@ -112,10 +119,10 @@ struct ForkerDetailView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Add") {
-                        onSave?(editedForker)
+                        store.addForker(editedForker)
                         dismiss()
                     }
-                    .disabled(!isValid)
+                    .disabled(!canSave)
                 }
             } else {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -124,7 +131,7 @@ struct ForkerDetailView: View {
                             store.updateForker(editedForker)
                             isEditing = false
                         }
-                        .disabled(!isValid)
+                        .disabled(!canSave)
                     } else {
                         Button("Edit") {
                             isEditing = true
@@ -135,7 +142,7 @@ struct ForkerDetailView: View {
                 if isEditing {
                     ToolbarItem(placement: .topBarLeading) {
                         Button("Cancel") {
-                            editedForker = forker
+                            resetEditedForker()
                             isEditing = false
                         }
                     }

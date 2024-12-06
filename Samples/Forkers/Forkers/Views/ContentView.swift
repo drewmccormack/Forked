@@ -27,7 +27,7 @@ struct ContentView: View {
             }
             .navigationTitle("Forkers")
             .navigationDestination(for: Forker.self) { forker in
-                ForkerDetailView(forker: forker)
+                ForkerDetailView(existingForkerId: forker.id)
                     .environment(store)
             }
             .toolbar {
@@ -44,9 +44,7 @@ struct ContentView: View {
         }
         .sheet(isPresented: $showingAddForker) {
             NavigationStack {
-                ForkerDetailView(forker: Forker()) { newForker in
-                    store.addForker(newForker)
-                }
+                ForkerDetailView(existingForkerId: nil)
             }
         }
     }

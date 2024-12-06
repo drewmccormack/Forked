@@ -38,7 +38,8 @@ class Store {
     // Forkers that are currently in the .ui fork.
     // This branch is used to update the displayedForkers for SwiftUI.
     // Any sync changes will automatically be merged in here, as well
-    // as any editing commits. We use an AsyncStream to do the updates.
+    // as any editing commits. We use an AsyncStream to do the updates
+    // in a data driver way.
     private var uiForkers: [Forker] {
         try! forkedModel.resource(of: .ui)!.forkers
     }
@@ -81,7 +82,7 @@ class Store {
         try forkedModel.syncMain(with: [.ui, .editing])
         
         // Setup CloudKitExchange
-        cloudKitExchange = try .init(id: "ForkedForkers", forkedResource: forkedModel)
+        cloudKitExchange = try .init(id: "Forkers", forkedResource: forkedModel)
         
         // Set displayed forkers to what is in the repo
         displayedForkers = uiForkers
@@ -111,16 +112,15 @@ extension Store {
 
 extension Store {
     
-    func startEdits() {
-        try! forkedModel.syncMain(with: [.ui])
-        try! forkedModel.mergeFromMain(into: .editing)
+    func prepareForEdits() {
+        try! forkedModel.syncMain(with: [.editing])
     }
     
     func commitEdits() {
         try! forkedModel.syncMain(with: [.editing])
     }
     
-    func cancelEdits() {
+    func rollbackEdits() {
         try! forkedModel.delete(.editing)
         try! forkedModel.create(.editing)
         try! forkedModel.syncMain(with: [.editing])
@@ -133,28 +133,32 @@ extension Store {
 
 extension Store {
     
+    func editingForker(withId id: Forker.ID) -> Forker? {
+        editingForkers.first(where: { $0.id == id })
+    }
+    
     func addForker(_ forker: Forker) {
-        // Add the forker, but don't commit yet.
-        // The user can still back out of the changes by
-        // pressing cancel.
         editingForkers.append(forker)
+        commitEdits()
     }
     
     func updateForker(_ forker: Forker) {
-        // Stage the change, but don't commit until user presses save,
-        // because user could cancel.
         if let index = editingForkers.firstIndex(where: { $0.id == forker.id }) {
             editingForkers[index] = forker
         }
+        commitEdits()
     }
     
     func deleteForker(at indexSet: IndexSet) {
-        // Deletes are committed immediately.
+        prepareForEdits()
         editingForkers.remove(atOffsets: indexSet)
+        commitEdits()
     }
     
     func moveForker(from source: IndexSet, to destination: Int) {
+        prepareForEdits()
         editingForkers.move(fromOffsets: source, toOffset: destination)
+        commitEdits()
     }
     
 }
