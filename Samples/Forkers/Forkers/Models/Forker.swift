@@ -8,6 +8,8 @@ struct Forker: Identifiable, Hashable {
     var notes: String
     var birthday: Date?
     var email: String
+    var category: ForkerCategory?
+    var color: ForkerColor?
     
     init(
         id: UUID = UUID(),
@@ -16,7 +18,9 @@ struct Forker: Identifiable, Hashable {
         company: String = "",
         notes: String = "",
         birthday: Date? = nil,
-        email: String = ""
+        email: String = "",
+        category: ForkerCategory? = nil,
+        color: ForkerColor? = nil
     ) {
         self.id = id
         self.firstName = firstName
@@ -25,5 +29,7 @@ struct Forker: Identifiable, Hashable {
         self.notes = notes
         self.birthday = birthday
         self.email = email
+        self.category = category
+        self.color = color
     }
 } 

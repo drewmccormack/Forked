@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var store = Store()
+    @Environment(Store.self) private var store
     @State private var showingAddForker = false
     
     var body: some View {
@@ -28,6 +28,7 @@ struct ContentView: View {
             .navigationTitle("Forkers")
             .navigationDestination(for: Forker.self) { forker in
                 ForkerDetailView(forker: forker)
+                    .environment(store)
             }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -37,6 +38,7 @@ struct ContentView: View {
                 }
                 ToolbarItem(placement: .topBarLeading) {
                     EditButton()
+                        .disabled(store.forkers.isEmpty)
                 }
             }
         }
