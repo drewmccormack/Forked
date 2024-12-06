@@ -14,25 +14,29 @@ actor ForkingContestant {
     init() {
         try! forkedInt.update(.main, with: .init(value: 0))
     }
-    
-    func addOne() async {
-        let fork = Fork(name: UUID().uuidString)
-        try! forkedInt.create(fork)
-        try! forkedInt.syncMain(with: [fork])
-        
-        var accumulatingInt = try! forkedInt.value(in: fork)!
-        await pauseToTriggerRaceCondition()
-        accumulatingInt.value += 1
-        try! forkedInt.update(fork, with: accumulatingInt)
-        
-        try! forkedInt.mergeIntoMain(from: fork)
-        try! forkedInt.delete(fork)
-    }
-    
-    func result() -> Int {
-        try! forkedInt.syncAllForks()
-        return try! forkedInt.value(in: .main)!.value
-    }
+
 }
 
-extension ForkingContestant: Contestant {} 
+extension ForkingContestant: Contestant {
+    
+    func addOne() async throws {
+        let fork = Fork(name: UUID().uuidString)
+        try forkedInt.create(fork)
+        try forkedInt.syncMain(with: [fork])
+        
+        var accumulatingInt = try forkedInt.value(in: fork)!
+        await pauseToTriggerRaceCondition()
+        accumulatingInt.value += 1
+        try forkedInt.update(fork, with: accumulatingInt)
+        
+        try forkedInt.mergeIntoMain(from: fork)
+        try forkedInt.delete(fork)
+    }
+    
+    func result() throws -> Int {
+        try forkedInt.syncAllForks()
+        return try forkedInt.value(in: .main)!.value
+    }
+    
+}
+
