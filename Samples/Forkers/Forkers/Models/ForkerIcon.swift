@@ -1,16 +1,16 @@
 import Foundation
 
 enum ForkerIcon: String, CaseIterable {
-    case work = "Work"
-    case family = "Family"
-    case sports = "Sports"
-    case education = "Education"
-    case gaming = "Gaming"
-    case music = "Music"
-    case art = "Art"
-    case travel = "Travel"
-    case food = "Food"
-    case tech = "Technology"
+    case work
+    case family
+    case sports
+    case education
+    case gaming
+    case music
+    case art
+    case travel
+    case food
+    case tech
     
     var systemImage: String {
         switch self {

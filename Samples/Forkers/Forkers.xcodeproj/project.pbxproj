@@ -6,6 +6,12 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		07AD39392D0329C00010B8BA /* Forked in Frameworks */ = {isa = PBXBuildFile; productRef = 07AD39382D0329C00010B8BA /* Forked */; };
+		07AD393B2D0329C00010B8BA /* ForkedCloudKit in Frameworks */ = {isa = PBXBuildFile; productRef = 07AD393A2D0329C00010B8BA /* ForkedCloudKit */; };
+		07AD393D2D0329C00010B8BA /* ForkedModel in Frameworks */ = {isa = PBXBuildFile; productRef = 07AD393C2D0329C00010B8BA /* ForkedModel */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		072EAA952D02FFF500E4C12F /* Forkers.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Forkers.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -36,6 +42,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				07AD393B2D0329C00010B8BA /* ForkedCloudKit in Frameworks */,
+				07AD393D2D0329C00010B8BA /* ForkedModel in Frameworks */,
+				07AD39392D0329C00010B8BA /* Forked in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -78,6 +87,9 @@
 			);
 			name = Forkers;
 			packageProductDependencies = (
+				07AD39382D0329C00010B8BA /* Forked */,
+				07AD393A2D0329C00010B8BA /* ForkedCloudKit */,
+				07AD393C2D0329C00010B8BA /* ForkedModel */,
 			);
 			productName = Forkers;
 			productReference = 072EAA952D02FFF500E4C12F /* Forkers.app */;
@@ -107,6 +119,9 @@
 			);
 			mainGroup = 072EAA8C2D02FFF500E4C12F;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				07AD39372D0329C00010B8BA /* XCLocalSwiftPackageReference "../../../Forked" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 072EAA962D02FFF500E4C12F /* Products */;
 			projectDirPath = "";
@@ -349,6 +364,28 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		07AD39372D0329C00010B8BA /* XCLocalSwiftPackageReference "../../../Forked" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../../Forked;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		07AD39382D0329C00010B8BA /* Forked */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Forked;
+		};
+		07AD393A2D0329C00010B8BA /* ForkedCloudKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ForkedCloudKit;
+		};
+		07AD393C2D0329C00010B8BA /* ForkedModel */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ForkedModel;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 072EAA8D2D02FFF500E4C12F /* Project object */;
 }

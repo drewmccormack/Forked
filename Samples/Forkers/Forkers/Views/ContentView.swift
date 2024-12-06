@@ -7,7 +7,7 @@ struct ContentView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if store.forkers.isEmpty {
+                if store.displayedForkers.isEmpty {
                     ContentUnavailableView(
                         "No Forkers Yet",
                         systemImage: "person.crop.circle.badge.plus",
@@ -15,7 +15,7 @@ struct ContentView: View {
                     )
                 } else {
                     List {
-                        ForEach(store.forkers) { forker in
+                        ForEach(store.displayedForkers) { forker in
                             NavigationLink(value: forker) {
                                 ForkerRow(forker: forker)
                             }
@@ -38,7 +38,7 @@ struct ContentView: View {
                 }
                 ToolbarItem(placement: .topBarLeading) {
                     EditButton()
-                        .disabled(store.forkers.isEmpty)
+                        .disabled(store.displayedForkers.isEmpty)
                 }
             }
         }
