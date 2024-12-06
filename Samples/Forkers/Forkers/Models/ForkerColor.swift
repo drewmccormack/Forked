@@ -1,6 +1,6 @@
 import SwiftUI
 
-enum ForkerColor: String, CaseIterable {
+enum ForkerColor: String, CaseIterable, Codable {
     case red
     case orange
     case yellow

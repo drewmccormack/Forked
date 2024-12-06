@@ -1,6 +1,6 @@
 import Foundation
 
-enum ForkerCategory: String, CaseIterable {
+enum ForkerCategory: String, CaseIterable, Codable {
     case work
     case family
     case sports

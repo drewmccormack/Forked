@@ -28,6 +28,10 @@ struct ForkerDetailView: View {
                     TextField("Last Name", text: $editedForker.lastName)
                     TextField("Company", text: $editedForker.company)
                     TextField("Email", text: $editedForker.email)
+                        .textInputAutocapitalization(.never)
+                        .keyboardType(.emailAddress)
+                        .textContentType(.emailAddress)
+                        .autocorrectionDisabled()
                 } else {
                     LabeledContent("First Name", value: editedForker.firstName)
                     LabeledContent("Last Name", value: editedForker.lastName)
