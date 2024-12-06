@@ -73,7 +73,12 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
                 delegate: self
             )
         engine = CKSyncEngine(configuration)
-        
+
+        // Create zone if it doesn't exist
+        // Note that if it does exist, CKSyncEngine will ignore this
+        let zone = CKRecordZone(zoneID: zoneID)
+        engine.state.add(pendingDatabaseChanges: [.saveZone(zone)])
+
         // Fork for sync
         try createForks()
         
