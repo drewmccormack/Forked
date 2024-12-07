@@ -31,15 +31,15 @@ class Store {
     private static let repoDirURL: URL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
     private static let repoFileURL: URL = repoDirURL.appendingPathComponent("Forkers.json")
     
-    // Observable array of forkers to display for SwiftUI
-    // This is updated to be the same as the .ui fork.
+    /// Observable array of forkers to display for SwiftUI
+    /// This is updated to be the same as the .ui fork.
     private(set) var displayedForkers: [Forker] = []
     
-    // Forkers that are currently in the .ui fork.
-    // This branch is used to update the displayedForkers for SwiftUI.
-    // Any sync changes will automatically be merged in here, as well
-    // as any editing commits. We use an AsyncStream to do the updates
-    // in a data driver way.
+    /// Forkers that are currently in the .ui fork.
+    /// This branch is used to update the displayedForkers for SwiftUI.
+    /// Any sync changes will automatically be merged in here, as well
+    /// as any editing commits. We use an AsyncStream to do the updates
+    /// in a data driver way.
     private var uiForkers: [Forker] {
         get {
             try! forkedModel.resource(of: .ui)!.forkers
@@ -103,10 +103,20 @@ extension Store {
 
 extension Store {
     
-    // Forkers that are currently in the .editing fork.
-    // We use a separate context for this to prevent mixing in sync changes
-    // while we are editing. This way, we can make changes, and when user
-    // hits save or cancel, we can commit or rollback the changes.
+    /// Prepare to put a Forker into edit mode. We create a new fork
+    /// for this, so we can make edits in isolation from sync and other changes.
+    /// We don't want changes appearing in our editing context while we edit.
+    func prepareToEditForker() {
+        try! forkedModel.delete(.editingForker)
+        try! forkedModel.create(.editingForker)
+        try! forkedModel.mergeFromMain(into: .editingForker)
+    }
+    
+    /// Forkers that are currently in the .editing fork.
+    /// We use a separate context for editing existing Forkers
+    /// to prevent mixing in sync changes while we are editing.
+    /// This way, we can make changes, and when user
+    /// hits save or cancel, we can commit or rollback the changes.
     private var editingForkers: [Forker] {
         get {
             return try! forkedModel.resource(of: .editingForker)!.forkers
@@ -123,23 +133,11 @@ extension Store {
         editingForkers.first(where: { $0.id == id })
     }
     
-    /// Prepare to put a Forker into edit mode. We create a new fork
-    /// for this, so we can make edits in isolation from sync and other changes.
-    /// We don't want changes appearing in our editing context while we edit.
-    func prepareForEdits() {
-        try! forkedModel.delete(.editingForker)
-        try! forkedModel.create(.editingForker)
-        try! forkedModel.mergeFromMain(into: .editingForker)
-    }
-    
-    func commitEditedForker() {
-        try! forkedModel.mergeIntoMain(from: .editingForker)
-    }
-    
-    func rollbackForkerEdits() {
-        try! forkedModel.delete(.editingForker)
-        try! forkedModel.create(.editingForker)
-        try! forkedModel.mergeFromMain(into: .editingForker)
+    func updateEditingForker(_ forker: Forker) {
+        if let index = editingForkers.firstIndex(where: { $0.id == forker.id }) {
+            editingForkers[index] = forker
+        }
+        try! forkedModel.syncMain(with: [.editingForker])
     }
     
 }
@@ -151,20 +149,21 @@ extension Store {
     
     func addForker(_ forker: Forker) {
         uiForkers.append(forker)
-    }
-    
-    func updateForker(_ forker: Forker) {
-        if let index = uiForkers.firstIndex(where: { $0.id == forker.id }) {
-            uiForkers[index] = forker
-        }
+        commitUIChanges()
     }
     
     func deleteForker(at indexSet: IndexSet) {
         uiForkers.remove(atOffsets: indexSet)
+        commitUIChanges()
     }
     
     func moveForker(from source: IndexSet, to destination: Int) {
         uiForkers.move(fromOffsets: source, toOffset: destination)
+        commitUIChanges()
+    }
+    
+    private func commitUIChanges() {
+        try! forkedModel.mergeIntoMain(from: .ui)
     }
     
 }

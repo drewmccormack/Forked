@@ -16,9 +16,9 @@ struct ForkerDetailView: View {
     }
     
     private func resetEditedForker() {
-        store.prepareForEdits()
         if let existingForkerId {
-            editedForker = store.editingForker(withId: existingForkerId) ?? Forker()
+            store.prepareToEditForker()
+            editedForker = store.editingForker(withId: existingForkerId)!
         } else {
             editedForker = Forker()
         }
@@ -105,6 +105,7 @@ struct ForkerDetailView: View {
                 }
             }
         }
+        .animation(.default, value: isEditing)
         .onAppear {
             guard !hasAppeared else { return }
             hasAppeared = true
@@ -131,7 +132,7 @@ struct ForkerDetailView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     if isEditing {
                         Button("Save") {
-                            store.updateForker(editedForker)
+                            store.updateEditingForker(editedForker)
                             isEditing = false
                         }
                         .disabled(!canSave)
