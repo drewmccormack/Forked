@@ -9,6 +9,7 @@ struct ForkerDetailView: View {
             
     @State private var editedForker: Forker = Forker()
     @State private var isEditing = false
+    @State private var hasAppeared = false
     
     private var canSave: Bool {
         !editedForker.firstName.isEmpty || !editedForker.lastName.isEmpty
@@ -105,6 +106,8 @@ struct ForkerDetailView: View {
             }
         }
         .onAppear {
+            guard !hasAppeared else { return }
+            hasAppeared = true
             resetEditedForker()
             isEditing = forkerIsNew
         }
