@@ -5,7 +5,7 @@ import Forked
 
 @ForkedModel
 struct Forkers: Codable {
-    @Merged var forkers: [Forker] = []
+    @Merged(using: .arrayOfIdentifiableMerge) var forkers: [Forker] = []
 }
 
 @ForkedModel
