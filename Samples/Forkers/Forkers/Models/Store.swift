@@ -17,7 +17,7 @@ extension Fork {
     /// unexpected changes half way through editing.
     /// Keeping things in a separate fork also allows us to rollback
     /// changes by simply deleting the fork and creating it again.
-    static let editing = Fork(name: "editing")
+    static let editingForker = Fork(name: "editing")
 }
 
 @MainActor
@@ -41,24 +41,14 @@ class Store {
     // as any editing commits. We use an AsyncStream to do the updates
     // in a data driver way.
     private var uiForkers: [Forker] {
-        try! forkedModel.resource(of: .ui)!.forkers
-    }
-    
-    // Forkers that are currently in the .editing fork.
-    // It is better to keep our mutable state in a separate fork, so that
-    // we don't accidentally write over changes that come in from iCloud.
-    // If we did this all in the .ui fork, it would be harder to manage
-    // because we would need to prevent sync changes being merged in while
-    // a Forker was being edited. This way, we know that the .editing fork
-    // is completely isolated until we are ready to commit or rollback.
-    private var editingForkers: [Forker] {
         get {
-            return try! forkedModel.resource(of: .editing)!.forkers
+            try! forkedModel.resource(of: .ui)!.forkers
         }
         set {
-            var model = try! forkedModel.resource(of: .editing)!
+            var model = try! forkedModel.resource(of: .ui)!
             model.forkers = newValue
-            try! forkedModel.update(.editing, with: model)
+            try! forkedModel.update(.ui, with: model)
+            displayedForkers = uiForkers
         }
     }
     
@@ -68,7 +58,7 @@ class Store {
         
         // Setup ForkedResource
         forkedModel = try ForkedResource(repository: repo)
-        for fork: Fork in [.ui, .editing] {
+        for fork: Fork in [.ui, .editingForker] {
             if !forkedModel.has(fork) {
                 try forkedModel.create(fork)
                 if fork == .ui {
@@ -79,7 +69,7 @@ class Store {
         }
         
         // Get all the local forks in sync
-        try forkedModel.syncMain(with: [.ui, .editing])
+        try forkedModel.syncMain(with: [.ui, .editingForker])
         
         // Setup CloudKitExchange
         cloudKitExchange = try .init(id: "Forkers", forkedResource: forkedModel)
@@ -101,6 +91,7 @@ class Store {
 
 extension Store {
     
+    /// Saves `ForkedReesource` to disk` with `Codable` serialization.`
     public func save() {
         try! self.repo.persist()
     }
@@ -108,22 +99,47 @@ extension Store {
 }
  
 
-// MARK: - Controlling Edits
+// MARK: - Editing a Forker
 
 extension Store {
     
+    // Forkers that are currently in the .editing fork.
+    // We use a separate context for this to prevent mixing in sync changes
+    // while we are editing. This way, we can make changes, and when user
+    // hits save or cancel, we can commit or rollback the changes.
+    private var editingForkers: [Forker] {
+        get {
+            return try! forkedModel.resource(of: .editingForker)!.forkers
+        }
+        set {
+            var model = try! forkedModel.resource(of: .editingForker)!
+            model.forkers = newValue
+            try! forkedModel.update(.editingForker, with: model)
+        }
+    }
+    
+    /// Returns the Forker in the editing context with the given ID.
+    func editingForker(withId id: Forker.ID) -> Forker? {
+        editingForkers.first(where: { $0.id == id })
+    }
+    
+    /// Prepare to put a Forker into edit mode. We create a new fork
+    /// for this, so we can make edits in isolation from sync and other changes.
+    /// We don't want changes appearing in our editing context while we edit.
     func prepareForEdits() {
-        try! forkedModel.syncMain(with: [.editing])
+        try! forkedModel.delete(.editingForker)
+        try! forkedModel.create(.editingForker)
+        try! forkedModel.mergeFromMain(into: .editingForker)
     }
     
-    func commitEdits() {
-        try! forkedModel.syncMain(with: [.editing])
+    func commitEditedForker() {
+        try! forkedModel.mergeIntoMain(from: .editingForker)
     }
     
-    func rollbackEdits() {
-        try! forkedModel.delete(.editing)
-        try! forkedModel.create(.editing)
-        try! forkedModel.syncMain(with: [.editing])
+    func rollbackForkerEdits() {
+        try! forkedModel.delete(.editingForker)
+        try! forkedModel.create(.editingForker)
+        try! forkedModel.mergeFromMain(into: .editingForker)
     }
     
 }
@@ -133,32 +149,22 @@ extension Store {
 
 extension Store {
     
-    func editingForker(withId id: Forker.ID) -> Forker? {
-        editingForkers.first(where: { $0.id == id })
-    }
-    
     func addForker(_ forker: Forker) {
-        editingForkers.append(forker)
-        commitEdits()
+        uiForkers.append(forker)
     }
     
     func updateForker(_ forker: Forker) {
-        if let index = editingForkers.firstIndex(where: { $0.id == forker.id }) {
-            editingForkers[index] = forker
+        if let index = uiForkers.firstIndex(where: { $0.id == forker.id }) {
+            uiForkers[index] = forker
         }
-        commitEdits()
     }
     
     func deleteForker(at indexSet: IndexSet) {
-        prepareForEdits()
-        editingForkers.remove(atOffsets: indexSet)
-        commitEdits()
+        uiForkers.remove(atOffsets: indexSet)
     }
     
     func moveForker(from source: IndexSet, to destination: Int) {
-        prepareForEdits()
-        editingForkers.move(fromOffsets: source, toOffset: destination)
-        commitEdits()
+        uiForkers.move(fromOffsets: source, toOffset: destination)
     }
     
 }
@@ -168,8 +174,13 @@ extension Store {
 
 extension Store {
 
+    /// We setup a few streams to monitor changes in the data.
+    /// One is to make sure that the .ui fork gets changes merged in from main
+    /// whenever some other fork merges (eg editing fork, cloudkit fork).
+    /// Another stream monitors any change involving the .ui fork, and
+    /// schedules a save.
     private func setupStreams() {
-        // Monitor stream of updates to resource (e.g., remote sync changes, editing changes)
+        // Monitor stream of updates (e.g., remote sync changes, editing changes)
         Task { [weak self, forkedModel] in
             for await change in forkedModel.changeStream where change.fork == .main && change.mergingFork != .ui {
                 guard let self else { return }
