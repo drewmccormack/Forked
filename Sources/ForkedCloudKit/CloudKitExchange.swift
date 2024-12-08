@@ -137,10 +137,28 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
         pollingTask.cancel()
     }
     
+    func resourceForUpload() throws -> R.Resource? {
+        try forkedResource.performAtomically {
+            try forkedResource.mergeIntoMain(from: .cloudKitDownload)
+            try forkedResource.mergeFromMain(into: .cloudKitUpload)
+            return try forkedResource.resource(of: .cloudKitUpload)
+        }
+    }
+    
+    var needsUpload: Bool {
+        get throws {
+            try forkedResource.performAtomically {
+                try forkedResource.hasUnmergedCommitsForMain(in: .cloudKitDownload) ||
+                    forkedResource.hasUnmergedCommitsInMain(for: .cloudKitUpload)
+            }
+        }
+    }
+    
     private func enqueueUploadOfMainIfNeeded() {
         do {
             try forkedResource.performAtomically {
-                if try forkedResource.hasUnmergedCommitsInMain(for: .cloudKitUpload) {
+                try forkedResource.mergeIntoMain(from: .cloudKitDownload)
+                if try needsUpload {
                     Logger.exchange.info("Main fork has unmerged changes. Uploading...")
                     let content = try forkedResource.content(of: .main)
                     if case .none = content {
@@ -148,8 +166,6 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
                     } else {
                         engine.state.add(pendingRecordZoneChanges: [.saveRecord(recordID)])
                     }
-                    let action = try forkedResource.mergeFromMain(into: .cloudKitUpload)
-                    assert(action == .fastForward)
                 }
             }
         } catch {
