@@ -1,14 +1,8 @@
-//
-//  CloudKitExchange+HandlingCloudChanges.swift
-//  Forked
-//
-//  Created by Drew McCormack on 27/08/2024.
-//
 import CloudKit
 import Forked
 import os.log
 
-@available(iOS 17.0, tvOS 17.0, watchOS 9.0, macOS 14.0, *)
+@available(iOS 17.0, tvOS 17.0, watchOS 10.0, macOS 14.0, *)
 extension CloudKitExchange {
     
     func handleAccountChange(_ event: CKSyncEngine.Event.AccountChange) {
@@ -59,6 +53,7 @@ extension CloudKitExchange {
             do {
                 try forkedResource.removeContent(from: .cloudKitDownload)
                 try forkedResource.mergeIntoMain(from: .cloudKitDownload)
+                recordFetchStatus = .doesNotExist
             } catch {
                 Logger.exchange.error("Failed to update resource with downloaded data: \(error)")
             }
@@ -116,6 +111,7 @@ extension CloudKitExchange {
         }
         
         do {
+            recordFetchStatus = .fetched(record)
             let resource = try JSONDecoder().decode(R.Resource.self, from: data)
             try forkedResource.update(.cloudKitDownload, with: resource)
             try forkedResource.mergeIntoMain(from: .cloudKitDownload)
@@ -126,4 +122,3 @@ extension CloudKitExchange {
     }
     
 }
-

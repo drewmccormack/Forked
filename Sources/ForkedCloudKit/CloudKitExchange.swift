@@ -1,9 +1,3 @@
-//
-//  CloudKitExchange.swift
-//  Forked
-//
-//  Created by Drew McCormack on 14/08/2024.
-//
 import CloudKit
 import SwiftUI
 import AsyncAlgorithms
@@ -23,6 +17,17 @@ extension CKRecord {
     static let resourceDataKey = "resourceData"
 }
 
+enum RecordFetchStatus: Equatable {
+    case uninitialized
+    case fetched(CKRecord)
+    case doesNotExist
+    
+    var record: CKRecord? {
+        guard case .fetched(let record) = self else { return nil }
+        return record
+    }
+}
+
 @available(iOS 17.0, tvOS 17.0, watchOS 10.0, macOS 14.0, *)
 public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.Resource: Codable & Sendable {
     let id: String
@@ -33,7 +38,8 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
     var recordID: CKRecord.ID { CKRecord.ID(recordName: id, zoneID: zoneID) }
     
     internal private(set) var engine: CKSyncEngine!
-    
+    internal var recordFetchStatus: RecordFetchStatus = .uninitialized
+
     private let dataURL: URL
     
     private struct SyncState: Codable {
@@ -44,7 +50,7 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
     private let changeStream: ChangeStream
     private var monitorTask: Task<(), Never>!
     private var pollingTask: Task<(), Swift.Error>!
-
+        
     public init(id: String, forkedResource: ForkedResource<R>, cloudKitContainer: CKContainer = .default()) throws {
         self.id = id
         self.forkedResource = forkedResource
@@ -75,12 +81,24 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
         engine = CKSyncEngine(configuration)
 
         // Create zone if it doesn't exist
-        // Note that if it does exist, CKSyncEngine will ignore this
         let zone = CKRecordZone(zoneID: zoneID)
         engine.state.add(pendingDatabaseChanges: [.saveZone(zone)])
 
         // Fork for sync
         try createForks()
+        
+        // Fetch the initial record using syncEngine's database
+        Task { [self] in
+            do {
+                guard recordFetchStatus == .uninitialized else { return }
+                let fetchedRecord = try await engine.database.record(for: recordID)
+                Logger.exchange.info("Successfully fetched initial record from syncEngine's database.")
+                recordFetchStatus = .fetched(fetchedRecord)
+            } catch {
+                recordFetchStatus = .doesNotExist
+                Logger.exchange.error("Failed to fetch initial record from syncEngine's database: \(error)")
+            }
+        }
         
         // Monitor changes to main
         monitorTask = Task { [weak self, changeStream] in
@@ -204,11 +222,14 @@ extension CloudKitExchange: CKSyncEngineDelegate {
     
     public func nextRecordZoneChangeBatch(_ context: CKSyncEngine.SendChangesContext, syncEngine: CKSyncEngine) async -> CKSyncEngine.RecordZoneChangeBatch? {
         let pendingChanges = syncEngine.state.pendingRecordZoneChanges.filter { context.options.scope.contains($0) }
-        return await CKSyncEngine.RecordZoneChangeBatch(pendingChanges: pendingChanges) { recordID in
-            guard recordID.recordName == id else { return nil }
+        return await CKSyncEngine.RecordZoneChangeBatch(pendingChanges: pendingChanges) { [self] recordID in
+            guard recordID.recordName == id, recordFetchStatus != .uninitialized else {
+                return nil
+            }
+            
             do {
                 if let resourceValue = try forkedResource.resource(of: .cloudKitUpload) {
-                    let record = (try? await syncEngine.database.record(for: recordID)) ?? CKRecord(recordType: recordType, recordID: recordID)
+                    let record = recordFetchStatus.record ?? CKRecord(recordType: recordType, recordID: recordID)
                     let data = try JSONEncoder().encode(resourceValue)
                     if data != record.encryptedValues[CKRecord.resourceDataKey] {
                         record.encryptedValues[CKRecord.resourceDataKey] = data
