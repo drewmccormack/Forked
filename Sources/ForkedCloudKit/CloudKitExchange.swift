@@ -177,7 +177,9 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
                 try forkedResource.mergeIntoMain(from: .cloudKitDownload)
                 if try needsUpload {
                     Logger.exchange.info("Main fork has unmerged changes. Uploading...")
+                    let downloadedContent = try forkedResource.content(of: .cloudKitDownload)
                     let content = try forkedResource.content(of: .main)
+                    guard downloadedContent != content else { return }
                     if case .none = content {
                         engine.state.add(pendingRecordZoneChanges: [.deleteRecord(recordID)])
                     } else {
