@@ -27,12 +27,16 @@ jobs:
         uses: actions/configure-pages@v4
       - name: Build documentation
         run: |
+          mkdir -p docs
           swift package --allow-writing-to-directory ./docs \
             generate-documentation --target Forked --target ForkedMerge --target ForkedModel --target ForkedCloudKit \
             --disable-indexing \
             --transform-for-static-hosting \
             --hosting-base-path Forked \
             --output-path ./docs
+          
+          # Create an index.html that redirects to the documentation
+          echo '<meta http-equiv="refresh" content="0; url=documentation/forked">' > ./docs/index.html
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
@@ -40,4 +44,4 @@ jobs:
           path: './docs'
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4 
+        uses: actions/deploy-pages@v4
