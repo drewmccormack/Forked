@@ -6,7 +6,7 @@ rm -rf ./docs/*
 swift package \
     --allow-writing-to-directory ./docs \
     generate-documentation \
-    --target Forked \
+    --target Forked --target ForkedMerge --target ForkedModel --target ForkedCloudKit \
     --output-path ./docs \
     --emit-digest \
     --disable-indexing \
