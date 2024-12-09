@@ -41,8 +41,19 @@ extension CloudKitExchange {
     
     func handleFetchedRecordZoneChanges(_ event: CKSyncEngine.Event.FetchedRecordZoneChanges) {
         Logger.exchange.info("Handling fetched record zone changes")
-
+    
+        // Skip if the modification came from this device.
+        // If we import it onto the .cloudKitDownload fork, it will be merged into main
+        // and then become the ancestor. When data from another device appears
+        // it will rollback anything unchanged from the other device, because
+        // it will be different to the ancestor, and will seem like a recent change.
         for modification in event.modifications {
+            // Check if the record has a peerId and if it matches the current device
+            if let recordPeerId = modification.record["peerId"] as? String,
+               recordPeerId == peerId {
+                continue
+            }
+            
             update(withDownloadedRecord: modification.record)
             Logger.exchange.info("Updated with record: \(modification.record.recordID.recordName)")
         }
@@ -111,11 +122,14 @@ extension CloudKitExchange {
         }
         
         do {
-            recordFetchStatus = .fetched(record)
-            let resource = try JSONDecoder().decode(R.Resource.self, from: data)
-            try forkedResource.update(.cloudKitDownload, with: resource)
-            try forkedResource.mergeIntoMain(from: .cloudKitDownload)
-            Logger.exchange.info("Updated cloudKitDownload with downloaded data, and merged into main")
+            try forkedResource.performAtomically {
+                recordFetchStatus = .fetched(record)
+                let resource = try JSONDecoder().decode(R.Resource.self, from: data)
+                let existingResource = try forkedResource.resource(of: .cloudKitDownload)
+                try forkedResource.update(.cloudKitDownload, with: resource)
+                try forkedResource.mergeIntoMain(from: .cloudKitDownload)
+                Logger.exchange.info("Updated cloudKitDownload with downloaded data, and merged into main")
+            }
         } catch {
             Logger.exchange.error("Failed to update resource with downloaded data: \(error)")
         }

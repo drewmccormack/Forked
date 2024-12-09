@@ -22,7 +22,7 @@ public extension ForkedResource {
     /// method from the same thread will lead to deadlock. It is best not to
     /// execute long running code in the block, because all other interactions
     /// with the `ForkedResource` will block waiting.
-    func performAtomically<ReturnType>(_ block: () throws -> ReturnType) throws -> ReturnType {
+    func performAtomically<ReturnType>(_ block: () throws -> ReturnType) rethrows -> ReturnType {
         try serialize {
             try block()
         }

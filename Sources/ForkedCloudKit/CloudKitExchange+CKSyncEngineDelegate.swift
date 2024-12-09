@@ -38,27 +38,31 @@ extension CloudKitExchange: CKSyncEngineDelegate {
     public func nextRecordZoneChangeBatch(_ context: CKSyncEngine.SendChangesContext, syncEngine: CKSyncEngine) async -> CKSyncEngine.RecordZoneChangeBatch? {
         let pendingChanges = syncEngine.state.pendingRecordZoneChanges.filter { context.options.scope.contains($0) }
         return await CKSyncEngine.RecordZoneChangeBatch(pendingChanges: pendingChanges) { [self] recordID in
-            guard recordID.recordName == id, recordFetchStatus != .uninitialized else {
-                return nil
-            }
-            
-            do {
-                if let resourceValue = try resourceForUpload() {
-                    let record = recordFetchStatus.record ?? CKRecord(recordType: recordType, recordID: recordID)
-                    let data = try JSONEncoder().encode(resourceValue)
-                    if data != record.encryptedValues[CKRecord.resourceDataKey] {
-                        record.encryptedValues[CKRecord.resourceDataKey] = data
-                        return record
-                    } else {
-                        return nil
-                    }
-                } else {
-                    syncEngine.state.remove(pendingRecordZoneChanges: [.saveRecord(recordID)])
+            forkedResource.performAtomically {
+                guard recordID.recordName == id, recordFetchStatus != .uninitialized else {
                     return nil
                 }
-            } catch {
-                Logger.exchange.error("Error while preparing batch of changes: \(error)")
-                return nil
+                
+                do {
+                    if let resourceValue = try resourceForUpload() {
+                        let record = recordFetchStatus.record ?? CKRecord(recordType: recordType, recordID: recordID)
+                        let data = try JSONEncoder().encode(resourceValue)
+                        if data != record.encryptedValues[CKRecord.resourceDataKey] {
+                            record.encryptedValues[CKRecord.resourceDataKey] = data
+                            record["peerId"] = peerId
+                            return record
+                        } else {
+                            syncEngine.state.remove(pendingRecordZoneChanges: [.saveRecord(recordID)])
+                            return nil
+                        }
+                    } else {
+                        syncEngine.state.remove(pendingRecordZoneChanges: [.saveRecord(recordID)])
+                        return nil
+                    }
+                } catch {
+                    Logger.exchange.error("Error while preparing batch of changes: \(error)")
+                    return nil
+                }
             }
         }
     }

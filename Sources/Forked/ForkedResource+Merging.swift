@@ -8,7 +8,7 @@ public extension ForkedResource {
     /// Note that this may change the commits stored in unrelated forks, in order to preserve common ancestors.
     /// This particular overload handles merges of non-`Mergeable` resources.
     @discardableResult func mergeIntoMain(from fromFork: Fork) throws -> MergeAction {
-        try performMergeIntoMain(from: fromFork, mergedContent: mergedContent)
+        try performMergeIntoMain(from: fromFork, mergedContentFunc: mergedContent)
     }
     
     /// Merges from the main fork into another fork. May perform a 3-way merge.
@@ -16,7 +16,7 @@ public extension ForkedResource {
     /// After this operation, the fork may be updated, with the version of the main fork unchanged.
     /// This particular overload handles merges of non-`Mergeable` resources.
     @discardableResult func mergeFromMain(into toFork: Fork) throws -> MergeAction {
-        try performMergeFromMain(into: toFork, mergedContent: mergedContent)
+        try performMergeFromMain(into: toFork, mergedContentFunc: mergedContent)
     }
     
     /// Brings main and the other fork to the same version by first merging from
@@ -25,19 +25,19 @@ public extension ForkedResource {
     /// To sync up all forks, just pass all forks to this func, including .main. The main fork is ignored
     /// when merging.
     func syncMain(with forks: [Fork]) throws {
-        try performSyncMain(with: forks, mergedContent: mergedContent)
+        try performSyncMain(with: forks, mergedContentFunc: mergedContent)
     }
     
     /// Merges other forks into main, and then main into the target fork, so it has up-to-date data from all other forks.
     /// You can pass in `.main` if you want to merge all other forks into `.main`.
     func mergeAllForks(into toFork: Fork) throws {
-        try performMergeAllForks(into: toFork, mergedContent: mergedContent)
+        try performMergeAllForks(into: toFork, mergedContentFunc: mergedContent)
     }
     
     /// Merges all forks so they are all at the same version. This involves merging all forks into the main fork
     /// first, and then merging the main fork into all other forks.
     func syncAllForks() throws {
-        try performSyncAllForks(mergedContent: mergedContent)
+        try performSyncAllForks(mergedContentFunc: mergedContent)
     }
     
     /// If the Resource is not Mergeable, fallback to last-write-wins approach. Most recent commit is chosen.
@@ -57,7 +57,7 @@ public extension ForkedResource where RepositoryType.Resource: Mergeable {
     /// Note that this may change the commits stored in unrelated forks, in order to preserve common ancestors.
     /// This particular overload handles merges of `Mergeable` resources.
     @discardableResult func mergeIntoMain(from fromFork: Fork) throws -> MergeAction {
-        try performMergeIntoMain(from: fromFork, mergedContent: mergedContent)
+        try performMergeIntoMain(from: fromFork, mergedContentFunc: mergedContent)
     }
     
     /// Merges from the main fork into another fork. May perform a 3-way merge.
@@ -65,7 +65,7 @@ public extension ForkedResource where RepositoryType.Resource: Mergeable {
     /// After this operation, the fork may be updated, with the version of the main fork unchanged.
     /// This particular overload handles merges of `Mergeable` resources.
     @discardableResult func mergeFromMain(into toFork: Fork) throws -> MergeAction {
-        try performMergeFromMain(into: toFork, mergedContent: mergedContent)
+        try performMergeFromMain(into: toFork, mergedContentFunc: mergedContent)
     }
     
     /// Brings main and the other fork to the same version by first merging from
@@ -74,21 +74,21 @@ public extension ForkedResource where RepositoryType.Resource: Mergeable {
     /// To sync up all forks, just pass all forks to this func, including .main. The main fork is ignored
     /// when merging.
     func syncMain(with forks: [Fork]) throws {
-        try performSyncMain(with: forks, mergedContent: mergedContent)
+        try performSyncMain(with: forks, mergedContentFunc: mergedContent)
     }
     
     /// Merges other forks into main, and then main into the target fork, so it has up-to-date data from all other forks.
     /// You can pass in `.main` if you want to merge all other forks into `.main`.
     /// This particular overload handles merges of  `Mergeable` resources.
     func mergeAllForks(into toFork: Fork) throws {
-        try performMergeAllForks(into: toFork, mergedContent: mergedContent)
+        try performMergeAllForks(into: toFork, mergedContentFunc: mergedContent)
     }
     
     /// Merges all forks so they are all at the same version. This involves merging all forks into the main fork
     /// first, and then merging the main fork into all other forks.
     /// This particular overload handles merges of  `Mergeable` resources.
     func syncAllForks() throws {
-        try performSyncAllForks(mergedContent: mergedContent)
+        try performSyncAllForks(mergedContentFunc: mergedContent)
     }
     
     /// For `Mergeable` types, we ask the `Resource` to do the merging itself
@@ -109,7 +109,7 @@ public extension ForkedResource where RepositoryType.Resource: Mergeable {
 
 private extension ForkedResource {
     
-    @discardableResult func performMergeIntoMain(from fromFork: Fork, mergedContent: (ConflictingCommits<ResourceType>, Commit<ResourceType>) throws -> CommitContent<ResourceType>) throws -> MergeAction {
+    @discardableResult func performMergeIntoMain(from fromFork: Fork, mergedContentFunc: (ConflictingCommits<ResourceType>, Commit<ResourceType>) throws -> CommitContent<ResourceType>) throws -> MergeAction {
         try serialize {
             var change: ForkChange?
             defer {
@@ -124,7 +124,7 @@ private extension ForkedResource {
                     let fromCommit = try mostRecentCommit(of: fromFork)
                     let ancestorCommit = try commonAncestor(of: fromFork)
                     let commits = ConflictingCommits(commits: (mainCommit, fromCommit))
-                    let content = try mergedContent(commits, ancestorCommit)
+                    let content = try mergedContentFunc(commits, ancestorCommit)
                     let newVersion = try update(.main, with: content)
                     change = ForkChange(fork: .main, version: newVersion, mergingFork: fromFork)
                     try removeAllCommitsExceptMostRecent(in: fromFork) // Fork version is now common ancestor
@@ -143,7 +143,7 @@ private extension ForkedResource {
         }
     }
     
-    @discardableResult func performMergeFromMain(into toFork: Fork, mergedContent: (ConflictingCommits<ResourceType>, Commit<ResourceType>) throws -> CommitContent<ResourceType>) throws -> MergeAction {
+    @discardableResult func performMergeFromMain(into toFork: Fork, mergedContentFunc: (ConflictingCommits<ResourceType>, Commit<ResourceType>) throws -> CommitContent<ResourceType>) throws -> MergeAction {
         try serialize {
             var change: ForkChange?
             defer {
@@ -158,7 +158,7 @@ private extension ForkedResource {
                     let toCommit = try mostRecentCommit(of: toFork)
                     let ancestorCommit = try commonAncestor(of: toFork)
                     let commits = ConflictingCommits(commits: (mainCommit, toCommit))
-                    let content = try mergedContent(commits, ancestorCommit)
+                    let content = try mergedContentFunc(commits, ancestorCommit)
                     let newVersion = try update(toFork, with: content)
                     try repository.copyMostRecentCommit(from: .main, to: toFork) // New common ancestor is the main version
                     try removeCommonAncestor(in: toFork) // Remove old common ancestor
@@ -175,29 +175,29 @@ private extension ForkedResource {
         }
     }
     
-    func performSyncMain(with forks: [Fork], mergedContent: (ConflictingCommits<ResourceType>, Commit<ResourceType>) throws -> CommitContent<ResourceType>) throws {
+    func performSyncMain(with forks: [Fork], mergedContentFunc: (ConflictingCommits<ResourceType>, Commit<ResourceType>) throws -> CommitContent<ResourceType>) throws {
         try serialize {
             for fork in forks where fork != .main {
-                try performMergeIntoMain(from: fork, mergedContent: mergedContent)
+                try performMergeIntoMain(from: fork, mergedContentFunc: mergedContentFunc)
             }
             for fork in forks where fork != .main {
-                let action = try performMergeFromMain(into: fork, mergedContent: mergedContent)
+                let action = try performMergeFromMain(into: fork, mergedContentFunc: mergedContentFunc)
                 assert(action == .fastForward || action == .none)
             }
         }
     }
     
-    func performMergeAllForks(into toFork: Fork, mergedContent: (ConflictingCommits<ResourceType>, Commit<ResourceType>) throws -> CommitContent<ResourceType>) throws {
+    func performMergeAllForks(into toFork: Fork, mergedContentFunc: (ConflictingCommits<ResourceType>, Commit<ResourceType>) throws -> CommitContent<ResourceType>) throws {
         try serialize {
             for fork in forks where fork != toFork && fork != .main {
-                try performMergeIntoMain(from: fork, mergedContent: mergedContent)
+                try performMergeIntoMain(from: fork, mergedContentFunc: mergedContentFunc)
             }
-            try performMergeFromMain(into: toFork, mergedContent: mergedContent)
+            try performMergeFromMain(into: toFork, mergedContentFunc: mergedContentFunc)
         }
     }
     
-    func performSyncAllForks(mergedContent: (ConflictingCommits<ResourceType>, Commit<ResourceType>) throws -> CommitContent<ResourceType>) throws {
-        try performSyncMain(with: forks, mergedContent: mergedContent)
+    func performSyncAllForks(mergedContentFunc: (ConflictingCommits<ResourceType>, Commit<ResourceType>) throws -> CommitContent<ResourceType>) throws {
+        try performSyncMain(with: forks, mergedContentFunc: mergedContentFunc)
     }
 }
 

@@ -41,6 +41,7 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
     internal var recordFetchStatus: RecordFetchStatus = .uninitialized
 
     private let dataURL: URL
+    public let peerId: String
     
     internal struct SyncState: Codable {
         var stateSerialization: CKSyncEngine.State.Serialization?
@@ -62,9 +63,23 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
         self.dataURL = dirURL
             .appending(component: id)
             .appendingPathExtension("json")
-
+        
+        // Create directory in Application Support if it doesn't exist
         if !FileManager.default.fileExists(atPath: dirURL.path()) {
             try FileManager.default.createDirectory(at: dirURL, withIntermediateDirectories: true)
+        }
+        
+        // Setup peerId. This allows us to skip changes from this device.
+        var peerIdURL = dirURL.appendingPathComponent("PeerId_\(id).txt")
+        if FileManager.default.fileExists(atPath: peerIdURL.path), let idRead = try? String(contentsOf: peerIdURL, encoding: .utf8) {
+            self.peerId = idRead
+        } else {
+            let newPeerId = UUID().uuidString
+            try newPeerId.write(to: peerIdURL, atomically: true, encoding: .utf8)
+            self.peerId = newPeerId
+            var res = URLResourceValues()
+            res.isExcludedFromBackup = true
+            try peerIdURL.setResourceValues(res)
         }
         
         // Restore state
@@ -84,16 +99,18 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
         let zone = CKRecordZone(zoneID: zoneID)
         engine.state.add(pendingDatabaseChanges: [.saveZone(zone)])
 
-        // Fork for sync
+        // Forks for sync
         try createForks()
         
         // Fetch the initial record using syncEngine's database
         Task { [self] in
             do {
-                guard recordFetchStatus == .uninitialized else { return }
                 let fetchedRecord = try await engine.database.record(for: recordID)
-                Logger.exchange.info("Successfully fetched initial record from syncEngine's database.")
-                recordFetchStatus = .fetched(fetchedRecord)
+                try forkedResource.performAtomically {
+                    guard recordFetchStatus == .uninitialized else { return }
+                    recordFetchStatus = .fetched(fetchedRecord)
+                    Logger.exchange.info("Successfully fetched initial record from syncEngine's database.")
+                }
             } catch {
                 recordFetchStatus = .doesNotExist
                 Logger.exchange.error("Failed to fetch initial record from syncEngine's database: \(error)")
