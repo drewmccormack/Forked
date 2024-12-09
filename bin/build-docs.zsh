@@ -1,4 +1,6 @@
 #!/bin/zsh
+# Will generate docs for GitHub Pages at URLs like
+# https://drewmccormack.github.io/Forked/ForkedMerge/documentation/forkedmerge/
 
 # First, clean the docs directory to ensure fresh generation
 rm -rf ./docs/*
@@ -19,31 +21,3 @@ for target in $targets; do
         --hosting-base-path "Forked/$target" \
         --enable-inherited-docs
 done
-
-# Create .nojekyll file to prevent GitHub Pages from ignoring files that begin with an underscore
-touch ./docs/.nojekyll
-
-# Create a simple index.html that links to each package's documentation
-cat > ./docs/index.html << EOL
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Documentation</title>
-</head>
-<body>
-    <h1>Available Documentation</h1>
-    <ul>
-EOL
-
-for target in $targets; do
-    echo "        <li><a href='./$target/documentation/$target/'>${target}</a></li>" >> ./docs/index.html
-done
-
-cat >> ./docs/index.html << EOL
-    </ul>
-</body>
-</html>
-EOL
-
-# Verify the output structure
-ls -la ./docs
