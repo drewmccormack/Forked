@@ -106,7 +106,7 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
         Task { [self] in
             do {
                 let fetchedRecord = try await engine.database.record(for: recordID)
-                try forkedResource.performAtomically {
+                forkedResource.performAtomically {
                     guard recordFetchStatus == .uninitialized else { return }
                     recordFetchStatus = .fetched(fetchedRecord)
                     Logger.exchange.info("Successfully fetched initial record from syncEngine's database.")

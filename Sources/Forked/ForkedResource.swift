@@ -11,9 +11,6 @@ public final class ForkedResource<RepositoryType: Repository>: @unchecked Sendab
     /// use the repository from outside the `ForkedResource` object. Doing so
     /// may lead to threading errors or logic bugs.
     let repository: RepositoryType
-    
-    /// Resolves conflicts
-    internal let resolver: Resolver<ResourceType> = .init()
         
     /// The timestamp of the most recent resource version added on any fork
     internal var mostRecentVersion: Version
