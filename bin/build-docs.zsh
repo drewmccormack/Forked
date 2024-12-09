@@ -16,7 +16,7 @@ for target in $targets; do
         --emit-digest \
         --disable-indexing \
         --transform-for-static-hosting \
-        --hosting-base-path "$target" \
+        --hosting-base-path "Forked/$target" \
         --enable-inherited-docs
 done
 
