@@ -29,7 +29,7 @@ enum RecordFetchStatus: Equatable {
 }
 
 @available(iOS 17.0, tvOS 17.0, watchOS 10.0, macOS 14.0, *)
-public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.Resource: Codable & Sendable {
+public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.Resource: Codable & Sendable & Mergeable {
     let id: String
     let forkedResource: ForkedResource<R>
     let cloudKitContainer: CKContainer
@@ -220,3 +220,4 @@ internal extension CloudKitExchange {
     }
     
 }
+
