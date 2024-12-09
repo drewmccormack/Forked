@@ -125,7 +125,9 @@ extension CloudKitExchange {
             try forkedResource.performAtomically {
                 recordFetchStatus = .fetched(record)
                 let resource = try JSONDecoder().decode(R.Resource.self, from: data)
-                let existingResource = try forkedResource.resource(of: .cloudKitDownload)
+                let newContent: CommitContent = .resource(resource)
+                let existingContent = try forkedResource.content(of: .cloudKitDownload)
+                guard existingContent != newContent else { return }
                 try forkedResource.update(.cloudKitDownload, with: resource)
                 try forkedResource.mergeIntoMain(from: .cloudKitDownload)
                 Logger.exchange.info("Updated cloudKitDownload with downloaded data, and merged into main")
