@@ -50,12 +50,15 @@ extension CloudKitExchange: CKSyncEngineDelegate {
                         if data != record.encryptedValues[CKRecord.resourceDataKey] {
                             record.encryptedValues[CKRecord.resourceDataKey] = data
                             record["peerId"] = peerId
+                            try forkedResource.update(.uploadingToCloudKit, with: resourceValue)
                             return record
                         } else {
+                            try forkedResource.removeContent(from: .uploadingToCloudKit)
                             syncEngine.state.remove(pendingRecordZoneChanges: [.saveRecord(recordID)])
                             return nil
                         }
                     } else {
+                        try forkedResource.removeContent(from: .uploadingToCloudKit)
                         syncEngine.state.remove(pendingRecordZoneChanges: [.saveRecord(recordID)])
                         return nil
                     }

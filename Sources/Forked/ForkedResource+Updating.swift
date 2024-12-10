@@ -35,6 +35,24 @@ public extension ForkedResource {
         }
     }
     
+    /// Update the contents of a fork with a new resource value. Will create a commit, and return the `Version`.
+    /// The difference between a restart and an update, is that the resource passed is assumed to be the common
+    /// ancestor of the fork with .main. Sometimes you can't achieve something through merging, and this gives
+    /// an override. In general, it should not be needed much, but is handy when in some instances.
+    /// Only use this if you know that the value of the resource precedes the value in .main, such that it
+    /// is eligble to be a common ancestor. If the value in .main is actually older, doing this will undo any changes in .main.
+    /// You can't restart the .main fork.
+    @discardableResult func restart(_ fork: Fork, with resource: ResourceType) throws -> Version {
+        guard fork != .main else { throw Error.attemptToRestartMainFork }
+        return try serialize {
+            let newVersion = try update(fork, with: .resource(resource))
+            try removeAllCommitsExceptMostRecent(in: fork)
+            let change = ForkChange(fork: fork, version: newVersion, mergingFork: nil)
+            addToChangeStreams(change)
+            return newVersion
+        }
+    }
+    
     /// Adds a new commit with content `.none`. This is like setting the content to `nil`.
     /// Note that this does not remove the fork, and the fork does still have commits. However, the value of the
     /// most recent commit will be `.none`, to indicate the absence of a resource.

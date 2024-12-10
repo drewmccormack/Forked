@@ -9,8 +9,8 @@ public extension Logger {
 }
 
 extension Fork {
-    static let cloudKitUpload: Self = .init(name: "cloudKitUpload")
-    static let cloudKitDownload: Self = .init(name: "cloudKitDownload")
+    static let cloudKit: Self = .init(name: "cloudKit")
+    static let uploadingToCloudKit: Self = .init(name: "uploadingToCloudKit")
 }
 
 extension CKRecord {
@@ -49,8 +49,8 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
     internal var syncState: SyncState
     
     private let changeStream: ChangeStream
-    private var monitorTask: Task<(), Never>!
-    private var pollingTask: Task<(), Swift.Error>!
+    private var monitorTask: Task<(), Never>?
+    private var pollingTask: Task<(), Swift.Error>?
         
     public init(id: String, forkedResource: ForkedResource<R>, cloudKitContainer: CKContainer = .default()) throws {
         self.id = id
@@ -123,7 +123,7 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
             for await _ in changeStream
                 .filter({
                     $0.fork == .main &&
-                    ![.cloudKitDownload, .cloudKitUpload].contains($0.mergingFork)
+                    .cloudKit != $0.mergingFork
                 })
                 .debounce(for: .seconds(1)) {
                 guard let self else { break }
@@ -141,7 +141,7 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
                 try await Task.sleep(for: .seconds(60))
                 Logger.exchange.info("Polling for new changes in cloud")
                 try? await engine.fetchChanges()
-                if let action = try? forkedResource.mergeIntoMain(from: .cloudKitDownload), action != .none {
+                if let action = try? forkedResource.mergeIntoMain(from: .cloudKit), action != .none {
                     Logger.exchange.info("Merged new changes into main from poll")
                 }
                 await uploadMain()
@@ -150,37 +150,28 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
     }
     
     deinit {
-        monitorTask.cancel()
-        pollingTask.cancel()
+        monitorTask?.cancel()
+        pollingTask?.cancel()
     }
     
     func resourceForUpload() throws -> R.Resource? {
         try forkedResource.performAtomically {
-            try forkedResource.mergeIntoMain(from: .cloudKitDownload)
-            try forkedResource.mergeFromMain(into: .cloudKitUpload)
-            return try forkedResource.resource(of: .cloudKitUpload)
-        }
-    }
-    
-    var needsUpload: Bool {
-        get throws {
-            try forkedResource.performAtomically {
-                try forkedResource.hasUnmergedCommitsForMain(in: .cloudKitDownload) ||
-                    forkedResource.hasUnmergedCommitsInMain(for: .cloudKitUpload)
-            }
+            try forkedResource.mergeIntoMain(from: .cloudKit)
+            return try forkedResource.resource(of: .main)
         }
     }
     
     private func enqueueUploadOfMainIfNeeded() {
         do {
             try forkedResource.performAtomically {
-                try forkedResource.mergeIntoMain(from: .cloudKitDownload)
-                if try needsUpload {
+                try forkedResource.mergeIntoMain(from: .cloudKit)
+                if try forkedResource.hasUnmergedCommitsInMain(for: .cloudKit) {
+                    let cloudKitContent = try forkedResource.content(of: .cloudKit)
+                    let mainContent = try forkedResource.content(of: .main)
+                    guard cloudKitContent != mainContent else { return }
+                    
                     Logger.exchange.info("Main fork has unmerged changes. Uploading...")
-                    let downloadedContent = try forkedResource.content(of: .cloudKitDownload)
-                    let content = try forkedResource.content(of: .main)
-                    guard downloadedContent != content else { return }
-                    if case .none = content {
+                    if case .none = mainContent {
                         engine.state.add(pendingRecordZoneChanges: [.deleteRecord(recordID)])
                     } else {
                         engine.state.add(pendingRecordZoneChanges: [.saveRecord(recordID)])
@@ -207,16 +198,15 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
 internal extension CloudKitExchange {
     
     nonisolated func createForks() throws {
-        for fork in [Fork.cloudKitUpload, .cloudKitDownload] where !forkedResource.has(fork) {
+        for fork in [Fork.cloudKit, Fork.uploadingToCloudKit] where !forkedResource.has(fork) {
             try forkedResource.create(fork)
         }
     }
     
     nonisolated func removeForks() throws {
-        for fork in [Fork.cloudKitUpload, .cloudKitDownload] where forkedResource.has(fork) {
-            try forkedResource.mergeIntoMain(from: fork)
-            try forkedResource.delete(fork)
-        }
+        try forkedResource.mergeIntoMain(from: .cloudKit)
+        try forkedResource.delete(.cloudKit)
+        try forkedResource.delete(.uploadingToCloudKit)
     }
     
 }

@@ -43,7 +43,7 @@ extension CloudKitExchange {
         Logger.exchange.info("Handling fetched record zone changes")
     
         // Skip if the modification came from this device.
-        // If we import it onto the .cloudKitDownload fork, it will be merged into main
+        // If we import it onto the .cloudKit fork, it will be merged into main
         // and then become the ancestor. When data from another device appears
         // it will rollback anything unchanged from the other device, because
         // it will be different to the ancestor, and will seem like a recent change.
@@ -62,8 +62,8 @@ extension CloudKitExchange {
             let id = deletion.recordID.recordName
             guard self.id == id else { continue }
             do {
-                try forkedResource.removeContent(from: .cloudKitDownload)
-                try forkedResource.mergeIntoMain(from: .cloudKitDownload)
+                try forkedResource.removeContent(from: .cloudKit)
+                try forkedResource.mergeIntoMain(from: .cloudKit)
                 recordFetchStatus = .doesNotExist
             } catch {
                 Logger.exchange.error("Failed to update resource with downloaded data: \(error)")
@@ -75,6 +75,44 @@ extension CloudKitExchange {
     }
     
     func handleSentRecordZoneChanges(_ event: CKSyncEngine.Event.SentRecordZoneChanges) {
+        for recordSave in event.savedRecords {
+            let id = recordSave.recordID.recordName
+            guard self.id == id else { continue }
+            Logger.exchange.info("Saved record to CloudKit: \(id)")
+
+            // We have the newly uploaded data. In the meantime,
+            // .main may have new changes, so we can't just merge.
+            // We use a restart instead. This sets our uploaded data
+            // as the new ancestor.
+            do {
+                try forkedResource.performAtomically {
+                    if let uploading = try forkedResource.resource(of: .uploadingToCloudKit) {
+                        try forkedResource.restart(.cloudKit, with: uploading)
+                        try forkedResource.removeContent(from: .uploadingToCloudKit)
+                    } else {
+                        Logger.exchange.error("Attempt to handle uploaded record, but no uploading resource found: \(recordSave.recordID.recordName)")
+                    }
+                }
+            } catch {
+                Logger.exchange.error("Exception handling sent record zone: \(error)")
+            }
+        }
+        
+        for recordDelete in event.deletedRecordIDs {
+            let id = recordDelete.recordName
+            guard self.id == id else { continue }
+            Logger.exchange.info("Deleted record in CloudKit: \(id)")
+            
+            do {
+                try forkedResource.performAtomically {
+                    try forkedResource.removeContent(from: .cloudKit)
+                    try forkedResource.removeContent(from: .uploadingToCloudKit)
+                }
+            } catch {
+                Logger.exchange.error("Exception handling sent record zone: \(error)")
+            }
+        }
+        
         for failedRecordSave in event.failedRecordSaves {
             let failedRecord = failedRecordSave.record
             let id = failedRecord.recordID.recordName
@@ -126,10 +164,10 @@ extension CloudKitExchange {
                 recordFetchStatus = .fetched(record)
                 let resource = try JSONDecoder().decode(R.Resource.self, from: data)
                 let newContent: CommitContent = .resource(resource)
-                let existingContent = try forkedResource.content(of: .cloudKitDownload)
+                let existingContent = try forkedResource.content(of: .cloudKit)
                 guard existingContent != newContent else { return }
-                try forkedResource.update(.cloudKitDownload, with: resource)
-                try forkedResource.mergeIntoMain(from: .cloudKitDownload)
+                try forkedResource.update(.cloudKit, with: resource)
+                try forkedResource.mergeIntoMain(from: .cloudKit)
                 Logger.exchange.info("Updated cloudKitDownload with downloaded data, and merged into main")
             }
         } catch {

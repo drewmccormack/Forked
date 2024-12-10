@@ -10,4 +10,5 @@ public enum Error: Swift.Error {
     case attemptToAccessNonExistentCommitInFork(Fork)
     case attemptToAccessNonExistentVersion(Version, Fork)
     case attemptToReplaceExistingVersion(Version, Fork)
+    case attemptToRestartMainFork
 }
