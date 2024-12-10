@@ -86,4 +86,14 @@ struct ManipulatingForksSuite {
         #expect(try resource.resource(of: fork) == 5)
         #expect(try resource.mainVersion(isSameAsVersionIn: fork))
     }
+    
+    @Test func quickForkMerge() throws {
+        let uiFork = Fork(name: "ui")
+        let intResource = QuickFork<Int>(initialValue: 0, forks: [uiFork])
+        try intResource.update(uiFork, with: 1)
+        try intResource.update(.main, with: 2)
+        try intResource.mergeIntoMain(from: uiFork)
+        let resultInt = try intResource.value(in: .main)!
+        #expect(resultInt == 2)
+    }
 }

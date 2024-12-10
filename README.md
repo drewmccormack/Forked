@@ -10,7 +10,7 @@ Forked can operate within a single iOS app, on a Swift server, or distributed ac
 
 In short, it's forking brilliant![^goodplace]
 
-## Quick Forking Start
+## Quick Start
 
 ### Installation
 
@@ -46,18 +46,20 @@ In contrast to locks, queues, and actors, Forked doesn't serialize access to a r
 
 Forked takes care of all the logic involved in the branching process, including keeping a copy of the data at the point that branches (known as _forks_) diverge. This divergence copy is known as the _common ancestor_, and it is important, because when it comes time to merge the branches again, Forked can use it to determine what was changed, and in what fork.
 
-You can merge branches safely at any time with Forked — in any order — using powerful merging algorithms that go way beyond what is available in other data modeling frameworks. For example, Forked utilizes so-called Conflict-Free Replicated Data Types (CRDTs) to merge text in a way that would seem logical to people, rather than just discarding some changes, or merging in an unnatural way (_eg_ letter by letter).
+You can merge branches safely at any time with Forked — in any order — using powerful merging algorithms that go way beyond what is available in other data modeling frameworks. For example, Forked utilizes so-called Conflict-Free Replicated Data Types (CRDTs) to merge text in a way that would seem logical to people, rather than just discarding some of the changes, or merging in an unnatural way (_eg_ letter by letter).
 
-## Show me the forking code!
+## Show Me The Forking Code!
+
+Ready to play? Let's learn about Forked by example.
 
 ### A Simple Forking Example
 
-Ready to play? Here is your first fork:
+Here is your first fork:
 
 ```swift
 import Forked
 let uiFork = Fork(name: "ui")
-let intResource = QuickFork<Int>(initialValue: 0, forks: [fork])
+let intResource = QuickFork<Int>(initialValue: 0, forks: [uiFork])
 ```
 
 `QuickFork` is a convenient way to create an in-memory `ForkedResource` holding a single value, in this case an `Int`.
@@ -70,7 +72,7 @@ Let's update the `Int` on `uiFork`, and independently on the `main` fork, then m
 try intResource.update(uiFork, with: 1)
 try intResource.update(.main, with: 2)
 try intResource.mergeIntoMain(from: uiFork)
-let resultInt = try intResource.resource(of: .main)!.value
+let resultInt = try intResource.value(in: .main)!
 ```
 
 The `resultInt` will be `2` in this case, because that was the value set most recently. 
@@ -92,11 +94,11 @@ struct AccumulatingInt: Mergeable {
 
 By conforming to the `Mergeable` protocol, `AccumulatingInt` has total control over how it is merged.
 
-The `Mergeable` protocol requires the func `merged(withSubordinate:commonAncestor:)`. The `subordinate` is a conflicting value from another fork, and `commonAncestor` is the value at the point that the two branches diverged.
+The `Mergeable` protocol requires the func `merged(withSubordinate:commonAncestor:)`. The `subordinate` is a conflicting value from another fork, and `commonAncestor` is the value at the point that the two forks diverged.
 
 The merge algorithm of `AccumulatingInt` determines what has changed on each fork since the common ancestor was created, and tallies these changes up to produce a new value.
 
-If we were to use an `AccumulatingInt` in the original example, instead of an `Int`, the result would be `3`, because the `uiFork` incremented by `1`, and the `.main` fork incremented by `2`, giving a total of `3`.
+If we were to use an `AccumulatingInt` in the original example, instead of an `Int`, the result would be `3`, because the `uiFork` incremented by `1`, and the `main` fork incremented by `2`, giving a total of `3`.
 
 ### Merging Algorithms
 
@@ -111,7 +113,8 @@ import ForkedMerge
 struct TextDocument: Mergeable {
     var text: String = ""
     func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
-        let newText = try TextMerger().merge(self.text, 
+        let newText = try TextMerger().merge(
+            self.text, 
             withSubordinate: other.text, 
             commonAncestor: commonAncestor.text
         )
@@ -120,11 +123,13 @@ struct TextDocument: Mergeable {
 }
 ```
 
-It doesn't look like much, but you've just created the model for a fully collaborative text editor. If the model initially contains the text "Fork Yeah", and one user changes this to "Fork Yeah!", and another changes it at the same time to "Fork yeah", the `TextMerger` will do what you would expect, merging to give "Fork yeah!".
+It doesn't look like much, but you've just created the model for a fully collaborative text editor. For example, if the model initially contains the text "Fork Yeah", and one user changes this to "Fork Yeah!", and another changes it at the same time to "Fork yeah", the `TextMerger` will do what you would expect, merging to give "Fork yeah!".
 
 ### Modeling Data
 
-Having complete control over merging is great, and the merging algorithms provided by `ForkedMerge` make it much easier to piece together, but wouldn't it be nice if `Forked` could just generate this code automatically? That's exactly what `ForkedModel` is for. It uses Swift Macros to make defining a global data model almost trivial. 
+Having complete control over merging is great, and the merging algorithms provided by `ForkedMerge` make it much easier to piece things together, but wouldn't it be nice if `Forked` could just generate this code automatically? 
+
+That's exactly what `ForkedModel` is for. It uses Swift Macros to make defining a global data model almost trivial. 
 
 Let's update `TextDocument` to use `ForkedModel`:
 
@@ -138,7 +143,7 @@ struct TextDocument {
 }
 ```
 
-"Where's the rest?" I hear you cry. There is not rest. That is the forking lot!
+"Where's the rest?" I hear you cry. There is no rest. That is the forking lot!
 
 This code is equivalent to the code we wrote manually in the previous section. It could form the basis of a fully collaborative text editor, or simply a personal editor syncing via iCloud.
 
@@ -156,12 +161,14 @@ struct TextDocument {
     @Merged var text: String = ""
     @Merged var tags: Set<String> = []
     @Merged(using: .textMerge) var comment: String = ""
-    @Merged var editCount: AccumulatingInt = 0
+    @Merged var editCount: AccumulatingInt = .init()
     var cursorPosition: Int = 0
 }
 ```
 
-The `@Merged` attribute tells `ForkedModel` that the property is `Mergeable`, and it should use an appropriate merging algorithm. There are defaults for most common types, but you can also specify your own merging algorithm by passing it to the `using:` parameter. If you have a custom type, like `AccumulatingInt`, applying `@Merged` will cause it to merge using the `merged(withSubordinate:commonAncestor:)` method you provided. 
+The `@Merged` attribute tells `ForkedModel` that the property is `Mergeable`, and it should use an appropriate merging algorithm. There are defaults for most common types, but you can also specify your own merging algorithm by passing it to the `using:` parameter. 
+
+If you have a custom `Mergeable` type, like `AccumulatingInt`, applying `@Merged` will cause it to merge using the `merged(withSubordinate:commonAncestor:)` method you provided. 
 
 Properties without `@Merged` attached will be merged atomically, with a more recent change taking precedence over an older one. Properties that are `Equatable` will be merged property-wise, independent of the rest of the struct, based on the most recent change to the property itself. Properties that are not `Equatable` will take their value from the newest value of the struct, and not be merged property-wise.
 
@@ -170,13 +177,13 @@ Properties without `@Merged` attached will be merged atomically, with a more rec
 A good way to get started with `Forked` is to take a look at the sample apps provided. They range in difficulty from very basic, to a functional iCloud-based Contacts app. You can find them all in the `Samples` directory. 
 
 #### A Race of Actors
-Actors solve the problem of data races in Swift very well, but they don't help at all with race conditions, and can even make them worse. This sample shows you can use a `ForkedResource` inside of an actor to handle race conditions in a straightforward way.
+Actors solve the problem of data races in Swift very well, but they don't help at all with race conditions, and can even give rise to new ones. This sample shows you can use a `ForkedResource` inside of an actor to handle race conditions in a straightforward way.
 
 #### Forked Model
 Sets up a simple mergeable model similar to the ones above. The UI allows you to change the values of text and a counter in two different forks, and pressing a button you see how they get merged.
 
 #### Forking Simple iCloud
-The model in this sample is secondary, and even simpler than the others. The import thing in this sample is how you setup the `CloudKitExchange` to sync data with iCloud. It shows how you can use a `ForkedResource` for storage, update a property for display in SwiftUI, and monitor changes to forks in order to refresh the UI when changes arrive from iCloud.
+The model in this sample is extremely simple, and is secondary to how you setup the `CloudKitExchange` to sync data with iCloud. It shows how you can use a `ForkedResource` for storage on disk, update a property for display in SwiftUI, and monitor changes to forks in order to refresh the UI when changes arrive from iCloud.
 
 #### Forkers
 Forkers is a contacts app for keeping track of your favorite forkers. The model is more complex than the other samples, showing how you can nest `Mergeable` types, in this case with an `Array` of your contacts. It also integrates with iCloud, giving a fully functional, local-first contacts app.
