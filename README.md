@@ -1,8 +1,9 @@
 # Forked
-_No more forking around with your data!_
 
 [![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fdrewmccormack%2FForked%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/drewmccormack/Forked)
 [![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fdrewmccormack%2FForked%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/drewmccormack/Forked)
+
+_No more forking around with your Swift data!_
 
 Forked provides a generalized approach to managing shared data in Swift applications, taking control of data races and race conditions. It can be used to replace — or be used in conjunction with — actors, locks, and queues.
 
