@@ -124,7 +124,7 @@ struct TextDocument: Mergeable {
 }
 ```
 
-It doesn't look like much, but you've just created the model for a fully collaborative text editor. For example, if the model initially contains the text "Fork Yeah", and one user changes this to "Fork Yeah!", and another changes it at the same time to "Fork yeah", the `TextMerger` will do what you would expect, merging to give "Fork yeah!".
+It doesn't look like much, but you've just created the model for a fully collaborative text editor. For example, if the model initially contains the text "Fork Yeah", and one user changes this to "Fork Yeah!!!", while another changes it at the same time to "Fork yeah", the `TextMerger` will do what you would expect, merging to give "Fork yeah!!!".
 
 ### Modeling Data
 
@@ -177,32 +177,32 @@ Properties without `@Merged` attached will be merged atomically, with a more rec
 
 A good way to get started with `Forked` is to take a look at the sample apps provided. They range in difficulty from very basic, to a functional iCloud-based Contacts app. You can find them all in the `Samples` directory. 
 
-#### A Race of Actors
+##### [A Race of Actors](https://github.com/drewmccormack/Forked/tree/main/Samples/A%20Race%20of%20Actors)
 Actors solve the problem of data races in Swift very well, but they don't help at all with race conditions, and can even give rise to new ones. This sample shows you can use a `ForkedResource` inside of an actor to handle race conditions in a straightforward way.
 
-#### Forked Model
+##### [Forked Model](https://github.com/drewmccormack/Forked/tree/main/Samples/Forked%20Model)
 Sets up a simple mergeable model similar to the ones above. The UI allows you to change the values of text and a counter in two different forks, and pressing a button you see how they get merged.
 
-#### Forking Simple iCloud
+##### [Forking Simple iCloud](https://github.com/drewmccormack/Forked/tree/main/Samples/Forking%20Simple%20iCloud)
 The model in this sample is extremely simple, and is secondary to how you setup the `CloudKitExchange` to sync data with iCloud. It shows how you can use a `ForkedResource` for storage on disk, update a property for display in SwiftUI, and monitor changes to forks in order to refresh the UI when changes arrive from iCloud.
 
-#### Forkers
+##### [Forkers](https://github.com/drewmccormack/Forked/tree/main/Samples/Forkers)
 Forkers is a contacts app for keeping track of your favorite forkers. The model is more complex than the other samples, showing how you can nest `Mergeable` types, in this case with an `Array` of your contacts. It also integrates with iCloud, giving a fully functional, local-first contacts app.
 
 ## Docs
 
 Documentation is available for each subpackage.
 
-#### [Forked](https://drewmccormack.github.io/Forked/Forked/documentation/forked)
+##### [Forked](https://drewmccormack.github.io/Forked/Forked/documentation/forked)
 This is the core package, and needed to use any of the other packages. It provides `ForkedResource`, which is the basic building block of `Forked`.
 
-#### [ForkedMerge](https://drewmccormack.github.io/Forked/ForkedMerge/documentation/forkedmerge)
+##### [ForkedMerge](https://drewmccormack.github.io/Forked/ForkedMerge/documentation/forkedmerge)
 This package provides the standard merging algorithms for `Mergeable` types. It also includes a number of Conflict-Free Replicated Data Types (CRDTs).
 
-#### [ForkedModel](https://drewmccormack.github.io/Forked/ForkedModel/documentation/forkedmodel)
+##### [ForkedModel](https://drewmccormack.github.io/Forked/ForkedModel/documentation/forkedmodel)
 This package provides the `@ForkedModel` and `@Merged` macros, which allow you to define a global data model using value types.
 
-#### [ForkedCloudKit](https://drewmccormack.github.io/Forked/ForkedCloudKit/documentation/forkedcloudkit)
+##### [ForkedCloudKit](https://drewmccormack.github.io/Forked/ForkedCloudKit/documentation/forkedcloudkit)
 This provides the `CloudKitExchange` class, which automatically syncs a `ForkedResource` between devices with iCloud.
 
 ## Contributing
