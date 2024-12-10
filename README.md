@@ -3,42 +3,19 @@
 [![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fdrewmccormack%2FForked%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/drewmccormack/Forked)
 [![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fdrewmccormack%2FForked%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/drewmccormack/Forked)
 
-Forked introduces a new approach to sharing data in Swift apps. It not only prevents data races,
-where multiple threads access data at the same time, it also prevents race conditions causing 
-data to become invalid, which is a common problem when using Swift actors. 
-Forked even helps maintain the validity of data shared between devices!
+Forked provides a generalized approach to managing shared data in Swift applications, taking control of data races and race conditions. It can be used to replace — or be used in conjunction with — actors, locks, and queues.
 
-This package provides a forking data structure to manage concurrent access to shared resources in Swift.
-You can protect shared data, preventing corruption and guaranteeing validity, without locks, queues,
-or even actors. 
+Forked can operate within a single iOS app, on a Swift server, or distributed across a network. The ForkedCloudKit package, for example, supports syncing of data across devices in just a few lines of code.
 
 In short, it's forking brilliant! [1] 
 
-## Features
+## Quick Forking Start
 
-Scroll down for a fuller discussion of Forked. Here is the tldr; summary.
+### Installation
 
-- Existing approaches to sharing data can easily lead to invalid state
-    - Actors suffer from race conditions due to interleaving and reentrance
-    - Locks can deadlock, cause freezes, and require disipline to use correctly
-    - Queues can also deadlock, freeze, and tend to result in verbose code
-- Forked...
-    - Provides a shared data structure that avoids these issues
-    - Restricts access to shared data, like an actor
-    - Can be used where different subsystems are updating the same data
-    - Works with other shared resources, like files
-    - Can be used to manage sharing with remote servers
-    - Can be used to sync your data via CloudKit and other services
-- How it works
-    - Forked is based on a decentral model similar to Git
-    - It tracks changes to a shared resource, and resolves conflicts using 3-way merging
-    - You are in control, and never lose changes to your data. Fork yeah!
+#### Swift Package Manager
 
-## Installation
-
-### Swift Package Manager
-
-To add Forked to your project, add the following to your `Package.swift` file:
+Add to your `Package.swift`:
 
 ```swift
 dependencies: [
@@ -46,209 +23,178 @@ dependencies: [
 ]
 ```
 
-And then add the Forked library to your target.
+#### Xcode
 
-### Xcode
+1. Select your project in the navigator
+2. Open the Package Dependencies tab
+3. Click + and enter: `https://github.com/drewmccormack/Forked.git`
 
-To add Forked to a project in Xcode, select the project root in the source list,
-and then in the panel on the right. Open the Package Dependencies tab, and
-use the + button to add a new dependency. Enter the URL for the Forked project,
-and add the package to the appropriate targets.
+## Key Features
 
-### Importing
+- **Git-like**: Uses a decentralized approach similar to Git for tracking and merging changes
+- **Safe & Simple Data Concurrency**: Prevents data races _and_ race conditions, ensuring data validity without locks, queues, or actors
+- **Conflict Resolution**: 3-way merging with advanced algorithms, including Conflict-Free Replicated Data Types (CRDTs)
+- **Data Modeling**: Develop a global data model using value types (_eg_ structs) throughout
+- **Local First**: Develop multi-device apps which sync automatically via iCloud
 
-In the files where you want to use Forked, import it:
+## How it Works
+
+Forked is based on a decentral model similar to Git. It tracks changes to a shared data resource, and resolves conflicts using 3-way merging. You are in control, and never lose any changes to your data. Forking great, right?!
+
+In contrast to locks, queues, and actors, Forked doesn't serialize access to a resource. Instead, Forked provides a branching mechanism to systematically create copies of the data, which can be modified concurrently, and merged at a later time.
+
+Forked takes care of all the logic involved in the branching process, including keeping a copy of the data at the point that branches (known as _forks_) diverge. This divergence copy is known as the _common ancestor_, and it is important, because when it comes time to merge the branches again, Forked can use it to determine what was changed, and in what fork.
+
+You can merge branches safely at any time with Forked — in any order — using powerful merging algorithms that go way beyond what is available in other data modeling frameworks. For example, Forked utilizes so-called Conflict-Free Replicated Data Types (CRDTs) to merge text in a way that would seem logical to people, rather than just discarding some changes, or merging in an unnatural way (_eg_ letter by letter).
+
+## Show me the forking code!
+
+### A Simple Forking Example
+
+Ready to play? Here is your first fork:
 
 ```swift
 import Forked
+let uiFork = Fork(name: "ui")
+let intResource = QuickFork<Int>(initialValue: 0, forks: [fork])
 ```
 
-## Usage
+`QuickFork` is a convenient way to create an in-memory `ForkedResource` holding a single value, in this case an `Int`.
 
-`ForkedResource` is the central data structure in `Forked`. It is a container for
-your shared data, which manages access to it.
+We have also declared `uiFork`, which is a named fork. Aside from forks you create yourself, all `ForkedResource` instances have a central fork called `main`, which can be merged with any other fork.
 
-You can store standard data types in Forked, such as `Data`, `Int`, and `String`. But 
-it becomes more powerful when you store your own data types.
-
-Define your shared data type
-
-Define how you want it to merge if a conflict should arise due to concurrent changes
-
-Decide what subsystems need to access it, and make forks for each
-
-Only one subsystem should update a given fork
-
-One rule of fork club: keep a fork chronological. 
-Only update a fork with new data that comes after what is already in the for
-
-We plan to add tools to help with merging of data. So before you get discouraged,
-it's forking comin', OK?!
-
-## Beyond Locks, Queues and Actors
-
-As a Swift developer, you have a variety of tools available to you in order
-to control access to shared data. 
-
-Actors are the most recent means of protecting shared data in Swift, and they do 
-guarantee that your data will not be corrupted by concurrent access from 
-multiple threads. 
-
-Unfortunately, actors can
-experience _interleaving_, whereby a race may arise when you include any 
-async funcs. This makes it difficult to make guarantees about data validity. 
-Funcs can be in-flight at the same time, modifying shared data in unexpected ways.
-Your data may end in an unexpected state, and can even be completely invalid. 
-What the fork?!
-
-Queues (eg `Dispatch`) and locks (eg `NSLock`) have been around longer, and can also prevent
-concurrent access to shared data. What's more, they don't suffer from the same
-interleaving issues that actors do. However, improper use can lead to deadlocks (freezes), or 
-temporary blockages of threads, which may result in undesirable
-glitches in an app's user interface.
-
-Forked provides a data structure which can be used across threads, and 
-guarantees not only that shared data is uncorrupted, but also is in a valid state.
-Data races, interleaving and deadlocks are not possible with Forked.
-
-## Forked and Actors
-
-May seem forked replaces them
-
-Not true. Forked just takes over one aspect of actors, namely, controlling access to shared data
-
-Forked does not provide any executable code, it is purely a data structure
-
-An actor has executable code
-
-You can use the two together
-
-Take this scenario
-
-```
-struct AppData { ... }
-
-actor Store {
-    private var appData: AppData
-
-    func download() async {
-        // Code including suspension points (await)
-        ...
-    }
-    
-    func import() async {
-        // Code including suspension points (await)
-        ...
-    }
-    
-    func userEntry() {
-        ...
-    }    
-}
-
-```
-This actor is charged with storing your app's data, and can be updated in a
-variety of different ways. The user could make changes; a long running data 
-import may take place, and data may even be downloaded from a server. The 
-funcs `import` and `download` are asynchronous, and can await other funcs.
-
-With this design, there is a reasonable chance that if any of the funcs are
-in-flight at the same time, or even invoked repeatedly, `sharedData` will
-end up invalid, or simply not contain all the changes. The actor will prevent
-concurrent access from different threads, but will not guarantee that only one
-func is in-flight at the same time, meaning it will be very easy for, say, a
-`download` to overwrite changes made by the user.
-
-Here is the same setup using Forked, which guarantees no data will ever be lost.
-
-```
-struct AppData: Resource { ... }
-struct AppDataResolver: Resolver { ... }
-
-actor Store {
-    private let forkedAppData: ForkedResource<AppData>
-    
-    private let resolver = AppDataResolver()
-    private let downloadFork = Fork(name: "download")
-    private let importFork = Fork(name: "import")
-    private let userEntryFork = Fork(name: "userEntry")
-
-    init() {
-        // Create new forked resource (if needed)
-        forkedAppData = ForkedResource<AppData>()
-        forkedAppData.update(.main, with: AppData())
-        forkedAppData.create(downloadFork)
-        forkedAppData.create(importFork)
-        forkedAppData.create(userEntryFork)
-    }
-
-    func download() async {
-        // Get latest data
-        forkedAppData.mergeAllForks(into: .downloadFork, resolver: resolver)
-        var appData: AppData = forkedAppData.resource(of: downloadFork)!
-        
-        // Update appData with downloaded data (async)
-        ...
-        
-        // Save
-        forkedAppData.update(downloadFork, with: appData)
-    }
-    
-    func import() async {
-        // Get latest data
-        forkedAppData.mergeAllForks(into: importFork)
-        var appData: AppData = forkedAppData.resource(of: importFork)!
-        
-        // Update appData with imported data (async)
-        ...
-        
-        // Save
-        forkedAppData.update(importFork, with: appData)
-    }
-    
-    func userEntry() {
-        ...
-    }    
-}
-
-```
-
-## Beyond Actors
-
-If you thought that Swift actors could protect shared data, you are only half right. 
-It is true that an actor will prevent concurrent access to a shared resource from
-multiple threads, thereby ensuring it is not corrupted. But actors do not prevent
-data races, and can lead to unexpected behavior, and difficult to track down bugs.
-In short, your shared data may not be corrupted, but it may not be valid either.
-
-Take this simple example of an actor that maintains a count.
+Let's update the `Int` on `uiFork`, and independently on the `main` fork, then merge to get the result:
 
 ```swift
-actor Counter {
-    var sum: Int = 0
-    
-    func addOne() {
-        sum += 1
-    }
-    
-    func addTwo() {
-        sum += 2
-    }
-}
+try intResource.update(uiFork, with: 1)
+try intResource.update(.main, with: 2)
+try intResource.mergeIntoMain(from: uiFork)
+let resultInt = try intResource.resource(of: .main)!.value
+```
 
-Task {
-    let counter = Counter()
-    async let first = await counter.addOne()
-    async let second = await counter.addTwo()
-    _ = await [first, second]
-    let result = await counter.sum
-    print("The result is \(result)")
+The `resultInt` will be `2` in this case, because that was the value set most recently. 
+
+### Controlled Forking
+
+For an atomic type like an `Int`, the results of merging are not very interesting; the real power of Forked comes from its ability to merge complex data types. 
+
+Let's start by defining a struct so we can control the merging behavior of the `Int`.
+
+```swift
+struct AccumulatingInt: Mergeable {
+    var value: Int = 0
+    func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
+        return AccumulatingInt(value: self.value + other.value - commonAncestor.value)
+    }
 }
 ```
 
-So far, so good. Even though we have deliberately called the `addOne` and `addTwo`
-funcs concurrently, we can be sure that each func is executed serially, 
-and the result is always 3.
+By conforming to the `Mergeable` protocol, `AccumulatingInt` has total control over how it is merged.
+
+The `Mergeable` protocol requires the func `merged(withSubordinate:commonAncestor:)`. The `subordinate` is a conflicting value from another fork, and `commonAncestor` is the value at the point that the two branches diverged.
+
+The merge algorithm of `AccumulatingInt` determines what has changed on each fork since the common ancestor was created, and tallies these changes up to produce a new value.
+
+If we were to use an `AccumulatingInt` in the original example, instead of an `Int`, the result would be `3`, because the `uiFork` incremented by `1`, and the `.main` fork incremented by `2`, giving a total of `3`.
+
+### Merging Algorithms
+
+So you can come up with structs that can merge in any way that you choose, but those merging algorithms can quickly get complex. That's where the subpackage `ForkedMerge` comes in: it provides standard built-in merging algorithms.
+
+Imagine we are developing a text editor with this oversimplified model:
+
+```swift
+import Forked
+import ForkedMerge
+
+struct TextDocument: Mergeable {
+    var text: String = ""
+    func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
+        let newText = try TextMerger().merge(self.text, 
+            withSubordinate: other.text, 
+            commonAncestor: commonAncestor.text
+        )
+        return TextDocument(text: newText)
+    }
+}
+```
+
+It doesn't look like much, but you've just created the model for a fully collaborative text editor. If the model initially contains the text "Fork Yeah", and one user changes this to "Fork Yeah!", and another changes it at the same time to "Fork yeah", the `TextMerger` will do what you would expect, merging to give "Fork yeah!".
+
+### Modeling Data
+
+Having complete control over merging is great, and the merging algorithms provided by `ForkedMerge` make it much easier to piece together, but wouldn't it be nice if `Forked` could just generate this code automatically? That's exactly what `ForkedModel` is for. It uses Swift Macros to make defining a global data model almost trivial. 
+
+Let's update `TextDocument` to use `ForkedModel`:
+
+```swift
+import Forked
+import ForkedModel
+
+@ForkedModel
+struct TextDocument {
+    @Merged var text: String = ""
+}
+```
+
+"Where's the rest?" I hear you cry. There is not rest. That is the forking lot!
+
+This code is equivalent to the code we wrote manually in the previous section. It could form the basis of a fully collaborative text editor, or simply a personal editor syncing via iCloud.
+
+And it doesn't stop there: each property in the struct gets merged independently. You can choose from a standard _atomic_ merge for simple types, to advanced merging algorithms for common Swift types like `String`, `Array`, `Dictionary`, and `Set`.
+
+To demonstrate, here is a more complex example of `TextDocument`:
+
+```swift
+import Forked
+import ForkedModel
+
+@ForkedModel
+struct TextDocument {
+    var id: UUID = UUID()
+    @Merged var text: String = ""
+    @Merged var tags: Set<String> = []
+    @Merged(using: .textMerge) var comment: String = ""
+    @Merged var editCount: AccumulatingInt = 0
+    var cursorPosition: Int = 0
+}
+```
+
+The `@Merged` attribute tells `ForkedModel` that the property is `Mergeable`, and it should use an appropriate merging algorithm. There are defaults for most common types, but you can also specify your own merging algorithm by passing it to the `using:` parameter. If you have a custom type, like `AccumulatingInt`, applying `@Merged` will cause it to merge using the `merged(withSubordinate:commonAncestor:)` method you provided. 
+
+Properties without `@Merged` attached will be merged atomically, with a more recent change taking precedence over an older one. Properties that are `Equatable` will be merged property-wise, independent of the rest of the struct, based on the most recent change to the property itself. Properties that are not `Equatable` will take their value from the newest value of the struct, and not be merged property-wise.
+
+## Sample Code
+
+A good way to get started with `Forked` is to take a look at the sample apps provided. They range in difficulty from very basic, to a functional iCloud-based Contacts app. You can find them all in the `Samples` directory. 
+
+#### A Race of Actors
+Actors solve the problem of data races in Swift very well, but they don't help at all with race conditions, and can even make them worse. This sample shows you can use a `ForkedResource` inside of an actor to handle race conditions in a straightforward way.
+
+#### Forked Model
+Sets up a simple mergeable model similar to the ones above. The UI allows you to change the values of text and a counter in two different forks, and pressing a button you see how they get merged.
+
+#### Forking Simple iCloud
+The model in this sample is secondary, and even simpler than the others. The import thing in this sample is how you setup the `CloudKitExchange` to sync data with iCloud. It shows how you can use a `ForkedResource` for storage, update a property for display in SwiftUI, and monitor changes to forks in order to refresh the UI when changes arrive from iCloud.
+
+#### Forkers
+Forkers is a contacts app for keeping track of your favorite forkers. The model is more complex than the other samples, showing how you can nest `Mergeable` types, in this case with an `Array` of your contacts. It also integrates with iCloud, giving a fully functional, local-first contacts app.
+
+## Docs
+
+Documentation is available for each subpackage.
+
+#### [Forked](https://drewmccormack.github.io/Forked/Forked/documentation/forked)
+This is the core package, and needed to use any of the other packages. It provides `ForkedResource`, which is the basic building block of `Forked`.
+
+#### [ForkedMerge](https://drewmccormack.github.io/Forked/ForkedMerge/documentation/forkedmerge)
+This package provides the standard merging algorithms for `Mergeable` types. It also includes a number of Conflict-Free Replicated Data Types (CRDTs).
+
+#### [ForkedModel](https://drewmccormack.github.io/Forked/ForkedModel/documentation/forkedmodel)
+This package provides the `@ForkedModel` and `@Merged` macros, which allow you to define a global data model using value types.
+
+#### [ForkedCloudKit](https://drewmccormack.github.io/Forked/ForkedCloudKit/documentation/forkedcloudkit)
+This provides the `CloudKitExchange` class, which automatically syncs a `ForkedResource` between devices with iCloud.
 
 ## Contributing
 
@@ -256,8 +202,8 @@ Contributions are welcome! Please feel free to submit a pull request or open an 
 
 ## License
 
-Forked is available under the MIT license. See the LICENSE file for more info.
+Forked is available under the MIT license. See the LICENCE file for more info.
 
 ## Footnotes
 
-[1] "Forking" jokes are inspired by [The Good Place](https://en.wikipedia.org/wiki/The_Good_Place).
+[1] "Forking" jokes are inspired by [The Good Place](https://en.wikipedia.org/wiki/The_Good_Place). Go watch it!
