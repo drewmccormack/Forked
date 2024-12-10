@@ -8,7 +8,7 @@ Forked provides a generalized approach to managing shared data in Swift applicat
 
 Forked can operate within a single iOS app, on a Swift server, or distributed across a network. The ForkedCloudKit package, for example, supports syncing of data across devices in just a few lines of code.
 
-In short, it's forking brilliant! [1] 
+In short, it's forking brilliant![^goodplace]
 
 ## Quick Forking Start
 
@@ -207,4 +207,4 @@ Forked is available under the MIT license. See the LICENCE file for more info.
 
 ## Footnotes
 
-[1] "Forking" jokes are inspired by [The Good Place](https://en.wikipedia.org/wiki/The_Good_Place). Go watch it!
+[^goodplace]: "Forking" jokes are inspired by [The Good Place](https://en.wikipedia.org/wiki/The_Good_Place). Go watch it!
