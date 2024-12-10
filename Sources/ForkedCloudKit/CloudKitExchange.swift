@@ -9,7 +9,12 @@ public extension Logger {
 }
 
 extension Fork {
+    /// Represents the last known state of the resource on the cloud.
     static let cloudKit: Self = .init(name: "cloudKit")
+    
+    /// Used as temporary storage for uploading data. It's a staging area. We never merge it.
+    /// We have this, because we don't want to update .cloudKit before we know that the upload
+    /// definitely took place.
     static let uploadingToCloudKit: Self = .init(name: "uploadingToCloudKit")
 }
 
