@@ -82,4 +82,69 @@ extension Repository {
         try store(commit, in: toFork)
     }
     
+    /// Returns the occupation state of a fork based on its stored commits.
+    /// - If there are no commits, the fork is considered the same as main
+    /// - If there is one commit, that commit is both the current value and common ancestor (fork is behind main)
+    /// - If there are two commits, the oldest is the common ancestor and newest is the current value
+    /// - If there are more than two commits, only the oldest (ancestor) and newest (current) are relevant
+    func occupation(of fork: Fork) throws -> ForkOccupation<Resource> {
+        guard fork != .main else { return .sameAsMain }
+        
+        let versions = try ascendingVersions(storedIn: fork)
+        
+        switch versions.count {
+        case 0:
+            return .sameAsMain
+            
+        case 1:
+            // Single commit means fork is behind main
+            let version = versions.first!
+            let content = try content(of: fork, at: version)
+            let commit = Commit(content: content, version: version)
+            return .leftBehindByMain(commit)
+            
+        case 2...:
+            // Two or more commits - oldest is ancestor, newest is current
+            let ancestorVersion = versions.first!
+            let currentVersion = versions.last!
+            
+            let ancestorContent = try content(of: fork, at: ancestorVersion)
+            let currentContent = try content(of: fork, at: currentVersion)
+            
+            let ancestorCommit = Commit(content: ancestorContent, version: ancestorVersion)
+            let currentCommit = Commit(content: currentContent, version: currentVersion)
+            
+            return .conflictingWithMain(currentCommit, commonAncestor: ancestorCommit)
+            
+        default:
+            fatalError("Negative count of versions should be impossible")
+        }
+    }
+    
+    /// Removes any commits that are neither the ancestor nor the current commit.
+    /// For the main fork, only keeps the most recent commit.
+    /// For other forks:
+    /// - If empty or one commit, does nothing
+    /// - If two or more commits, keeps only the oldest (ancestor) and newest (current)
+    func removeRedundantCommits(from fork: Fork) throws {
+        let versions = try ascendingVersions(storedIn: fork)
+        
+        if fork == .main {
+            // Main fork only needs most recent commit
+            let versionsToRemove = versions.dropLast()
+            for version in versionsToRemove {
+                try removeCommit(at: version, from: fork)
+            }
+            return
+        }
+        
+        // For other forks with more than 2 commits,
+        // remove everything except oldest (ancestor) and newest (current)
+        if versions.count > 2 {
+            let versionsToKeep = Set([versions.first!, versions.last!])
+            for version in versions where !versionsToKeep.contains(version) {
+                try removeCommit(at: version, from: fork)
+            }
+        }
+    }
 }
