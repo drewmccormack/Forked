@@ -33,10 +33,12 @@ public final class ForkedResource<RepositoryType: Repository>: @unchecked Sendab
         self.repository = repository
 
         if !repository.forks.contains(.main) {
+            // Create main fork in its initial state
             try repository.create(.main, withInitialCommit: .init(content: .none, version: Version.initialVersion))
+            self.mostRecentVersion = Version.initialVersion
+        } else {
+            self.mostRecentVersion = try repository.mostRecentVersion()
         }
-        
-        self.mostRecentVersion = try repository.mostRecentVersion()
     }
     
     deinit {
@@ -91,3 +93,4 @@ extension ForkedResource {
     }
     
 }
+

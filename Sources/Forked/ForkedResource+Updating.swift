@@ -174,13 +174,9 @@ internal extension ForkedResource {
     func removeAllCommitsExceptMostRecent(in fork: Fork) throws {
         try serialize {
             switch try repository.occupation(of: fork) {
-            case .sameAsMain:
-                return // Nothing to remove
-            case .leftBehindByMain(let commit):
-                // Only one commit, nothing to remove
+            case .sameAsMain, .leftBehindByMain:
                 return
-            case .aheadOrConflictingWithMain(_, commonAncestor: _):
-                // Remove the common ancestor, keeping only current commit
+            case .aheadOrConflictingWithMain:
                 try removeCommonAncestor(in: fork)
             }
         }
