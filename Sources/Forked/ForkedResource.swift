@@ -10,7 +10,7 @@ public final class ForkedResource<RepositoryType: Repository>: @unchecked Sendab
     /// The forked resource takes complete ownership of this. You should not
     /// use the repository from outside the `ForkedResource` object. Doing so
     /// may lead to threading errors or logic bugs.
-    let repository: RepositoryType
+    public let repository: RepositoryType
         
     /// The timestamp of the most recent resource version added on any fork
     internal var mostRecentVersion: Version
@@ -29,6 +29,8 @@ public final class ForkedResource<RepositoryType: Repository>: @unchecked Sendab
 
     /// Initialize the `ForkedResource` with a repository. If the repository is new,
     /// and has no main fork, one will be added with an initial commit.
+    /// - Parameter repository: The repository to use for storing the forked resource data
+    /// - Throws: An error if creating the main fork or accessing repository data fails
     public init(repository: RepositoryType) throws {
         self.repository = repository
 
@@ -47,6 +49,8 @@ public final class ForkedResource<RepositoryType: Repository>: @unchecked Sendab
         }
     }
     
+    /// Persists any pending changes in the underlying repository to permanent storage
+    /// - Throws: An error if the persistence operation fails
     public func persist() throws {
         try repository.persist()
     }
@@ -65,8 +69,9 @@ internal extension ForkedResource {
 
 extension ForkedResource {
     
-    /// Creates and returns an AsyncStream which provides a
-    /// stream of all changes. It fires for any change to any fork.
+    /// Creates and returns an AsyncStream which provides notifications of all changes to any fork
+    /// in the repository. The stream will continue until cancelled or until the ForkedResource
+    /// is deallocated.
     public var changeStream: ChangeStream {
         serialize {
             ChangeStream { [weak self] continuation in

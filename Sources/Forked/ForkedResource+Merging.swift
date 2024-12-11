@@ -41,7 +41,7 @@ public extension ForkedResource {
     }
     
     /// If the Resource is not Mergeable, fallback to last-write-wins approach. Most recent commit is chosen.
-    func mergedContent(forConflicting commits: ConflictingCommits<ResourceType>, withCommonAncestor ancestorCommit: Commit<ResourceType>) throws -> CommitContent<ResourceType> {
+    internal func mergedContent(forConflicting commits: ConflictingCommits<ResourceType>, withCommonAncestor ancestorCommit: Commit<ResourceType>) throws -> CommitContent<ResourceType> {
         return commits.dominant.content
     }
     
@@ -92,7 +92,7 @@ public extension ForkedResource where RepositoryType.Resource: Mergeable {
     }
     
     /// For `Mergeable` types, we ask the `Resource` to do the merging itself
-    func mergedContent(forConflicting commits: ConflictingCommits<ResourceType>, withCommonAncestor ancestorCommit: Commit<ResourceType>) throws -> CommitContent<ResourceType>  {
+    internal func mergedContent(forConflicting commits: ConflictingCommits<ResourceType>, withCommonAncestor ancestorCommit: Commit<ResourceType>) throws -> CommitContent<ResourceType>  {
         switch (commits.dominant.content, commits.subordinate.content, ancestorCommit.content) {
         case (.none, .none, _):
             return .none
