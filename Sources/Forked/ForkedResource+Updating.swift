@@ -86,29 +86,34 @@ internal extension ForkedResource {
     /// Will create a commit, and return the `Version`.
     @discardableResult func update(_ fork: Fork, with content: CommitContent<ResourceType>) throws -> Version {
         try serialize {
-            func addNewCommit() throws {
-                if fork == .main { try addCommonAncestorsToEmptyForks() }
-                let newVersion = mostRecentVersion.next()
-                let commit: Commit<ResourceType> = .init(content: content, version: newVersion)
-                try repository.store(commit, in: fork)
-                mostRecentVersion = newVersion
+            // If updating main, ensure all forks have proper common ancestors
+            if fork == .main {
+                try addCommonAncestorsToEmptyForks()
             }
             
-            // Clean up redundant versions, and update common ancestors
-            let versions = try repository.ascendingVersions(storedIn: fork)
-            switch versions.count {
-            case 0:
-                assert(fork != .main, "main fork should never have zero commits")
-                try repository.copyMostRecentCommit(from: .main, to: fork) // Copy in common ancestor
-                try addNewCommit()
-            case 1...:
-                try addNewCommit()
-                try removeRedundantCommits(in: fork)
-            default:
-                fatalError()
+            // Create and store the new commit
+            let newVersion = mostRecentVersion.next()
+            let newCommit = Commit(content: content, version: newVersion)
+            
+            switch try repository.occupation(of: fork) {
+            case .sameAsMain:
+                // Fork is same as main, need to add common ancestor first if not main
+                if fork != .main {
+                    let mainCommit = try mostRecentCommit(of: .main)
+                    try repository.store(mainCommit, in: fork)
+                }
+                try repository.store(newCommit, in: fork)
+                
+            case .leftBehindByMain, .aheadOrConflictingWithMain:
+                // Fork already has commits, just add the new one
+                try repository.store(newCommit, in: fork)
             }
             
-            return mostRecentVersion
+            // Clean up any redundant commits
+            try repository.removeRedundantCommits(from: fork)
+            mostRecentVersion = newVersion
+            
+            return newVersion
         }
     }
 
@@ -131,8 +136,7 @@ internal extension ForkedResource {
     /// This should be called anytime main is about to be updated.
     func addCommonAncestorsToEmptyForks() throws {
         for fork in forks where fork != .main {
-            let versions = try repository.versions(storedIn: fork)
-            if versions.isEmpty {
+            if case .sameAsMain = try repository.occupation(of: fork) {
                 try repository.copyMostRecentCommit(from: .main, to: fork)
             }
         }
@@ -143,10 +147,8 @@ internal extension ForkedResource {
     func removeAllCommits(in fork: Fork) throws {
         try serialize {
             guard fork != .main else { throw Error.attemptToDeleteAllDataFromMainFork }
-            let versions = try repository.ascendingVersions(storedIn: fork)
-            try versions.forEach {
-                try repository.removeCommit(at: $0, from: fork)
-            }
+            let versions = try repository.versions(storedIn: fork)
+            try versions.forEach { try repository.removeCommit(at: $0, from: fork) }
         }
     }
     
