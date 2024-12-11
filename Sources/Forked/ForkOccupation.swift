@@ -4,5 +4,5 @@ import Foundation
 internal enum ForkOccupation<Resource>: Equatable {
     case sameAsMain
     case leftBehindByMain(Commit<Resource>)
-    case conflictingWithMain(Commit<Resource>, commonAncestor: Commit<Resource>)
+    case aheadOrConflictingWithMain(Commit<Resource>, commonAncestor: Commit<Resource>)
 }

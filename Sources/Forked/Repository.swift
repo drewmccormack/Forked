@@ -114,7 +114,7 @@ extension Repository {
             let ancestorCommit = Commit(content: ancestorContent, version: ancestorVersion)
             let currentCommit = Commit(content: currentContent, version: currentVersion)
             
-            return .conflictingWithMain(currentCommit, commonAncestor: ancestorCommit)
+            return .aheadOrConflictingWithMain(currentCommit, commonAncestor: ancestorCommit)
             
         default:
             fatalError("Negative count of versions should be impossible")
