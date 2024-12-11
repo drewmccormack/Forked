@@ -124,10 +124,28 @@ internal extension ForkedResource {
     /// or two (ie common ancestor and a recent commit).
     func removeRedundantCommits(in fork: Fork) throws {
         try serialize {
-            let versions = try repository.ascendingVersions(storedIn: fork)
-            let versionsToRemove = fork == .main ? versions.dropLast() : versions.dropFirst().dropLast()
-            try versionsToRemove.forEach {
-                try repository.removeCommit(at: $0, from: fork)
+            if fork == .main {
+                // Main only keeps most recent commit
+                let versions = try repository.ascendingVersions(storedIn: fork)
+                let versionsToRemove = versions.dropLast()
+                try versionsToRemove.forEach { try repository.removeCommit(at: $0, from: fork) }
+                return
+            }
+            
+            switch try repository.occupation(of: fork) {
+            case .sameAsMain:
+                return // No commits to remove
+            case .leftBehindByMain:
+                return // Single commit, nothing redundant
+            case .aheadOrConflictingWithMain(let current, commonAncestor: let ancestor):
+                // Remove anything between ancestor and current
+                let versions = try repository.ascendingVersions(storedIn: fork)
+                let versionsToKeep = Set([ancestor.version, current.version])
+                try versions.forEach { version in
+                    if !versionsToKeep.contains(version) {
+                        try repository.removeCommit(at: version, from: fork)
+                    }
+                }
             }
         }
     }
@@ -155,10 +173,15 @@ internal extension ForkedResource {
     /// Deletes all commits in a fork except the most recent one.
     func removeAllCommitsExceptMostRecent(in fork: Fork) throws {
         try serialize {
-            let versions = try repository.ascendingVersions(storedIn: fork)
-            let versionsToRemove = versions.dropLast()
-            try versionsToRemove.forEach {
-                try repository.removeCommit(at: $0, from: fork)
+            switch try repository.occupation(of: fork) {
+            case .sameAsMain:
+                return // Nothing to remove
+            case .leftBehindByMain(let commit):
+                // Only one commit, nothing to remove
+                return
+            case .aheadOrConflictingWithMain(_, commonAncestor: _):
+                // Remove the common ancestor, keeping only current commit
+                try removeCommonAncestor(in: fork)
             }
         }
     }
@@ -168,8 +191,15 @@ internal extension ForkedResource {
     func removeCommonAncestor(in fork: Fork) throws {
         try serialize {
             guard fork != .main else { return }
-            let versions = try repository.ascendingVersions(storedIn: fork)
-            try versions.first.flatMap { try repository.removeCommit(at: $0, from: fork) }
+            switch try repository.occupation(of: fork) {
+            case .sameAsMain:
+                return // No ancestor to remove
+            case .leftBehindByMain(let commit):
+                // The commit is the ancestor, remove it
+                try repository.removeCommit(at: commit.version, from: fork)
+            case .aheadOrConflictingWithMain(_, commonAncestor: let ancestor):
+                try repository.removeCommit(at: ancestor.version, from: fork)
+            }
         }
     }
 }
