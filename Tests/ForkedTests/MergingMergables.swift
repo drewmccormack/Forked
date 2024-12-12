@@ -33,4 +33,14 @@ struct MergingMergeablesSuite {
         #expect(try resource.resource(of: fork)!.value == 5)
         #expect(try resource.resource(of: .main)!.value == 5)
     }
+    
+    @Test func mergeOptionals() throws {
+        let resource = QuickFork<AccumulatingInt?>(initialValue: .init(), forkNames: ["fork"])
+        try resource.update(fork, with: nil)
+        #expect(try resource.resource(of: fork)??.value == nil)
+        #expect(try resource.resource(of: .main)??.value == 0)
+        try resource.syncAllForks()
+        #expect(try resource.resource(of: fork)??.value == nil)
+        #expect(try resource.resource(of: .main)??.value == nil)
+    }
 }
