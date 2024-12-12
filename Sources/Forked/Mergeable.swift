@@ -4,9 +4,9 @@ public protocol Mergeable {
     func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self
 }
 
-public extension Optional where Wrapped: Mergeable & Equatable {
+extension Optional: Mergeable where Wrapped: Mergeable & Equatable {
     
-    func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
+    public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
         if self == commonAncestor {
             return other
         } else if other == commonAncestor {
@@ -26,6 +26,14 @@ public extension Optional where Wrapped: Mergeable & Equatable {
                 return s
             }
         }
+    }
+    
+}
+
+extension Optional: @retroactive Identifiable where Wrapped: Identifiable {
+    
+    public var id: Wrapped.ID? {
+        self?.id
     }
     
 }

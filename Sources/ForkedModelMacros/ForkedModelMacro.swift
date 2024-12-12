@@ -106,75 +106,27 @@ public struct ForkedModelMacro: ExtensionMacro {
         for propertyInfo in mergePropertyVars {
             let varSyntax = propertyInfo.varSyntax
             let varName = varSyntax.bindings.first!.pattern.as(IdentifierPatternSyntax.self)!.identifier.text
-            let varType = varSyntax.bindings.first!.typeAnnotation!.type.trimmedDescription
             let expr: String
+            
+            func mergeExpr(merger: String) -> String {
+                "merged.\(varName) = try merge(withMergerType: \(merger).self, dominant: self.\(varName), subordinate: other.\(varName), commonAncestor: commonAncestor.\(varName))"
+            }
             
             // If no merge given, fall back on default for variety
             let defaultMerge = propertyInfo.propertyVariety.defaultPropertyMerge
             switch propertyInfo.merge ?? defaultMerge {
             case .mergeableProtocol:
-                expr =
-                    """
-                    merged.\(varName) = try self.\(varName).merged(withSubordinate: other.\(varName), commonAncestor: commonAncestor.\(varName))
-                    """
+                expr = "merged.\(varName) = try self.\(varName).merged(withSubordinate: other.\(varName), commonAncestor: commonAncestor.\(varName))"
             case .arrayMerge:
-                guard varType.hasPrefix("[") && varType.hasSuffix("]") else {
-                    throw ForkedModelError.propertyMergeAndTypeAreIncompatible
-                }
-                let elementType = varType.dropFirst().dropLast()
-                expr =
-                    """
-                    do {
-                        let merger = ArrayMerger<\(elementType)>()
-                        merged.\(varName) = try merger.merge(self.\(varName), withSubordinate: other.\(varName), commonAncestor: commonAncestor.\(varName))
-                    }
-                    """
+                expr = mergeExpr(merger: "ArrayMerger")
             case .arrayOfIdentifiableMerge:
-                guard varType.hasPrefix("[") && varType.hasSuffix("]") else {
-                    throw ForkedModelError.propertyMergeAndTypeAreIncompatible
-                }
-                let elementType = varType.dropFirst().dropLast()
-                expr =
-                    """
-                    do {
-                        let merger = ArrayOfIdentifiableMerger<\(elementType)>()
-                        merged.\(varName) = try merger.merge(self.\(varName), withSubordinate: other.\(varName), commonAncestor: commonAncestor.\(varName))
-                    }
-                    """
+                expr = mergeExpr(merger: "ArrayOfIdentifiableMerger")
             case .setMerge:
-                guard varType.hasPrefix("Set<") else {
-                    throw ForkedModelError.propertyMergeAndTypeAreIncompatible
-                }
-                let elementType = varType.dropFirst(4).dropLast()
-                expr =
-                    """
-                    do {
-                        let merger = SetMerger<\(elementType)>()
-                        merged.\(varName) = try merger.merge(self.\(varName), withSubordinate: other.\(varName), commonAncestor: commonAncestor.\(varName))
-                    }
-                    """
+                expr = mergeExpr(merger: "SetMerger")
             case .dictionaryMerge:
-                guard let (key, value) = extractKeyAndValueTypes(from: varType) else {
-                    throw ForkedModelError.propertyMergeAndTypeAreIncompatible
-                }
-                expr =
-                    """
-                    do {
-                        let merger = DictionaryMerger<\(key), \(value)>()
-                        merged.\(varName) = try merger.merge(self.\(varName), withSubordinate: other.\(varName), commonAncestor: commonAncestor.\(varName))
-                    }
-                    """
+                expr = mergeExpr(merger: "DictionaryMerger")
             case .textMerge:
-                guard varType == "String" else {
-                    throw ForkedModelError.propertyMergeAndTypeAreIncompatible
-                }
-                expr =
-                    """
-                    do {
-                        let merger = TextMerger()
-                        merged.\(varName) = try merger.merge(self.\(varName), withSubordinate: other.\(varName), commonAncestor: commonAncestor.\(varName))
-                    }
-                    """
+                expr = mergeExpr(merger: "TextMerger")
             }
             
             expressions.append(expr)

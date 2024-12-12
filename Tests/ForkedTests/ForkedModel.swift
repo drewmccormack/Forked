@@ -28,6 +28,14 @@ struct Note {
     @Merged(using: .dictionaryMerge) var metadata: [String:String] = [:]
 }
 
+@ForkedModel
+struct NoteWithOptional {
+    var title: String = ""
+    var description: String?
+    @Merged(using: .arrayOfIdentifiableMerge) var items: [NoteItem?] = []
+    @Merged(using: .arrayOfIdentifiableMerge) var optionalItems: [NoteItem]?
+}
+
 struct ForkedModelSuite {
     
     @Test func initialCreation() {
@@ -185,5 +193,29 @@ struct ForkedModelSuite {
         note2.metadata = ["key2": "value4", "key3": "value5"]
         let merged = try note2.merged(withSubordinate: note1, commonAncestor: ancestor)
         #expect(merged.metadata == ["key2": "value4", "key3": "value5"])
+    }
+
+    @Test func optionalPropertiesMerge() throws {
+        let ancestor = NoteWithOptional(title: "Original", description: nil, items: [], optionalItems: nil)
+        
+        var note1 = ancestor
+        note1.description = "Description 1"
+        note1.items = [NoteItem(id: "1"), nil]
+        note1.optionalItems = [NoteItem(id: "1")]
+        
+        var note2 = ancestor
+        note2.description = "Description 2"
+        note2.items = [nil, NoteItem(id: "2")]
+        note2.optionalItems = [NoteItem(id: "2")]
+        
+        let merged = try note2.merged(withSubordinate: note1, commonAncestor: ancestor)
+        
+        #expect(merged.description == "Description 2")
+        #expect(merged.items.count == 3)
+        #expect(merged.items[0]?.id == nil)
+        #expect(merged.items[1]?.id == "2")
+        #expect(merged.items[2]?.id == "1")
+        #expect(merged.optionalItems?.count == 1)
+        #expect(merged.optionalItems?[0].id == "2")
     }
 }
