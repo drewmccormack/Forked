@@ -94,9 +94,10 @@ public struct ForkedModelMacro: ExtensionMacro {
             let varName = varSyntax.bindings.first!.pattern.as(IdentifierPatternSyntax.self)!.identifier.text
             let expr =
                 """
-                if  let anyEquatableSelf = ForkedEquatable(self.\(varName)),
-                    case let anyEquatableCommon = ForkedEquatable(commonAncestor.\(varName)) {
-                    merged.\(varName) = anyEquatableSelf != anyEquatableCommon ? self.\(varName) : other.\(varName)
+                if areEqualForForked(self.\(varName), commonAncestor.\(varName)) {
+                    merged.\(varName) = other.\(varName)
+                } else {
+                    merged.\(varName) = self.\(varName)
                 }
                 """
             expressions.append(expr)

@@ -308,13 +308,15 @@ final class ForkedModelMacrosSuite: XCTestCase {
             extension User: Forked.Mergeable {
                 public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
                     var merged = self
-                    if  let anyEquatableSelf = ForkedEquatable(self.name),
-                case let anyEquatableCommon = ForkedEquatable(commonAncestor.name) {
-                merged.name = anyEquatableSelf != anyEquatableCommon ? self.name : other.name
+                    if areEqualForForked(self.name, commonAncestor.name) {
+                merged.name = other.name
+                    } else {
+                merged.name = self.name
                     }
-                    if  let anyEquatableSelf = ForkedEquatable(self.age),
-                        case let anyEquatableCommon = ForkedEquatable(commonAncestor.age) {
-                        merged.age = anyEquatableSelf != anyEquatableCommon ? self.age : other.age
+                    if areEqualForForked(self.age, commonAncestor.age) {
+                        merged.age = other.age
+                    } else {
+                        merged.age = self.age
                     }
                     return merged
                 }
