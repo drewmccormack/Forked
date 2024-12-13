@@ -3,7 +3,7 @@ import Foundation
 /// Thread-safe wrappers around repository methods
 public extension ForkedResource {
     
-    /// Create a new fork.Will throw if a fork with the same name already exists.
+    /// Create a new fork. Will throw if a fork with the same name already exists.
     func create(_ fork: Fork) throws {
         try serialize {
             guard !repository.forks.contains(fork) else {

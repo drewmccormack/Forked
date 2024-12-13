@@ -1,1 +1,1 @@
-{"videos":[],"downloads":[],"images":[{"alt":"A diagram showing the hub-and-spoke architecture of Forked. The main fork is in the center, with other forks radiating outward like spokes on a wheel.","identifier":"ForkedHub","type":"image","variants":[{"traits":["1x","light"],"url":"\/images\/Forked\/ForkedHub.png"}]}]}
+{"videos":[],"downloads":[],"images":[{"type":"image","identifier":"ForkedHub","variants":[{"url":"\/images\/Forked\/ForkedHub.png","traits":["1x","light"]}],"alt":"The hub-and-spoke architecture of Forked."}]}

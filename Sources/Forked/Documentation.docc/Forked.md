@@ -22,22 +22,22 @@ When forks diverge and need to be reconciled, Forked provides sophisticated merg
 ### Essentials
 
 - <doc:GettingStarted>
-- ``Fork``
 - ``ForkedResource``
 - ``Mergeable``
 
 ### Working with Resources
 
 - ``QuickFork``
+- ``ForkedResource/create()``
 - ``ForkedResource/update(_:with:)``
 - ``ForkedResource/value(in:)``
 - ``ForkedResource/mergeIntoMain(from:)``
+- ``ForkedResource/mergeFromMain(into:)``
 
 ### Merging and Conflict Resolution
 
-- <doc:MergingStrategy>
-- ``ConflictingCommits``
-- ``Commit``
+- ``ForkedMerge``
+- ``ForkedModel``
 
 ### Packages
 
@@ -50,9 +50,7 @@ When forks diverge and need to be reconciled, Forked provides sophisticated merg
 
 ### Articles
 
+- <doc:GettingStarted>
 - <doc:CloudKitIntegration>
-- <doc:MergingStrategy>
+- <doc:ForkedInnards>
 
-### Error Handling
-
-- ``ForkedError``

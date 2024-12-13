@@ -18,7 +18,7 @@ This philosophy translates directly to how Forked operates in your application. 
 
 ### The Reality of Modern Apps
 
-Most modern applications are inherently decentralized, whether you realize it or not. Consider how your app might sync data across multiple devices, or how app extensions operate in separate processes on shared data. Even background processes performing imports or downloads from a web service must coordinate with the main app. These scenarios all represent decentralized operations, even if we often try to force them into a centralized model.
+Most modern applications are inherently decentralized, whether intentional or not. Consider how your app might sync data across multiple devices, or how app extensions operate in separate processes on shared data. Even background processes performing imports or downloads from a web service must coordinate with the main app. These scenarios all represent decentralized operations, even if we often try to force them into a centralized model.
 
 ### Sync Comes for Free
 
@@ -36,7 +36,7 @@ Rather than implementing a full version control system, Forked maintains just en
 
 In a `ForkedResource`, forks are arranged in a hub-and-spoke pattern. The hub is the main fork, while other forks (the spokes) can merge with the main fork, but not directly with each other.
 
-![A diagram showing the hub-and-spoke architecture of Forked. The main fork is in the center, with other forks radiating outward like spokes on a wheel.](ForkedHub)
+![The hub-and-spoke architecture of Forked.](ForkedHub "A diagram showing the hub-and-spoke architecture of Forked. The main fork is in the center, with other forks radiating outward like spokes on a wheel. The smaller black dots represent copies of the resource.")
 
 The main fork in the hub stores exactly one copy of the resource — its current value. Other forks, on the other hand, are responsible for keeping track of the common ancestor when updates occur. In this way, a 3-way merge between the main fork and any other fork can be performed at any time.
 
