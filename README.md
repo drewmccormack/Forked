@@ -13,6 +13,12 @@ In short, what's forking stopping you?![^goodplace]
 
 ## Quick Start
 
+### Try Before You Buy
+
+Who wants to invest time in a framework without knowing if it's right for them? Nobody, that's who! 
+
+So we have uploaded the [Forkers](https://apps.apple.com/us/app/forkers/id6739265992) sample app to the App Store for you to try. (Note that it is unlisted, so use the link instead of searching.) The Forkers app is built on Forked, and the source code is right here. Try it out, and don't forget to test out the iCloud sync!
+
 ### Installation
 
 #### Swift Package Manager
