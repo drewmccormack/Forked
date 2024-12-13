@@ -4,7 +4,9 @@ Create mergeable data models using Swift value types.
 
 ## Overview
 
-ForkedModel provides a simple way to define data models that can be safely merged when concurrent changes occur. Attaching the `@ForkedModel` macro to a `struct`, you can create a data model that can handle property-wise merging with sophisticated algorithms.
+ForkedModel provides a simple way to define data models using Swift value types (_ie_ structs), which can be safely merged when concurrent changes occur. Attaching the `@ForkedModel` macro to a `struct`, you can create a data model that can handle property-wise merging with sophisticated algorithms.
+
+A mergeable model is useful for handling concurrent changes to data within your app, between processes (_eg_ extensions), and even between devices if you are syncing with iCloud. Adopting `@ForkedModel` takes very little effort, has very little risk since your model is comprised of standard structs, and prepares your app for whatever data concurrency challenges may arise.
 
 ## Creating a Basic Model
 
@@ -21,6 +23,8 @@ struct User {
 The attributes in this model will be merged using a "most recent wins" strategy — if both forks modify the same property, the most recent change will be kept.
 
 Note that equatable properties will be merged in a property-wise fashion. If the `name` property is modified in one fork, and the `age` property is modified in another, the most recent of each property will be kept when merging. This is different to just choosing the most recent value of the struct, which does not consider how the individual properties have changed.
+
+> The `@ForkedModel` macro generates a standard Swift struct with an extension that conforms to `Mergeable`. There is no runtime overhead or magic - just pure Swift value types with some helper functions to facilitate merging. The generated struct can be used the same as any other struct, including adding `Codable` conformance to save or work with a web service.
 
 ## Using `@Merged` Properties
 
