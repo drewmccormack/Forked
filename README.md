@@ -42,10 +42,12 @@ dependencies: [
 - **Swift Values**: Model data with `Sendable` value types that pass easily between threads and isolation domains
 - **Simple Setup**: 100% Swift, no complex configuration needed
 - **Smart Sync**: Git-inspired branching and merging lets you track changes on a single device or across many
+- **Supports Local-First**: [Local-first](https://www.inkandswitch.com/local-first/) apps are all the rage, and Forked makes it easy to get started
 - **Smashable**: Advanced 3-way merging algorithms (_eg_ CRDTs) intelligently handle conflicts
 - **Saveable**: Full `Codable` support for easy persistence to disk and cloud services
 - **Seamless iCloud**: Built-in CloudKit integration for effortless multi-device synchronization
 - **Scalable**: You can start using Forked with your own data types, and scale up to complete data models when it suits
+- **Self Service**: You can add custom storage for Forked data, and integrate with custom cloud services
 - **Succinct**: Unlike Git, Forked only keeps the bare essentials for merging, not a complete history of all changes
 
 ## How it Works

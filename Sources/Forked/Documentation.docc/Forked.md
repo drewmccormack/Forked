@@ -18,7 +18,7 @@ A ``ForkedResource`` manages the state and history of your data across multiple 
 When forks diverge and need to be reconciled, Forked provides sophisticated merging capabilities. The framework supports both automatic merging for simple types and custom merge strategies for complex data structures.
 
 ### Repositories
-A ``ForkedRepository`` does not actually store any data. It just contains the logic for managing forks and resources. Repositories provide the storage for a `ForkedResource`, whether it be in memory, on disk, in a database, or in the cloud.
+A ``ForkedResource`` does not actually store any data: it just contains the logic for managing forks and resources. Repositories provide the storage for a `ForkedResource`, whether it be in memory, on disk, in a database, or in the cloud.
 
 ## Topics
 
@@ -27,7 +27,7 @@ A ``ForkedRepository`` does not actually store any data. It just contains the lo
 - <doc:GettingStarted>
 - ``ForkedResource``
 - ``Mergeable``
-- ``ForkedRepository``
+- ``Repository``
 
 ### Working with Resources
 
