@@ -47,6 +47,7 @@ dependencies: [
 - **Smashable**: Advanced 3-way merging algorithms (_eg_ CRDTs) intelligently handle conflicts
 - **Saveable**: Full `Codable` support for easy persistence to disk and cloud services
 - **Seamless iCloud**: Built-in CloudKit integration for effortless multi-device synchronization
+- **Scalable**: You can start using Forked with your own data types, and scale up to complete data models when it suits
 - **Succinct**: Unlike Git, Forked only keeps the bare essentials for merging, not a complete history of all changes
 
 ## How it Works
