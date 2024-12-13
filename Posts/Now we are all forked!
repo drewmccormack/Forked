@@ -1,0 +1,88 @@
+# Now We're All Forked!
+
+TLDR; I'm launching a new Swift framework called [Forked](https://github.com/drewmccormack/Forked) for working with shared data, both on a single device, and across many.
+
+A few years ago, I was knee-deep developing the collaboration feature of our app [Agenda](https://agenda.com). Agenda is mostly [local-first](https://www.inkandswitch.com/local-first/), so it was a challenge. Effectively, Agenda is a decentral system, and the collaboration feature would allow anyone in a group to edit a shared note at any time — even when they were offline for days. When each copy of a shared note was transferred over to the devices of other users in the group, the result had to be consistent. It would be unacceptable for two people to end up with different versions.
+
+I mentioned that Agenda is a local-first app. That means there is no central server with any understanding of the data model, taking care of conflicts — there is no _central truth_. Each Agenda client app has to take the data it gets from the cloud, make sense of it, and merge it in such a way that the result is the same as what other devices end up with, even if the data in question is days old.
+
+What I realized back then is that this problem has already been solved very elegantly by the product that is extremely well-known and popular, and right under our noses. It's called Git.
+
+If you treat each copy of the Agenda data as something akin to the latest commit in a Git repository, you can use the same approach as Git to merging data. And Git works: developers can go hiking in Alaska, develop code completely offline, come back and merge their changes, and all is good with the world.
+
+Back to Agenda: I decided the solutions was a class called `BranchedFile`. My goals at the time were to create a simplified, embedded version of Git, that would operate on a single file. It would support branching, with a main branch, and secondary branches that could be altered for different purposes, and merged later to reach _eventual consistency_.
+
+The system should not require a complete history of changes, but keep enough copies of the data to facilitate 3-way merging. 
+
+> 3-way merging is what is used in Git: when it comes time to merge branches, you have the two recent conflicting versions, and the common ancestor. The common ancestor is a copy of the file at the point the two branches diverged, and you can compare it to the two recent versions to determine what has changed.
+
+This approach worked well. I was able to come up with some fairly straightforward rules for which versions of files were needed to fulfil a merge, and implemented it all in `BranchedFile`. Agenda has been using this now for several years whenever two or more people want to collaboratively edit a note.
+
+I hadn't looked much at that code for several years, but that changed early in 2024. I attended the inaugural [Local-First Conf](https://www.localfirstconf.com) in Berlin. I gave a short talk about [Ensembles](https://ensembles.io), which is the Core Data sync framework I have developed for more than 10 years ago, and then I watched the other talks. And I was inspired, and started to wonder: what if I could make my `BranchedFile` type more generic, and perhaps even turn it into a genuine modeling framework like SwiftData.
+
+I started to dream:
+
+- It should use structs instead of classes
+- It should track changes in branches, and have 3-way merging
+- Where merging is an afterthought in many data modeling frameworks, this framework would support advanced merging, employing the latest Conflict-free Replicated Data Types (CRDTs)
+- It should be possible to sync via iCloud and other cloud services with no change to the model
+- It should be useful not only for sync, but even for subsystems within an app on a single device
+
+Today the dream has been fulfilled, at least to what I had in mind for my MVP. 
+
+Today I'm launching "Forked" a new approach to working with shared data in Swift. And it has actually worked out better than I expected. I wasn't sure it would even be possible, but I'm pretty proud of this first public release, and can't wait to start doing some serious dog-fooding.
+
+Let's just finish up with a little code, so you can see how simple it turned out to be. Here's a model from the [Forkers](https://apps.apple.com/us/app/forkers/id6739265992) sample app:
+
+```swift
+@ForkedModel
+struct Forkers: Codable {
+    @Merged(using: .arrayOfIdentifiableMerge) var forkers: [Forker] = []
+}
+
+@ForkedModel
+struct Forker: Identifiable, Codable, Hashable {
+    var id: UUID = .init()
+    var firstName: String = ""
+    var lastName: String = ""
+    var company: String = ""
+    var birthday: Date?
+    var email: String = ""
+    var category: ForkerCategory?
+    var color: ForkerColor?
+    @Merged var balance: Balance = .init()
+    @Merged var notes: String = ""
+    @Merged var tags: Set<String> = []
+}
+```
+
+What I love the most about Forked models is that they are just simple value types. The `@ForkedModel` macro doesn't change the properties at all, it just adds some code in an extension to support 3-way merging. So you can use this on any `struct`, and the result can do everything your original `struct` could do, from encoding to JSON, to jumping seamlessly between isolation domains.
+
+The merging that `@ForkedModel` provides is pretty powerful. It does property-wise merging of structs, and if you attach the `@Merged` attribute, you can add custom merging logic, or use advanced algorithms like CRDTs.
+
+To give an example, the `notes` property above is a `String`. With `@Merged` applied, it gets a huge boost, because it can resolve conflicts in a more natural way. Rather than discarding changes, or giving arbitrary results, it produces a result a person would expect. For example,  if we begin with the text "hello world", with a change made to "Hello World" on one device, and to "hello world!!!" on another, the merged result result will be "Hello World!!!". Pretty cool!
+
+And this works within your app's process, between processes (_eg_ with sharing extensions), and even between devices via iCloud.
+
+I want to end with a few not so obvious observations: 
+
+1. Forked models work great with Swift 6 structured concurrency, helping to avoid race conditions. When there is a chance you might get a race condition (_eg_ due to interleaving in an actor), you can setup a `QuickFork` — equivalent to an in-memory Git repo — and use branches (known as _forks_ in Forked) to isolate each set of changes, merging later to get a valid result. 
+
+2. When a type supports 3-way merging, you can build a generic system that tracks versions and asks the type to merge itself as needed. You aren't confined to a single device anymore.
+
+To pick up on that last point, adding support for CloudKit to your app is next to trivial, and your model can remain completely unchanged. Here is the code that Forkers uses to add CloudKit sync:
+
+```swift
+let forkedModel = try ForkedResource(repository: repo)
+let cloudKitExchange = try .init(id: "Forkers", forkedResource: forkedModel)
+
+// Listen for incoming changes from CloudKit
+Task {
+    for await change in forkedModel.changeStream where change.fork == .main && change.mergingFork == .cloudKit {
+        // Update UI
+    }
+}
+```
+
+That's all of it! We just added sync to our app in less than 10 lines of code. Decentral systems can sometimes be astounding, and they also work great even when your use case is not technically decentralized!
+
