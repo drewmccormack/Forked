@@ -41,12 +41,12 @@ dependencies: [
 ## Key Features
 
 - **Safe**: Prevents data races and manages race conditions without locks, queues, or actors
-- **Swift Values**: `Sendable` value types that pass easily between threads and isolation domains
+- **Swift Values**: Model data with `Sendable` value types that pass easily between threads and isolation domains
+- **Simple Setup**: 100% Swift, no complex configuration needed
 - **Smart Sync**: Git-inspired branching and merging lets you track changes on a single device or across many
 - **Smashable**: Advanced 3-way merging algorithms (_eg_ CRDTs) intelligently handle conflicts
 - **Saveable**: Full `Codable` support for easy persistence to disk and cloud services
 - **Seamless iCloud**: Built-in CloudKit integration for effortless multi-device synchronization
-- **Simple Setup**: 100% Swift, no complex configuration needed
 - **Succinct**: Unlike Git, Forked only keeps the bare essentials for merging, not a complete history of all changes
 
 ## How it Works
