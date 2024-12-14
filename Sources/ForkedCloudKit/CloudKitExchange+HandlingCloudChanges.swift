@@ -1,3 +1,4 @@
+#if canImport(CloudKit)
 import CloudKit
 import Forked
 import os.log
@@ -177,5 +178,4 @@ extension CloudKitExchange {
     
     
 }
-
-
+#endif
