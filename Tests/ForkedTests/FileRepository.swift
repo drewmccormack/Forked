@@ -159,4 +159,57 @@ struct FileRepositorySuite {
             try repository.store(commit, in: fork)
         }
     }
+    
+    @Test func fileSystemState() throws {
+        let tempDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+        
+        let repository = try FileRepository(rootDirectory: tempDirectory)
+        let fork = Fork(name: "test")
+        
+        // Check root directory exists
+        #expect(FileManager.default.fileExists(atPath: tempDirectory.path))
+        
+        // Create fork and verify directory structure
+        let initialCommit = Commit(content: .resource(Data()), version: .initialVersion)
+        try repository.create(fork, withInitialCommit: initialCommit)
+        
+        let forkDirectory = tempDirectory.appendingPathComponent("test")
+        #expect(FileManager.default.fileExists(atPath: forkDirectory.path))
+        
+        // Verify initial version files
+        let initialMetadataPath = forkDirectory.appendingPathComponent("0.metadata").path
+        let initialDataPath = forkDirectory.appendingPathComponent("0").path
+        #expect(FileManager.default.fileExists(atPath: initialMetadataPath))
+        #expect(FileManager.default.fileExists(atPath: initialDataPath))
+        
+        // Add a .none commit and verify only metadata exists
+        let version1 = Version(count: 1, timestamp: .now)
+        let noneCommit = Commit<Data>(content: .none, version: version1)
+        try repository.store(noneCommit, in: fork)
+        
+        let version1MetadataPath = forkDirectory.appendingPathComponent("1.metadata").path
+        let version1DataPath = forkDirectory.appendingPathComponent("1").path
+        #expect(FileManager.default.fileExists(atPath: version1MetadataPath))
+        #expect(!FileManager.default.fileExists(atPath: version1DataPath))
+        
+        // Add a resource commit and verify both files exist
+        let version2 = Version(count: 2, timestamp: .now)
+        let resourceCommit = Commit(content: .resource(Data([1,2,3])), version: version2)
+        try repository.store(resourceCommit, in: fork)
+        
+        let version2MetadataPath = forkDirectory.appendingPathComponent("2.metadata").path
+        let version2DataPath = forkDirectory.appendingPathComponent("2").path
+        #expect(FileManager.default.fileExists(atPath: version2MetadataPath))
+        #expect(FileManager.default.fileExists(atPath: version2DataPath))
+        
+        // Remove a commit and verify files are deleted
+        try repository.removeCommit(at: version2, from: fork)
+        #expect(!FileManager.default.fileExists(atPath: version2MetadataPath))
+        #expect(!FileManager.default.fileExists(atPath: version2DataPath))
+        
+        // Delete fork and verify directory is removed
+        try repository.delete(fork)
+        #expect(!FileManager.default.fileExists(atPath: forkDirectory.path))
+    }
 }
