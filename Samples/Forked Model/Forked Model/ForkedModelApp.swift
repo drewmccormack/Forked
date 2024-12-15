@@ -7,10 +7,11 @@
 
 import SwiftUI
 
+@MainActor fileprivate var store = Store()
+
 @main
 struct ForkedModelApp: App {
     var body: some Scene {
-        @State var store = Store()
         WindowGroup {
             ContentView()
                 .environment(store)
