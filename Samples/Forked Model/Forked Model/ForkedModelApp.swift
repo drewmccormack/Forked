@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-@MainActor fileprivate var store = Store()
+@MainActor fileprivate let store = Store()
 
 @main
 struct ForkedModelApp: App {
