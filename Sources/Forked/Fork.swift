@@ -1,6 +1,6 @@
 import Foundation
 
-/// A  type representing a named fork.
+/// A type representing a named fork.
 public struct Fork: Hashable, Codable, Sendable {
     /// The name of the fork
     public let name: String
@@ -14,9 +14,9 @@ public struct Fork: Hashable, Codable, Sendable {
         self.name = name
     }
     
-    /// The only fork created by default. All other forkes
+    /// The only fork created by default. All other forks
     /// can be merged with the main, but not directly with
-    /// each other.. It acts as the central hub of the
+    /// each other. It acts as the central hub of the
     /// wheel of forks.
     public static let main = Fork(name: "main")
 }
