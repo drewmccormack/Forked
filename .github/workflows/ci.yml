@@ -6,8 +6,8 @@ on:
   pull_request:
     branches:
       - '*'
-  schedule:
-    - cron: '0 4,16 * * *'
+  #schedule:
+  #  - cron: '0 4,16 * * *'
 jobs:
   linux:
     runs-on: ubuntu-latest
@@ -25,7 +25,7 @@ jobs:
         with:
           run-tests: false
   macos-ios:
-    runs-on: macos-latest
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
       - name: "Test Swift Package macOS"
