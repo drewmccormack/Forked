@@ -360,6 +360,110 @@ final class ForkedModelMacrosSuite: XCTestCase {
             macros: Self.testMacros
         )
     }
+
+    func testVars() {
+        assertMacroExpansion(
+            """
+            @ForkedModel
+            private struct Note {
+                var text: String = ""
+            }
+            """,
+            expandedSource:
+            """
+            private struct Note {
+                var text: String = ""
+            }
+
+            extension Note: Forked.Mergeable {
+                public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
+                    var merged = self
+                    if areEqualForForked(self.text, commonAncestor.text) {
+                merged.text = other.text
+                    } else {
+                merged.text = self.text
+                    }
+                    return merged
+                }
+            }
+            """,
+            macros: Self.testMacros
+        )
+    }
+
+    func testSimpleComputedVars() {
+        assertMacroExpansion(
+            """
+            @ForkedModel
+            private struct Note {
+                var text: String = ""
+                var textComputed: String {
+                    return text
+                }
+            }
+            """,
+            expandedSource:
+            """
+            private struct Note {
+                var text: String = ""
+                var textComputed: String {
+                    return text
+                }
+            }
+
+            extension Note: Forked.Mergeable {
+                public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
+                    var merged = self
+                    if areEqualForForked(self.text, commonAncestor.text) {
+                merged.text = other.text
+                    } else {
+                merged.text = self.text
+                    }
+                    return merged
+                }
+            }
+            """,
+            macros: Self.testMacros
+        )
+    }
+
+    func testComplexComputedVars() {
+        assertMacroExpansion(
+            """
+            @ForkedModel
+            private struct Note {
+                var text: String = ""
+                var textComputed: String {
+                    get { text }
+                    set { text = newValue }
+                }
+            }
+            """,
+            expandedSource:
+            """
+            private struct Note {
+                var text: String = ""
+                var textComputed: String {
+                    get { text }
+                    set { text = newValue }
+                }
+            }
+
+            extension Note: Forked.Mergeable {
+                public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
+                    var merged = self
+                    if areEqualForForked(self.text, commonAncestor.text) {
+                merged.text = other.text
+                    } else {
+                merged.text = self.text
+                    }
+                    return merged
+                }
+            }
+            """,
+            macros: Self.testMacros
+        )
+    }
 }
 #endif
 
