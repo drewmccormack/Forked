@@ -94,7 +94,7 @@ public struct ForkedModelMacro: ExtensionMacro {
             let varName = varSyntax.bindings.first!.pattern.as(IdentifierPatternSyntax.self)!.identifier.text
             let expr =
                 """
-                if areEqualForForked(self.\(varName), commonAncestor.\(varName)) {
+                if self.\(varName) == commonAncestor.\(varName) {
                     merged.\(varName) = other.\(varName)
                 } else {
                     merged.\(varName) = self.\(varName)

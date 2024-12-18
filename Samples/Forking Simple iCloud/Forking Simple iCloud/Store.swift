@@ -7,8 +7,9 @@ extension Fork {
     static let ui = Fork(name: "ui")
 }
 
-struct Model: Codable {
+struct Model: Codable, Mergeable {
     var text: String
+    func merged(withSubordinate other: Model, commonAncestor: Model) throws -> Model { self }
 }
 
 @MainActor

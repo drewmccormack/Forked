@@ -3,9 +3,9 @@ import Forked
 
 /// Represents a mergable type for a dictionary of values.
 /// Uses a CRDT algorithm.
-public struct MergeableDictionary<Key, Value> where Key: Hashable, Value: Equatable {
+public struct MergeableDictionary<Key:Hashable, Value: Equatable>: Equatable {
     
-    fileprivate struct ValueContainer {
+    fileprivate struct ValueContainer: Equatable {
         var isDeleted: Bool
         var timestamp: StableTimestamp
         var value: Value
@@ -165,9 +165,6 @@ extension MergeableDictionary where Value: Mergeable {
 
 extension MergeableDictionary: Codable where Value: Codable, Key: Codable {}
 extension MergeableDictionary.ValueContainer: Codable where Value: Codable, Key: Codable {}
-
-extension MergeableDictionary: Equatable where Value: Equatable {}
-extension MergeableDictionary.ValueContainer: Equatable where Value: Equatable {}
 
 extension MergeableDictionary: Hashable where Value: Hashable {}
 extension MergeableDictionary.ValueContainer: Hashable where Value: Hashable {}

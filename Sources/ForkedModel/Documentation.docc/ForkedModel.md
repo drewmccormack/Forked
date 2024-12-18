@@ -155,6 +155,6 @@ When merging the dictionary, if the values for a given key are `Mergeable`, they
 
 - All non-optional stored properties must have default values
 - The `@ForkedModel` macro automatically makes your type conform to `Mergeable`
-- Equatable properties without `@Merged` will use a "most recent wins" strategy, in a property-wise fashion
+- Properties without `@Merged` will use a "most recent wins" strategy, in a property-wise fashion
 - Non-equatable properties without `@Merged` will use a "most recent wins" strategy for the entire struct
 - The merging strategy is determined at compile time and cannot be changed at runtime
