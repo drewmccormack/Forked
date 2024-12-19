@@ -22,7 +22,7 @@ struct User {
 
 The attributes in this model will be merged using a "most recent wins" strategy — if both forks modify the same property, the most recent change will be kept.
 
-Note that equatable properties will be merged in a property-wise fashion. If the `name` property is modified in one fork, and the `age` property is modified in another, the most recent of each property will be kept when merging. This is different to just choosing the most recent value of the struct, which does not consider how the individual properties have changed.
+Note that properties will be merged in a property-wise fashion. If the `name` property is modified in one fork, and the `age` property is modified in another, the most recent of each property will be kept when merging. This is different to just choosing the most recent value of the struct, which does not consider how the individual properties have changed.
 
 > The `@ForkedModel` macro generates a standard Swift struct with an extension that conforms to `Mergeable`. There is no runtime overhead or magic - just pure Swift value types with some helper functions to facilitate merging. The generated struct can be used the same as any other struct, including adding `Codable` conformance to save or work with a web service.
 
@@ -156,5 +156,4 @@ When merging the dictionary, if the values for a given key are `Mergeable`, they
 - All non-optional stored properties must have default values
 - The `@ForkedModel` macro automatically makes your type conform to `Mergeable`
 - Properties without `@Merged` will use a "most recent wins" strategy, in a property-wise fashion
-- Non-equatable properties without `@Merged` will use a "most recent wins" strategy for the entire struct
 - The merging strategy is determined at compile time and cannot be changed at runtime
