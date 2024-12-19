@@ -361,7 +361,7 @@ final class ForkedModelMacrosSuite: XCTestCase {
         )
     }
 
-    func testVars() {
+    func testVarThatIsNotUsingMergedMacro() {
         assertMacroExpansion(
             """
             @ForkedModel
@@ -378,7 +378,45 @@ final class ForkedModelMacrosSuite: XCTestCase {
             extension Note: Forked.Mergeable {
                 public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
                     var merged = self
-                    if areEqualForForked(self.text, commonAncestor.text) {
+                    if self.text == commonAncestor.text {
+                merged.text = other.text
+                    } else {
+                merged.text = self.text
+                    }
+                    return merged
+                }
+            }
+            """,
+            macros: Self.testMacros
+        )
+    }
+
+    func testVarThatHaveSingleDidSetAccessor() {
+        assertMacroExpansion(
+            """
+            @ForkedModel
+            private struct Note {
+                var text: String = "" {
+                    didSet {
+                    
+                    }
+                }
+            }
+            """,
+            expandedSource:
+            """
+            private struct Note {
+                var text: String = "" {
+                    didSet {
+                    
+                    }
+                }
+            }
+
+            extension Note: Forked.Mergeable {
+                public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
+                    var merged = self
+                    if self.text == commonAncestor.text {
                 merged.text = other.text
                     } else {
                 merged.text = self.text
@@ -414,7 +452,7 @@ final class ForkedModelMacrosSuite: XCTestCase {
             extension Note: Forked.Mergeable {
                 public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
                     var merged = self
-                    if areEqualForForked(self.text, commonAncestor.text) {
+                    if self.text == commonAncestor.text {
                 merged.text = other.text
                     } else {
                 merged.text = self.text
@@ -427,7 +465,7 @@ final class ForkedModelMacrosSuite: XCTestCase {
         )
     }
 
-    func testComplexComputedVars() {
+    func testComputedVarThatHaveSetter() {
         assertMacroExpansion(
             """
             @ForkedModel
@@ -452,10 +490,60 @@ final class ForkedModelMacrosSuite: XCTestCase {
             extension Note: Forked.Mergeable {
                 public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
                     var merged = self
-                    if areEqualForForked(self.text, commonAncestor.text) {
+                    if self.text == commonAncestor.text {
                 merged.text = other.text
                     } else {
                 merged.text = self.text
+                    }
+                    if self.textComputed == commonAncestor.textComputed {
+                        merged.textComputed = other.textComputed
+                    } else {
+                        merged.textComputed = self.textComputed
+                    }
+                    return merged
+                }
+            }
+            """,
+            macros: Self.testMacros
+        )
+    }
+
+    func testComputedVarThatHaveSetterAndDidSetter() {
+        assertMacroExpansion(
+            """
+            @ForkedModel
+            private struct Note {
+                var text: String = ""
+                var textComputed: String {
+                    get { text }
+                    set { text = newValue }
+                    didSet { }
+                }
+            }
+            """,
+            expandedSource:
+            """
+            private struct Note {
+                var text: String = ""
+                var textComputed: String {
+                    get { text }
+                    set { text = newValue }
+                    didSet { }
+                }
+            }
+
+            extension Note: Forked.Mergeable {
+                public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
+                    var merged = self
+                    if self.text == commonAncestor.text {
+                merged.text = other.text
+                    } else {
+                merged.text = self.text
+                    }
+                    if self.textComputed == commonAncestor.textComputed {
+                        merged.textComputed = other.textComputed
+                    } else {
+                        merged.textComputed = self.textComputed
                     }
                     return merged
                 }

@@ -63,13 +63,13 @@ public struct ForkedModelMacro: ExtensionMacro {
         // Get all vars
         let allPropertyVars: [VariableDeclSyntax] = structDecl.memberBlock.members.compactMap { member -> VariableDeclSyntax? in
             guard let varSyntax = member.decl.as(VariableDeclSyntax.self) else { return nil }
-            guard !varSyntax.isComputedVar() else { return nil }
+            guard !varSyntax.isComputed() else { return nil }
             return varSyntax
         }
         
         // Gather names of all mergeable properties
         let mergePropertyVars: [MergePropertyVar] = try structDecl.memberBlock.members.compactMap { member -> MergePropertyVar? in
-            guard let varSyntax = member.decl.as(VariableDeclSyntax.self), varSyntax.isMerged(), !varSyntax.isComputedVar()
+            guard let varSyntax = member.decl.as(VariableDeclSyntax.self), varSyntax.isMerged(), !varSyntax.isComputed()
                 else { return nil }
             let propertyMerge = try varSyntax.propertyMerge()
             return MergePropertyVar(varSyntax: varSyntax, merge: propertyMerge, propertyVariety: varSyntax.propertyVariety())
@@ -79,7 +79,7 @@ public struct ForkedModelMacro: ExtensionMacro {
         let backedPropertyVars: [BackedPropertyVar] = try structDecl.memberBlock.members.compactMap { member -> BackedPropertyVar? in
             guard let varSyntax = member.decl.as(VariableDeclSyntax.self),
                   let backing = try varSyntax.propertyBacking(),
-                  !varSyntax.isComputedVar()
+                  !varSyntax.isComputed()
                 else { return nil }
             return BackedPropertyVar(varSyntax: varSyntax, backing: backing)
         }
