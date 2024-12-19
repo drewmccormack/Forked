@@ -19,7 +19,7 @@ extension VariableDeclSyntax {
 
     func isComputed() -> Bool {
         // Each variable may have multiple declarations on the same line (ex. var foo: String, bar: String),
-        // but computed variables much always have 1.
+        // but computed variables must always have 1.
         guard bindings.count == 1 else {
             return false
         }
@@ -41,16 +41,8 @@ extension VariableDeclSyntax {
 
         // The variable is a "computed variable" only if a getter is present in the list
         // of its accessors, with no setter present.
-        var containsGetter: Bool = false
-        var containsSetter: Bool = false
-        for accessor in accessorsList {
-            if accessor.accessorSpecifier.tokenKind == .keyword(.set) {
-                containsSetter = true
-            } else if accessor.accessorSpecifier.tokenKind == .keyword(.get) {
-                containsGetter = true
-            }
-        }
-
+        let containsGetter = accessorsList.contains { $0.accessorSpecifier.tokenKind == .keyword(.get) }
+        let containsSetter = accessorsList.contains { $0.accessorSpecifier.tokenKind == .keyword(.set) }
         return containsGetter && !containsSetter
     }
 
