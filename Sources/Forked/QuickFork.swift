@@ -1,6 +1,6 @@
 import Foundation
 
-public typealias QuickFork<T> = ForkedResource<AtomicRepository<T>>
+public typealias QuickFork<T: Equatable> = ForkedResource<AtomicRepository<T>>
 
 public extension QuickFork {
     

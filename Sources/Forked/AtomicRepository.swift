@@ -5,7 +5,7 @@ import Foundation
 /// also `Codable`, and can be converted to a serialized form and saved as a file.
 /// Saving and loading are atomic, that is, the whole repository is loaded from file, and the whole
 /// file is written to disk.
-public final class AtomicRepository<Resource>: Repository {
+public final class AtomicRepository<Resource: Equatable>: Repository {
     private var forkToResource: [Fork:[Commit<Resource>]] = [:]
     
     /// If set, the persistence of the repo is managed for you. It will load and

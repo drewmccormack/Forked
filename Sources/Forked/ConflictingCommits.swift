@@ -1,6 +1,6 @@
 import Foundation
 
-internal struct ConflictingCommits<Resource> {
+internal struct ConflictingCommits<Resource: Equatable> {
     public var dominant: Commit<Resource>
     public var subordinate: Commit<Resource>
     

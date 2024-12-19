@@ -186,10 +186,7 @@ The `@Merged` attribute tells `ForkedModel` that the property is `Mergeable`, an
 
 If you have a custom `Mergeable` type, like `AccumulatingInt`, applying `@Merged` will cause it to merge using the `merged(withSubordinate:commonAncestor:)` method you provided. 
 
-Properties without `@Merged` attached will be merged atomically, with a more recent change taking precedence over an older one. 
-
-- Properties that are `Equatable` will be merged property-wise, independent of the rest of the struct, based on the most recent change to the property itself
-- Properties that are not `Equatable` will take their value from the newest value of the struct, and not be merged property-wise
+Properties without `@Merged` attached will be merged atomically, with a more recent change taking precedence over an older one. Properties will be merged in a property-wise manner, based on the most recent change to the property itself
 
 ## Sample Code
 

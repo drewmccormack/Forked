@@ -2,7 +2,7 @@ import Foundation
 
 /// A wrapper to hold the resource. This allows for the resource to be
 /// absent in a fork, similar to using `nil`.
-public enum CommitContent<Resource>: Equatable {
+public enum CommitContent<Resource: Equatable> {
     /// The content is not present. Perhaps it has not been added yet,
     /// or it may have been removed.
     case none
@@ -16,20 +16,10 @@ public enum CommitContent<Resource>: Equatable {
         }
         return nil
     }
-    
-    /// By default, resource content is treated as not being equal if we can't test it.
-    public static func == (lhs: CommitContent<Resource>, rhs: CommitContent<Resource>) -> Bool {
-        switch (lhs, rhs) {
-        case (.none, .none):
-            return true
-        default:
-            return false
-        }
-    }
 }
 
 extension CommitContent: Codable where Resource: Codable {}
-extension CommitContent where Resource: Equatable {
+extension CommitContent: Equatable {
     
     /// The resource is Equatable, so test explicitly for equality.
     public static func == (lhs: CommitContent<Resource>, rhs: CommitContent<Resource>) -> Bool {
@@ -47,7 +37,7 @@ extension CommitContent where Resource: Equatable {
 
 /// A commit comprises of content, which is usually a value of the stored resource,
 /// together with a `Version`.
-public struct Commit<Resource>: Hashable, Equatable {
+public struct Commit<Resource: Equatable>: Hashable, Equatable {
     /// The content stored in the commit, usually a copy of the resource.
     public var content: CommitContent<Resource>
     

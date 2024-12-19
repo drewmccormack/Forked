@@ -1,7 +1,7 @@
 import Foundation
 import Forked
 
-struct AccumulatingInt: Mergeable {
+struct AccumulatingInt: Mergeable, Equatable {
     var value: Int
     func merged(withSubordinate other: AccumulatingInt, commonAncestor: AccumulatingInt) throws -> AccumulatingInt {
         AccumulatingInt(value: value + other.value - commonAncestor.value)

@@ -1,10 +1,10 @@
 import Foundation
 
-public protocol Mergeable {
+public protocol Mergeable: Equatable {
     func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self
 }
 
-extension Optional: Mergeable where Wrapped: Mergeable & Equatable {
+extension Optional: Mergeable where Wrapped: Mergeable {
     
     public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
         if self == commonAncestor {

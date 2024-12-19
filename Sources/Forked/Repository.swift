@@ -8,7 +8,7 @@ import Foundation
 /// Classes conforming to this type simply have to setup a storage
 /// mechanism, and handle the requests, keeping commits assigned to forks.
 public protocol Repository: AnyObject {
-    associatedtype Resource
+    associatedtype Resource: Equatable
     
     /// The forks in the repository, including .main, in no particular order.
     var forks: [Fork] { get }
