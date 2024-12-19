@@ -16,6 +16,54 @@ extension VariableDeclSyntax {
         }
     }
     
+
+    func isComputed() -> Bool {
+        // Each variable may have multiple declarations on the same line (ex. var foo: String, bar: String),
+        // but in this case, no accessor may be provided, so each declared var it may not be a computed var
+        guard bindings.count == 1 else { return false }
+
+        // If not accessors are presents, then the variable is in the form "var foo: Int = 3", which is by definition not a computed variable
+        guard let accessorBlock = bindings.first!.accessorBlock else {
+            return false
+        }
+
+        let accessorsList: AccessorDeclListSyntax
+
+        switch accessorBlock.accessors {
+        case .getter:
+            // If the block is a "getter" block, then the var is computed
+            // ex. var foo: Int { 3 }
+            return true
+        case .accessors(let accessors):
+            accessorsList = accessors
+        }
+
+        var containsGetter: Bool = false
+        var containsSetter: Bool = false
+
+        // The variable is a "computed variable" only if a getter is present in the list of its accessors without a setter.
+        // Check that the accessorsList may contains different accessors like "didSet" or "willSet", and no "set" and "get".
+        // In this case the var is not computed
+        // ex. var foo: Int = 4 { didSet { print("hello") } }
+        for accessor in accessorsList {
+            if accessor.accessorSpecifier.tokenKind == .keyword(.set) {
+                containsSetter = true
+                continue
+            }
+
+            if accessor.accessorSpecifier.tokenKind == .keyword(.get) {
+                containsGetter = true
+                continue
+            }
+        }
+
+        if containsGetter, !containsSetter {
+            return true
+        }
+
+        return false
+    }
+
     func propertyMerge() throws -> PropertyMerge? {
         let propertyAttribute = self.attributes.first { attribute in
             attribute.as(AttributeSyntax.self)?.attributeName.trimmedDescription == mergedLabel

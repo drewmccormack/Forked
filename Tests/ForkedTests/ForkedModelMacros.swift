@@ -360,6 +360,198 @@ final class ForkedModelMacrosSuite: XCTestCase {
             macros: Self.testMacros
         )
     }
+
+    func testVarThatIsNotUsingMergedMacro() {
+        assertMacroExpansion(
+            """
+            @ForkedModel
+            private struct Note {
+                var text: String = ""
+            }
+            """,
+            expandedSource:
+            """
+            private struct Note {
+                var text: String = ""
+            }
+
+            extension Note: Forked.Mergeable {
+                public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
+                    var merged = self
+                    if self.text == commonAncestor.text {
+                merged.text = other.text
+                    } else {
+                merged.text = self.text
+                    }
+                    return merged
+                }
+            }
+            """,
+            macros: Self.testMacros
+        )
+    }
+
+    func testVarThatHaveSingleDidSetAccessor() {
+        assertMacroExpansion(
+            """
+            @ForkedModel
+            private struct Note {
+                var text: String = "" {
+                    didSet {
+                    
+                    }
+                }
+            }
+            """,
+            expandedSource:
+            """
+            private struct Note {
+                var text: String = "" {
+                    didSet {
+                    
+                    }
+                }
+            }
+
+            extension Note: Forked.Mergeable {
+                public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
+                    var merged = self
+                    if self.text == commonAncestor.text {
+                merged.text = other.text
+                    } else {
+                merged.text = self.text
+                    }
+                    return merged
+                }
+            }
+            """,
+            macros: Self.testMacros
+        )
+    }
+
+    func testSimpleComputedVars() {
+        assertMacroExpansion(
+            """
+            @ForkedModel
+            private struct Note {
+                var text: String = ""
+                var textComputed: String {
+                    return text
+                }
+            }
+            """,
+            expandedSource:
+            """
+            private struct Note {
+                var text: String = ""
+                var textComputed: String {
+                    return text
+                }
+            }
+
+            extension Note: Forked.Mergeable {
+                public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
+                    var merged = self
+                    if self.text == commonAncestor.text {
+                merged.text = other.text
+                    } else {
+                merged.text = self.text
+                    }
+                    return merged
+                }
+            }
+            """,
+            macros: Self.testMacros
+        )
+    }
+
+    func testComputedVarThatHaveSetter() {
+        assertMacroExpansion(
+            """
+            @ForkedModel
+            private struct Note {
+                var text: String = ""
+                var textComputed: String {
+                    get { text }
+                    set { text = newValue }
+                }
+            }
+            """,
+            expandedSource:
+            """
+            private struct Note {
+                var text: String = ""
+                var textComputed: String {
+                    get { text }
+                    set { text = newValue }
+                }
+            }
+
+            extension Note: Forked.Mergeable {
+                public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
+                    var merged = self
+                    if self.text == commonAncestor.text {
+                merged.text = other.text
+                    } else {
+                merged.text = self.text
+                    }
+                    if self.textComputed == commonAncestor.textComputed {
+                        merged.textComputed = other.textComputed
+                    } else {
+                        merged.textComputed = self.textComputed
+                    }
+                    return merged
+                }
+            }
+            """,
+            macros: Self.testMacros
+        )
+    }
+
+    func testComputedVarThatHaveSetterAndDidSetter() {
+        assertMacroExpansion(
+            """
+            @ForkedModel
+            private struct Note {
+                var text: String = ""
+                var textComputed: String {
+                    get { text }
+                    set { text = newValue }
+                    didSet { }
+                }
+            }
+            """,
+            expandedSource:
+            """
+            private struct Note {
+                var text: String = ""
+                var textComputed: String {
+                    get { text }
+                    set { text = newValue }
+                    didSet { }
+                }
+            }
+
+            extension Note: Forked.Mergeable {
+                public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
+                    var merged = self
+                    if self.text == commonAncestor.text {
+                merged.text = other.text
+                    } else {
+                merged.text = self.text
+                    }
+                    if self.textComputed == commonAncestor.textComputed {
+                        merged.textComputed = other.textComputed
+                    } else {
+                        merged.textComputed = self.textComputed
+                    }
+                    return merged
+                }
+            }
+            """,
+            macros: Self.testMacros
+        )
+    }
 }
 #endif
 
