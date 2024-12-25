@@ -1,7 +1,15 @@
 import Foundation
 
+/// Any type conforming to this can be used in a 3-way merge
 public protocol Mergeable: Equatable {
+    
+    /// Performs a 3-way merge, where `self` and `other` are the most recent versions,
+    /// and `commonAncestor` is from a point in the past at which time the histories diverged.
+    /// By comparing the recent values to the ancestor, you can determine what changed in each fork,
+    /// and decide how to merge. Where it is not possible to merge changes from each, `self` should
+    /// be considered the `dominant` fork, and `other` subordinate. If you must choose, choose `self`.
     func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self
+    
 }
 
 extension Optional: Mergeable where Wrapped: Mergeable {
