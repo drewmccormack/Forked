@@ -564,24 +564,25 @@ final class ForkedModelMacrosSuite: XCTestCase {
             expandedSource:
             """
             struct User {
+                var name: String = ""
+
                 public static let currentModelVersion: Int = 1
                 public var modelVersion: Int? = Self.currentModelVersion
-                var name: String = ""
             }
 
             extension User: Forked.Mergeable {
                 public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
                     var merged = self
                     if self.name == commonAncestor.name {
-                        merged.name = other.name
+                merged.name = other.name
                     } else {
-                        merged.name = self.name
+                merged.name = self.name
                     }
                     return merged
                 }
             }
 
-            extension User: VersionedModel {
+            extension User: Forked.VersionedModel {
             }
             """,
             macros: Self.testMacros

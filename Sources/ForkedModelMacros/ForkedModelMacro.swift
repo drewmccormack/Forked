@@ -46,19 +46,7 @@ public struct ForkedModelMacro: ExtensionMacro, MemberMacro {
         providingMembersOf declaration: some DeclGroupSyntax,
         in context: some MacroExpansionContext
     ) throws -> [DeclSyntax] {
-        // Extract version if provided
-        var version: Int? = nil
-        if let argumentList = node.arguments?.as(LabeledExprListSyntax.self) {
-            for argument in argumentList {
-                if argument.label?.text == versionLabel,
-                   let integerExpr = argument.expression.as(IntegerLiteralExprSyntax.self) {
-                    version = Int(integerExpr.literal.text)
-                }
-            }
-        }
-        
-        // If version is provided, add modelVersion property and currentModelVersion
-        if let version {
+        if let version = extractVersion(from: node) {
             // Check if struct conforms to VersionedModel
             if let structDecl = declaration.as(StructDeclSyntax.self) {
                 let conformsToVersionedModel = structDecl.inheritanceClause?.inheritedTypes.contains {
@@ -143,7 +131,12 @@ public struct ForkedModelMacro: ExtensionMacro, MemberMacro {
         
         // If version is provided, also generate VersionedModel extension
         if let version = extractVersion(from: node) {
-            return [mergeableExtension]  // VersionedModel conformance is handled by the member macro
+            let versionedModelExtension = try ExtensionDeclSyntax(
+                """
+                extension \(type.trimmed): Forked.VersionedModel {}
+                """
+            )
+            return [mergeableExtension, versionedModelExtension]
         }
         
         return [mergeableExtension]
@@ -256,21 +249,26 @@ public struct ForkedModelMacro: ExtensionMacro, MemberMacro {
         providingConformancesOf declaration: some DeclGroupSyntax,
         in context: some MacroExpansionContext
     ) throws -> [(TypeSyntax, GenericWhereClauseSyntax?)] {
-        // Extract version if provided
-        var version: Int? = nil
-        if let argumentList = node.arguments?.as(LabeledExprListSyntax.self) {
-            for argument in argumentList {
-                if argument.label?.text == versionLabel,
-                   let integerExpr = argument.expression.as(IntegerLiteralExprSyntax.self) {
-                    version = Int(integerExpr.literal.text)
-                }
+        if extractVersion(from: node) != nil {
+            // Create a proper TypeSyntax for VersionedModel
+            return [(TypeSyntax("Forked.VersionedModel"), nil)]
+        }
+        return []
+    }
+
+    private static func extractVersion(from node: AttributeSyntax) -> Int? {
+        guard let argumentList = node.arguments?.as(LabeledExprListSyntax.self) else {
+            return nil
+        }
+        
+        for argument in argumentList {
+            if argument.label?.text == versionLabel,
+               let integerExpr = argument.expression.as(IntegerLiteralExprSyntax.self) {
+                return Int(integerExpr.literal.text)
             }
         }
         
-        if version != nil {
-            return [("VersionedModel", nil)]
-        }
-        return []
+        return nil
     }
 }
 
