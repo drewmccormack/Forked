@@ -4,8 +4,9 @@ import ForkedMerge
 
 public typealias Mergeable = Forked.Mergeable
 
-@attached(`extension`, names: arbitrary, conformances: Mergeable)
-public macro ForkedModel() = #externalMacro(module: "ForkedModelMacros", type: "ForkedModelMacro")
+@attached(`extension`, names: arbitrary, conformances: Mergeable, VersionedModel)
+@attached(member, names: arbitrary)
+public macro ForkedModel(version: Int? = nil) = #externalMacro(module: "ForkedModelMacros", type: "ForkedModelMacro")
 
 @attached(peer)
 public macro Merged(using: PropertyMerge = .mergeableProtocol) = #externalMacro(module: "ForkedModelMacros", type: "MergeablePropertyMacro")

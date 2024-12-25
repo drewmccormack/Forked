@@ -36,6 +36,11 @@ struct NoteWithOptional {
     @Merged(using: .arrayOfIdentifiableMerge) var optionalItems: [NoteItem]?
 }
 
+@ForkedModel(version: 1)
+private struct VersionedNote {
+    var title: String = ""
+}
+
 struct ForkedModelSuite {
     
     @Test func initialCreation() {
@@ -217,5 +222,21 @@ struct ForkedModelSuite {
         #expect(merged.items[2]?.id == "1")
         #expect(merged.optionalItems?.count == 1)
         #expect(merged.optionalItems?[0].id == "2")
+    }
+
+    @Test func testVersionedModelHandling() throws {
+        // Current version (1) should be loadable
+        let currentNote = VersionedNote(title: "Test")
+        #expect(currentNote.canLoadModelVersion)
+        #expect(currentNote.modelVersion == 1)
+        #expect(VersionedNote.currentModelVersion == 1)
+        
+        // Simulate an older version (0)
+        let oldNote = VersionedNote(title: "Old", modelVersion: 0)
+        #expect(oldNote.canLoadModelVersion)
+        
+        // Simulate a future version (2)
+        let futureNote = VersionedNote(title: "Future", modelVersion: 2)
+        #expect(!futureNote.canLoadModelVersion)
     }
 }

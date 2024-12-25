@@ -33,14 +33,28 @@ enum RecordFetchStatus: Equatable {
     }
 }
 
+public enum Error: Swift.Error {
+    case unknownVersionEncountered(version: Int, type: String)
+}
+
 @available(iOS 17.0, tvOS 17.0, watchOS 10.0, macOS 14.0, *)
-public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.Resource: Codable & Sendable & Mergeable {
-    let id: String
-    let forkedResource: ForkedResource<R>
-    let cloudKitContainer: CKContainer
-    let zoneID: CKRecordZone.ID = .init(zoneName: "Forked")
-    let recordType: CKRecord.RecordType = "ForkedResource"
-    var recordID: CKRecord.ID { CKRecord.ID(recordName: id, zoneID: zoneID) }
+public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.Resource: Codable & Sendable & Mergeable & VersionedModel {
+    public let id: String
+    public let forkedResource: ForkedResource<R>
+    public let cloudKitContainer: CKContainer
+    public let zoneID: CKRecordZone.ID = .init(zoneName: "Forked")
+    public let recordType: CKRecord.RecordType = "ForkedResource"
+    public var recordID: CKRecord.ID { CKRecord.ID(recordName: id, zoneID: zoneID) }
+    
+    /// An exchange can terminate when an unknown model is encountered.
+    /// The user should upgrade to continue.
+    public private(set) var exchangeTerminatedDueToUnknownModelVersion: Bool = false
+    
+    /// This is called if an unknown model version is downloaded. It means this copy
+    /// of the app is out-of-date and the user should be told to update. The exchange
+    /// will stop trying to merge downloaded data to prevent data loss, and uploads
+    /// will also stop as a result.
+    internal let unknownModelVersionHandler: (Error) -> Void
     
     internal private(set) var engine: CKSyncEngine!
     internal var recordFetchStatus: RecordFetchStatus = .uninitialized
@@ -57,11 +71,12 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
     private var monitorTask: Task<(), Never>?
     private var pollingTask: Task<(), Swift.Error>?
         
-    public init(id: String, forkedResource: ForkedResource<R>, cloudKitContainer: CKContainer = .default()) throws {
+    public init(id: String, forkedResource: ForkedResource<R>, cloudKitContainer: CKContainer = .default(), unknownModelVersionHandler: @escaping (Error) -> Void) throws {
         self.id = id
         self.forkedResource = forkedResource
         self.changeStream = forkedResource.changeStream
         self.cloudKitContainer = cloudKitContainer
+        self.unknownModelVersionHandler = unknownModelVersionHandler
         let dirURL = FileManager.default
             .urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
             .appending(component: "CloudKitExchange")
@@ -146,9 +161,7 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
                 try await Task.sleep(for: .seconds(60))
                 Logger.exchange.info("Polling for new changes in cloud")
                 try? await engine.fetchChanges()
-                if let action = try? forkedResource.mergeIntoMain(from: .cloudKit), action != .none {
-                    Logger.exchange.info("Merged new changes into main from poll")
-                }
+                try  mergeIntoMainFromCloudKitFork()
                 await uploadMain()
             }
         }
@@ -161,15 +174,35 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
     
     func resourceForUpload() throws -> R.Resource? {
         try forkedResource.performAtomically {
-            try forkedResource.mergeIntoMain(from: .cloudKit)
+            try mergeIntoMainFromCloudKitFork()
             return try forkedResource.resource(of: .main)
         }
+    }
+    
+    internal func mergeIntoMainFromCloudKitFork() throws {
+        try forkedResource.performAtomically {
+            guard let value = try forkedResource.value(in: .cloudKit) else { return }
+            guard value.canLoadModelVersion else {
+                let error = Error.unknownVersionEncountered(version: value.modelVersion ?? 0, type: String(describing: type(of: value)))
+                stopExchangingDueToUnknownModelVersion(with: error)
+                throw error
+            }
+            _ = try forkedResource.mergeIntoMain(from: .cloudKit)
+        }
+    }
+    
+    private func stopExchangingDueToUnknownModelVersion(with error: Error) {
+        guard !exchangeTerminatedDueToUnknownModelVersion else { return }
+        exchangeTerminatedDueToUnknownModelVersion = true
+        monitorTask?.cancel()
+        pollingTask?.cancel()
+        unknownModelVersionHandler(error)
     }
     
     private func enqueueUploadOfMainIfNeeded() {
         do {
             try forkedResource.performAtomically {
-                try forkedResource.mergeIntoMain(from: .cloudKit)
+                try mergeIntoMainFromCloudKitFork()
                 if try forkedResource.hasUnmergedCommitsInMain(for: .cloudKit) {
                     let cloudKitContent = try forkedResource.content(of: .cloudKit)
                     let mainContent = try forkedResource.content(of: .main)
@@ -209,7 +242,7 @@ internal extension CloudKitExchange {
     }
     
     nonisolated func removeForks() throws {
-        try forkedResource.mergeIntoMain(from: .cloudKit)
+        try? mergeIntoMainFromCloudKitFork()
         try forkedResource.delete(.cloudKit)
         try forkedResource.delete(.uploadingToCloudKit)
     }

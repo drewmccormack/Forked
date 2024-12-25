@@ -11,12 +11,12 @@ struct Balance: Mergeable, Codable, Hashable {
     }
 }
 
-@ForkedModel
+@ForkedModel(version: 0)
 struct Forkers: Codable {
     @Merged(using: .arrayOfIdentifiableMerge) var forkers: [Forker] = []
 }
 
-@ForkedModel
+@ForkedModel(version: 0)
 struct Forker: Identifiable, Codable, Hashable {
     var id: UUID = .init()
     var firstName: String = ""
