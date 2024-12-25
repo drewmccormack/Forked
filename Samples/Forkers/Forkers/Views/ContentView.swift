@@ -5,6 +5,7 @@ struct ContentView: View {
     @State var editorConfig = EditorConfig()
     
     var body: some View {
+        @Bindable var store = store
         NavigationStack {
             List {
                 ForEach(store.displayedForkers) { forker in
@@ -62,6 +63,11 @@ struct ContentView: View {
                             }
                         }
                 }
+            }
+            .alert("Update Required", isPresented: $store.showUpgradeAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("Please upgrade to the latest version of the app to continue syncing.")
             }
         }
     }
