@@ -9,7 +9,7 @@ extension Fork {
 
 struct Model: Codable, Mergeable, VersionedModel {
     static let currentModelVersion: Int = 0
-    var modelVersion: Int = Self.currentModelVersion
+    var modelVersion: Int? = Self.currentModelVersion
     var text: String
     func merged(withSubordinate other: Model, commonAncestor: Model) throws -> Model { self }
 }
