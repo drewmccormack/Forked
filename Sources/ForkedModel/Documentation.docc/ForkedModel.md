@@ -151,6 +151,48 @@ struct Document {
 
 When merging the dictionary, if the values for a given key are `Mergeable`, they will be merged recursively rather than just taking the most recent value.
 
+## Model Versioning
+
+When working with models that might be shared between different versions of your app on different devices, it's important to handle model versioning properly. The `@ForkedModel` macro includes support for versioning through its `version` parameter:
+
+```swift
+@ForkedModel(version: 1)
+struct TodoItem {
+    var title: String
+    var isComplete: Bool
+}
+```
+
+Whenever you make a change to the model, increment the version by 1.
+
+Versioning becomes crucial when:
+- Different devices might be running different versions of your app
+- You need to sync data between devices (e.g., via CloudKit)
+- You want to prevent older versions of your app from trying to load data they don't understand
+
+### Adding Versioning to Existing Models
+
+If you have an existing unversioned model, it effectively has a version of 0. When adding versioning, you have two options:
+
+1. If your model structure hasn't changed, keep compatibility with existing data:
+```swift
+@ForkedModel(version: 0)  // 
+struct TodoItem {
+    var title: String
+    var isComplete: Bool
+}
+```
+
+2. If you're changing the model structure, increment version to indicate:
+```swift
+@ForkedModel(version: 1)
+struct TodoItem {
+    var title: String
+    var isComplete: Bool
+    var dueDate: Date?    // New property
+}
+```
+
 ## Important Notes
 
 - All non-optional stored properties must have default values

@@ -29,7 +29,12 @@ let forkedResource = try ForkedResource(repository: repo)
 // Create CloudKitExchange instance
 let cloudKitExchange = try CloudKitExchange(
     id: "<Unique ID for the repo in CloudKit>",
-    forkedResource: forkedResource
+    forkedResource: forkedResource,
+    unknownModelVersionHandler: { error in
+        // Handle unknown model version by printing the error
+        // In a real app, you might want to show a UI alert telling the user to update
+        print("Error: \(error)")
+    }
 )
 ```
 
@@ -42,20 +47,50 @@ CloudKitExchange automatically:
 1. Monitors changes to your ForkedResource's main fork
 2. Uploads changes to iCloud when detected
 3. Downloads changes from other devices
-4. Merges remote changes into your local data on the main fork
+4. Before merging any changes, it checks the model version of the remote data and the local data. If the model version from iCloud is one that is unknown in the local app, it calls the `unknownModelVersionHandler` closure, and stops syncing. The user should update their app to the latest version.
+5. If the model is known, it merges the remote changes into your local data on the main fork
 
 All of this happens in the background without blocking your app's UI.
+
+## Model Versioning
+
+ForkedCloudKit requires your model to conform to `VersionedModel` to ensure safe syncing across different app versions. This is crucial because:
+
+1. Different versions of your app may have different data models
+2. When syncing, you need to ensure the app can understand the data it receives
+3. Older versions of your app should not try to merge data from newer, unknown model versions
+
+Here's how to make your model versioned:
+
+```swift
+@ForkedModel(version: 1)
+struct MyData {
+    ...
+}
+```
+
+When you update your model in a new app version, increment the version by 1.
+
+If CloudKitExchange encounters data with an unknown version (higher than the version in the code):
+
+1. It calls your `unknownModelVersionHandler` closure
+2. Stops syncing to prevent data corruption
+3. The user should be prompted to update their app
 
 ## Example Implementation
 
 Here's a complete example showing how to integrate CloudKit sync into a SwiftUI app:
 
 ```swift
+@Observable
 @MainActor
 class Store {
     private let repo: AtomicRepository<MyData>
     private let forkedResource: ForkedResource<AtomicRepository<MyData>>
-    private let cloudKitExchange: CloudKitExchange<AtomicRepository<MyData>>
+    private var cloudKitExchange: CloudKitExchange<AtomicRepository<MyData>>!
+
+    /// Set to true when the user needs to upgrade their model
+    public var showUpgradeAlert = false
     
     init() throws {
         // Setup local storage
@@ -66,7 +101,10 @@ class Store {
         // Initialize CloudKit sync
         cloudKitExchange = try CloudKitExchange(
             id: "<Unique ID for the repo in CloudKit>",
-            forkedResource: forkedResource
+            forkedResource: forkedResource,
+            unknownModelVersionHandler: { [weak self]error in
+                self?.showUpgradeAlert = true
+            }
         )
     }
 }
@@ -91,7 +129,10 @@ let container = CKContainer(identifier: "iCloud.com.mycompany.myapp-another-cont
 let cloudKitExchange = try CloudKitExchange(
     id: "<Unique ID for the repo in CloudKit>",
     forkedResource: forkedResource,
-    cloudKitContainer: container
+    cloudKitContainer: container,
+    unknownModelVersionHandler: { error in
+        print("Error: \(error)")
+    }
 )
 ```
 
@@ -115,7 +156,8 @@ Task {
 Common issues and solutions:
 
 - **No Sync**: Ensure iCloud is enabled on the device, the user is signed in, and iCloud Drive enabled
-- **Data Not Appearing**: Check that your CloudKit container is properly configured
+- **Data Not Appearing**: Check that your CloudKit container is properly configured. 
+- **No Sync in Production Version**: Make sure you push your CloudKit schema to production before launching your app. Use the CloudKit web portal (https://icloud.developer.apple.com) to do this
 - **Conflicts**: ForkedCloudKit automatically handles conflicts using your resource's merge strategy
 
 ## Further Reading
