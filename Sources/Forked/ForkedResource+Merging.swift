@@ -96,10 +96,13 @@ public extension ForkedResource where RepositoryType.Resource: Mergeable {
         switch (commits.dominant.content, commits.subordinate.content, ancestorCommit.content) {
         case (.none, .none, _):
             return .none
-        case (.resource, .none, _), (.resource, .resource, .none):
+        case (.resource, .none, _):
             return commits.dominant.content
         case (.none, .resource, _):
             return commits.subordinate.content
+        case (.resource(let r1), .resource(let r2), .none):
+            let resource = try r1.salvaging(from: r2)
+            return .resource(resource)
         case (.resource(let r1), .resource(let r2), .resource(let ra)):
             let resource = try r1.merged(withSubordinate: r2, commonAncestor: ra)
             return .resource(resource)
