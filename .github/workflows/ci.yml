@@ -11,7 +11,7 @@ jobs:
       - name: "Test Swift Package on macOS"
         run: swift test
       - name: "Test Swift Package on iOS"
-        run: xcodebuild test -sdk "iphonesimulator" -destination "platform=iOS Simulator,name=iPhone 16" -scheme "Forked-Package"
+        run: xcodebuild test -skipMacroValidation -skipPackagePluginValidation -sdk "iphonesimulator" -destination "platform=iOS Simulator,name=iPhone 16" -scheme "Forked-Package"
   linux-android:
     runs-on: ubuntu-24.04
     steps:
