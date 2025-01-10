@@ -3,6 +3,7 @@ public enum ForkedModelError: Error, CustomStringConvertible {
     case appliedToNonStruct
     case appliedToNonVariable
     case conformsToMergeable
+    case conformsToVersionedModel
     case invalidPropertyMerge
     case invalidPropertyBacking
     case propertyMergeAndTypeAreIncompatible
@@ -17,6 +18,8 @@ public enum ForkedModelError: Error, CustomStringConvertible {
             return "@Merged can only be applied to properties"
         case .conformsToMergeable:
             return "@ForkedModel should not explicitly conform to Mergeable protocol"
+        case .conformsToVersionedModel:
+            return "@ForkedModel should not explicitly conform to VersionedModel protocol"
         case .invalidPropertyMerge:
             return "@Merged has invalid merge algorithm"
         case .invalidPropertyBacking:

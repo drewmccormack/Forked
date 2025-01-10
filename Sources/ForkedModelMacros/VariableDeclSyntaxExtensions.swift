@@ -16,6 +16,36 @@ extension VariableDeclSyntax {
         }
     }
     
+
+    func isComputed() -> Bool {
+        // Each variable may have multiple declarations on the same line (ex. var foo: String, bar: String),
+        // but computed variables must always have 1.
+        guard bindings.count == 1 else {
+            return false
+        }
+
+        // If no accessors are present then the variable is a
+        // stored variable
+        guard let accessorBlock = bindings.first!.accessorBlock else {
+            return false
+        }
+
+        // Get accessors list
+        let accessorsList: AccessorDeclListSyntax
+        switch accessorBlock.accessors {
+        case .getter:
+            return true
+        case .accessors(let accessors):
+            accessorsList = accessors
+        }
+
+        // The variable is a "computed variable" only if a getter is present in the list
+        // of its accessors, with no setter present.
+        let containsGetter = accessorsList.contains { $0.accessorSpecifier.tokenKind == .keyword(.get) }
+        let containsSetter = accessorsList.contains { $0.accessorSpecifier.tokenKind == .keyword(.set) }
+        return containsGetter && !containsSetter
+    }
+
     func propertyMerge() throws -> PropertyMerge? {
         let propertyAttribute = self.attributes.first { attribute in
             attribute.as(AttributeSyntax.self)?.attributeName.trimmedDescription == mergedLabel

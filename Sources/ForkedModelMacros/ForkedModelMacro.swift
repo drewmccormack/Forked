@@ -38,20 +38,56 @@ private struct BackedPropertyVar {
     var backing: PropertyBacking
 }
 
-public struct ForkedModelMacro: ExtensionMacro {
-    public static func expansion(of node: AttributeSyntax, attachedTo declaration: some DeclGroupSyntax, providingExtensionsOf type: some TypeSyntaxProtocol, conformingTo protocols: [TypeSyntax], in context: some MacroExpansionContext) throws -> [ExtensionDeclSyntax] {
+private let versionLabel = "version"
+
+public struct ForkedModelMacro: ExtensionMacro, MemberMacro {
+    public static func expansion(
+        of node: AttributeSyntax,
+        providingMembersOf declaration: some DeclGroupSyntax,
+        in context: some MacroExpansionContext
+    ) throws -> [DeclSyntax] {
+        if let version = extractVersion(from: node) {
+            // Check if struct conforms to VersionedModel
+            if let structDecl = declaration.as(StructDeclSyntax.self) {
+                let conformsToVersionedModel = structDecl.inheritanceClause?.inheritedTypes.contains {
+                    $0.type.trimmedDescription == "VersionedModel"
+                } ?? false
+                
+                if conformsToVersionedModel {
+                    throw ForkedModelError.conformsToVersionedModel
+                }
+            }
+            
+            return [
+                """
+                public static let currentModelVersion: Int = \(raw: version)
+                public var modelVersion: Int? = Self.currentModelVersion
+                """
+            ]
+        }
+        
+        return []
+    }
+
+    public static func expansion(
+        of node: AttributeSyntax,
+        attachedTo declaration: some DeclGroupSyntax,
+        providingExtensionsOf type: some TypeSyntaxProtocol,
+        conformingTo protocols: [TypeSyntax],
+        in context: some MacroExpansionContext
+    ) throws -> [ExtensionDeclSyntax] {        
         // Check that the node is a struct
         guard let structDecl = declaration.as(StructDeclSyntax.self) else {
             throw ForkedModelError.appliedToNonStruct
         }
         
         // Check if the struct already conforms to Mergeable
-        let alreadyConformsToCodable = structDecl.inheritanceClause?.inheritedTypes.contains {
+        let alreadyConformsToMergeable = structDecl.inheritanceClause?.inheritedTypes.contains {
             $0.type.trimmedDescription == "Mergeable" || $0.type.trimmedDescription == "Forked.Mergeable"
         } ?? false
         
         // If it already conforms to Mergeable, throw an error
-        guard !alreadyConformsToCodable else {
+        guard !alreadyConformsToMergeable else {
             throw ForkedModelError.conformsToMergeable
         }
         
@@ -59,16 +95,17 @@ public struct ForkedModelMacro: ExtensionMacro {
         guard structDecl.allStoredPropertiesHaveDefaultValue else {
             throw ForkedModelError.nonOptionalStoredPropertiesMustHaveDefaultValues
         }
-        
+
         // Get all vars
         let allPropertyVars: [VariableDeclSyntax] = structDecl.memberBlock.members.compactMap { member -> VariableDeclSyntax? in
             guard let varSyntax = member.decl.as(VariableDeclSyntax.self) else { return nil }
+            guard !varSyntax.isComputed() else { return nil }
             return varSyntax
         }
         
         // Gather names of all mergeable properties
         let mergePropertyVars: [MergePropertyVar] = try structDecl.memberBlock.members.compactMap { member -> MergePropertyVar? in
-            guard let varSyntax = member.decl.as(VariableDeclSyntax.self), varSyntax.isMerged()
+            guard let varSyntax = member.decl.as(VariableDeclSyntax.self), varSyntax.isMerged(), !varSyntax.isComputed()
                 else { return nil }
             let propertyMerge = try varSyntax.propertyMerge()
             return MergePropertyVar(varSyntax: varSyntax, merge: propertyMerge, propertyVariety: varSyntax.propertyVariety())
@@ -77,7 +114,8 @@ public struct ForkedModelMacro: ExtensionMacro {
         // Gather names of all backed properties
         let backedPropertyVars: [BackedPropertyVar] = try structDecl.memberBlock.members.compactMap { member -> BackedPropertyVar? in
             guard let varSyntax = member.decl.as(VariableDeclSyntax.self),
-                  let backing = try varSyntax.propertyBacking()
+                  let backing = try varSyntax.propertyBacking(),
+                  !varSyntax.isComputed()
                 else { return nil }
             return BackedPropertyVar(varSyntax: varSyntax, backing: backing)
         }
@@ -88,13 +126,37 @@ public struct ForkedModelMacro: ExtensionMacro {
             !backedPropertyVars.contains { $0.varSyntax == varSyntax }
         }
         
+        // Generate the Mergeable extension
+        let mergeableExtension = try generateMergeableExtension(for: type, structDecl: structDecl, defaultMergeVars: defaultMergeVars, mergePropertyVars: mergePropertyVars, backedPropertyVars: backedPropertyVars)
+        
+        // If version is provided, also generate VersionedModel extension
+        if extractVersion(from: node) != nil {
+            let versionedModelExtension = try ExtensionDeclSyntax(
+                """
+                extension \(type.trimmed): Forked.VersionedModel {}
+                """
+            )
+            return [mergeableExtension, versionedModelExtension]
+        }
+        
+        return [mergeableExtension]
+    }
+    
+    // Move the existing Mergeable extension generation to a helper method
+    private static func generateMergeableExtension(
+        for type: some TypeSyntaxProtocol,
+        structDecl: StructDeclSyntax,
+        defaultMergeVars: [VariableDeclSyntax],
+        mergePropertyVars: [MergePropertyVar],
+        backedPropertyVars: [BackedPropertyVar]
+    ) throws -> ExtensionDeclSyntax {
         // Generate merge expression for defaults
         var expressions: [String] = []
         for varSyntax in defaultMergeVars {
             let varName = varSyntax.bindings.first!.pattern.as(IdentifierPatternSyntax.self)!.identifier.text
             let expr =
                 """
-                if areEqualForForked(self.\(varName), commonAncestor.\(varName)) {
+                if self.\(varName) == commonAncestor.\(varName) {
                     merged.\(varName) = other.\(varName)
                 } else {
                     merged.\(varName) = self.\(varName)
@@ -138,11 +200,12 @@ public struct ForkedModelMacro: ExtensionMacro {
             let varSyntax = propertyInfo.varSyntax
             let varName = varSyntax.bindings.first!.pattern.as(IdentifierPatternSyntax.self)!.identifier.text
             let expr: String
+            let backedVarName = BackedPropertyMacro.backingPropertyPrefix + varName
             switch propertyInfo.backing {
             case .mergeableValue, .mergeableArray, .mergeableSet, .mergeableDictionary:
                 expr =
                     """
-                    merged.\(BackedPropertyMacro.backingPropertyPrefix + varName) = try self.\(BackedPropertyMacro.backingPropertyPrefix + varName).merged(withSubordinate: other.\(BackedPropertyMacro.backingPropertyPrefix + varName), commonAncestor: commonAncestor.\(BackedPropertyMacro.backingPropertyPrefix + varName))
+                    merged.\(backedVarName) = try self.\(backedVarName).merged(withSubordinate: other.\(backedVarName), commonAncestor: commonAncestor.\(backedVarName))
                     """
             }
             
@@ -152,7 +215,8 @@ public struct ForkedModelMacro: ExtensionMacro {
         // generate extension syntax
         let declSyntax: DeclSyntax
         if expressions.isEmpty {
-            declSyntax = """
+            declSyntax =
+                """
                 extension \(type.trimmed): Forked.Mergeable {
                     public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
                         return self
@@ -160,7 +224,8 @@ public struct ForkedModelMacro: ExtensionMacro {
                 }
                 """
         } else {
-            declSyntax = """
+            declSyntax =
+                """
                 extension \(type.trimmed): Forked.Mergeable {
                     public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
                         var merged = self
@@ -170,15 +235,40 @@ public struct ForkedModelMacro: ExtensionMacro {
                 }
                 """
         }
-        
-        let extensionDecl = declSyntax.as(ExtensionDeclSyntax.self)!
-        return [extensionDecl]
+        return declSyntax.as(ExtensionDeclSyntax.self)!
     }
     
     private static func extensionDeclSyntax(from string: String) throws -> ExtensionDeclSyntax {
         try ExtensionDeclSyntax(
             .init(stringLiteral: string)
         )
+    }
+
+    public static func expansion(
+        of node: AttributeSyntax,
+        providingConformancesOf declaration: some DeclGroupSyntax,
+        in context: some MacroExpansionContext
+    ) throws -> [(TypeSyntax, GenericWhereClauseSyntax?)] {
+        if extractVersion(from: node) != nil {
+            // Create a proper TypeSyntax for VersionedModel
+            return [(TypeSyntax("Forked.VersionedModel"), nil)]
+        }
+        return []
+    }
+
+    private static func extractVersion(from node: AttributeSyntax) -> Int? {
+        guard let argumentList = node.arguments?.as(LabeledExprListSyntax.self) else {
+            return nil
+        }
+        
+        for argument in argumentList {
+            if argument.label?.text == versionLabel,
+               let integerExpr = argument.expression.as(IntegerLiteralExprSyntax.self) {
+                return Int(integerExpr.literal.text)
+            }
+        }
+        
+        return nil
     }
 }
 

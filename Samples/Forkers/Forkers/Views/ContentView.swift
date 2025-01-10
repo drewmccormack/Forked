@@ -2,37 +2,40 @@ import SwiftUI
 
 struct ContentView: View {
     @Environment(Store.self) private var store
-    @State private var showingAddForker = false
+    @State var editorConfig = EditorConfig()
     
     var body: some View {
+        @Bindable var store = store
         NavigationStack {
-            Group {
+            List {
+                ForEach(store.displayedForkers) { forker in
+                    NavigationLink(value: forker.id) {
+                        ForkerRow(forker: forker)
+                    }
+                }
+                .onDelete(perform: store.deleteForker)
+                .onMove(perform: store.moveForker)
+            }
+            .overlay {
                 if store.displayedForkers.isEmpty {
                     ContentUnavailableView(
                         "No Forkers Yet",
                         systemImage: "person.crop.circle.badge.plus",
                         description: Text("Use the button at the top to add your first Forker.")
                     )
-                } else {
-                    List {
-                        ForEach(store.displayedForkers) { forker in
-                            NavigationLink(value: forker) {
-                                ForkerRow(forker: forker)
-                            }
-                        }
-                        .onDelete(perform: store.deleteForker)
-                        .onMove(perform: store.moveForker)
-                    }
+                }
+            }
+            .navigationDestination(for: Forker.ID.self) { forkerID in
+                if let forker = store.displayedForkers.first(where: { $0.id == forkerID}) {
+                    ForkerDetailView(forker: forker)
                 }
             }
             .navigationTitle("Forkers")
-            .navigationDestination(for: Forker.self) { forker in
-                ForkerDetailView(existingForkerId: forker.id)
-                    .environment(store)
-            }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button(action: { showingAddForker = true }) {
+                    Button(action: {
+                        editorConfig.beginEditing(forker: Forker())
+                    }) {
                         Image(systemName: "person.crop.circle.badge.plus")
                     }
                 }
@@ -41,11 +44,31 @@ struct ContentView: View {
                         .disabled(store.displayedForkers.isEmpty)
                 }
             }
-        }
-        .sheet(isPresented: $showingAddForker) {
-            NavigationStack {
-                ForkerDetailView(existingForkerId: nil)
+            .sheet(isPresented: $editorConfig.isEditing) {
+                NavigationStack {
+                    EditForkerView(forker: $editorConfig.editingForker)
+                        .navigationTitle("New Forker")
+                        .toolbar {
+                            ToolbarItem(placement: .topBarLeading) {
+                                Button("Cancel") {
+                                    editorConfig.isEditing = false
+                                }
+                            }
+                            ToolbarItem(placement: .topBarTrailing) {
+                                Button("Add") {
+                                    store.addForker(editorConfig.editingForker)
+                                    editorConfig.isEditing = false
+                                }
+                                .disabled(!editorConfig.canSave)
+                            }
+                        }
+                }
+            }
+            .alert("Update Required", isPresented: $store.showUpgradeAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("Please upgrade to the latest version of the app to continue syncing.")
             }
         }
     }
-} 
+}

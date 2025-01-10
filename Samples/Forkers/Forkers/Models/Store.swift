@@ -26,7 +26,7 @@ class Store {
     private typealias RepoType = AtomicRepository<Forkers>
     private let repo: RepoType
     private let forkedModel: ForkedResource<RepoType>
-    private let cloudKitExchange: CloudKitExchange<RepoType>
+    private var cloudKitExchange: CloudKitExchange<RepoType>!
     
     private static let repoDirURL: URL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
     private static let repoFileURL: URL = repoDirURL.appendingPathComponent("Forkers.json")
@@ -52,6 +52,8 @@ class Store {
         }
     }
     
+    var showUpgradeAlert = false
+    
     init() throws {
         // Reads repo from disk if it exists, otherwise creates it anew
         repo = try AtomicRepository(managedFileURL: Self.repoFileURL)
@@ -72,7 +74,12 @@ class Store {
         try forkedModel.syncMain(with: [.ui, .editingForker])
         
         // Setup CloudKitExchange
-        cloudKitExchange = try .init(id: "Forkers", forkedResource: forkedModel)
+        cloudKitExchange = try .init(id: "Forkers",
+            forkedResource: forkedModel,
+            unknownModelVersionHandler: { [weak self] error in
+                self?.showUpgradeAlert = true
+            }
+        )
         
         // Set displayed forkers to what is in the repo
         displayedForkers = uiForkers

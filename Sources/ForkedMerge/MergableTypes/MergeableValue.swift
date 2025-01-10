@@ -5,9 +5,9 @@ import Forked
 /// This allows the type to automatically merge simply by choosing the value that was written later.
 /// Because there is a chance of timestamp collisions, a UUID is included to make collisions extremely unlikely.
 /// Based on Convergent and commutative replicated data types by M Shapiro, N Preguiça, C Baquero, M Zawirski - 2011 - hal.inria.fr
-public struct MergeableValue<T> {
+public struct MergeableValue<T: Equatable>: Equatable {
     
-    fileprivate struct Entry: Identifiable {
+    fileprivate struct Entry: Identifiable, Equatable {
         var value: T
         var timestamp: TimeInterval
         var id: UUID
@@ -50,9 +50,6 @@ extension MergeableValue: Mergeable {
 
 extension MergeableValue: Codable where T: Codable {}
 extension MergeableValue.Entry: Codable where T: Codable {}
-
-extension MergeableValue: Equatable where T: Equatable {}
-extension MergeableValue.Entry: Equatable where T: Equatable {}
 
 extension MergeableValue: Hashable where T: Hashable {}
 extension MergeableValue.Entry: Hashable where T: Hashable {}

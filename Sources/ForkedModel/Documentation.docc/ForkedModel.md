@@ -22,7 +22,7 @@ struct User {
 
 The attributes in this model will be merged using a "most recent wins" strategy — if both forks modify the same property, the most recent change will be kept.
 
-Note that equatable properties will be merged in a property-wise fashion. If the `name` property is modified in one fork, and the `age` property is modified in another, the most recent of each property will be kept when merging. This is different to just choosing the most recent value of the struct, which does not consider how the individual properties have changed.
+Note that properties will be merged in a property-wise fashion. If the `name` property is modified in one fork, and the `age` property is modified in another, the most recent of each property will be kept when merging. This is different to just choosing the most recent value of the struct, which does not consider how the individual properties have changed.
 
 > The `@ForkedModel` macro generates a standard Swift struct with an extension that conforms to `Mergeable`. There is no runtime overhead or magic - just pure Swift value types with some helper functions to facilitate merging. The generated struct can be used the same as any other struct, including adding `Codable` conformance to save or work with a web service.
 
@@ -151,10 +151,51 @@ struct Document {
 
 When merging the dictionary, if the values for a given key are `Mergeable`, they will be merged recursively rather than just taking the most recent value.
 
+## Model Versioning
+
+When working with models that might be shared between different versions of your app on different devices, it's important to handle model versioning properly. The `@ForkedModel` macro includes support for versioning through its `version` parameter:
+
+```swift
+@ForkedModel(version: 1)
+struct TodoItem {
+    var title: String
+    var isComplete: Bool
+}
+```
+
+Whenever you make a change to the model, increment the version by 1.
+
+Versioning becomes crucial when:
+- Different devices might be running different versions of your app
+- You need to sync data between devices (e.g., via CloudKit)
+- You want to prevent older versions of your app from trying to load data they don't understand
+
+### Adding Versioning to Existing Models
+
+If you have an existing unversioned model, it effectively has a version of 0. When adding versioning, you have two options:
+
+1. If your model structure hasn't changed, keep compatibility with existing data:
+```swift
+@ForkedModel(version: 0)  // 
+struct TodoItem {
+    var title: String
+    var isComplete: Bool
+}
+```
+
+2. If you're changing the model structure, increment version to indicate:
+```swift
+@ForkedModel(version: 1)
+struct TodoItem {
+    var title: String
+    var isComplete: Bool
+    var dueDate: Date?    // New property
+}
+```
+
 ## Important Notes
 
 - All non-optional stored properties must have default values
 - The `@ForkedModel` macro automatically makes your type conform to `Mergeable`
-- Equatable properties without `@Merged` will use a "most recent wins" strategy, in a property-wise fashion
-- Non-equatable properties without `@Merged` will use a "most recent wins" strategy for the entire struct
+- Properties without `@Merged` will use a "most recent wins" strategy, in a property-wise fashion
 - The merging strategy is determined at compile time and cannot be changed at runtime

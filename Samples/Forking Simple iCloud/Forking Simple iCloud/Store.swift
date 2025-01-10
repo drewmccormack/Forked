@@ -7,8 +7,11 @@ extension Fork {
     static let ui = Fork(name: "ui")
 }
 
-struct Model: Codable {
+struct Model: Codable, Mergeable, VersionedModel {
+    static let currentModelVersion: Int = 0
+    var modelVersion: Int? = Self.currentModelVersion
     var text: String
+    func merged(withSubordinate other: Model, commonAncestor: Model) throws -> Model { self }
 }
 
 @MainActor
@@ -49,7 +52,9 @@ class Store {
         }
      
         // Setup CloudKitExchange
-        cloudKitExchange = try .init(id: "ForkedRepo", forkedResource: forkedText)
+        cloudKitExchange = try .init(id: "ForkedRepo", forkedResource: forkedText, unknownModelVersionHandler: { error in
+            print("Syncing stopped due to unknown model version:", error)
+        })
         
         // Set displayed text to what is in the repo
         suppressModelUpdates = true

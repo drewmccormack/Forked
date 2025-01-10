@@ -2,7 +2,6 @@ import Foundation
 import Forked
 import ForkedMerge
 import ForkedModel
-import SwiftUI
 
 /// Mergeable type that accumulates the changes to each fork.
 struct AccumulatingInt: Mergeable {
@@ -25,7 +24,7 @@ extension Fork {
 
 @MainActor
 @Observable
-class Store {
+class Store: ObservableObject {
     @ObservationIgnored
     let forkedModel = QuickFork<Model>(initialValue: Model(), forks: [.ui1, .ui2])
 

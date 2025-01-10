@@ -3,9 +3,9 @@ import Forked
 
 /// Observed-Remove Set. Can add and remove like a normal set.
 /// Based on Convergent and commutative replicated data types by M Shapiro, N Preguiça, C Baquero, M Zawirski - 2011 - hal.inria.fr
-public struct MergeableSet<T: Hashable> {
+public struct MergeableSet<T: Hashable>: Hashable {
     
-    fileprivate struct Metadata {
+    fileprivate struct Metadata: Hashable {
         var isDeleted: Bool
         var timestamp: StableTimestamp
         
@@ -111,12 +111,6 @@ extension MergeableSet: Mergeable {
 
 extension MergeableSet: Codable where T: Codable {}
 extension MergeableSet.Metadata: Codable where T: Codable {}
-
-extension MergeableSet: Equatable where T: Equatable {}
-extension MergeableSet.Metadata: Equatable where T: Equatable {}
-
-extension MergeableSet: Hashable where T: Hashable {}
-extension MergeableSet.Metadata: Hashable where T: Hashable {}
 
 extension MergeableSet: ExpressibleByArrayLiteral {
     public init(arrayLiteral elements: T...) {

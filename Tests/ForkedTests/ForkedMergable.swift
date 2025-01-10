@@ -74,4 +74,48 @@ struct MergingMergeableSuite {
         #expect(try resource.resource(of: .main) == Pair(a: 2, b: 3))
     }
     
+    @Test func salvagingWhenBootstrapping() async throws {
+        struct SalvagablePair: Equatable, Mergeable {
+            var a: Int
+            var b: Int
+
+            func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
+                var result = self
+                if self.a == commonAncestor.a && other.a != commonAncestor.a {
+                    result.a = other.a
+                }
+                if self.b == commonAncestor.b && other.b != commonAncestor.b {
+                    result.b = other.b
+                }
+                return result
+            }
+            
+            func salvaging(from other: SalvagablePair) throws -> SalvagablePair {
+                other
+            }
+        }
+        
+        do {
+            let p1 = Pair(a: 1, b: 2)
+            try resource.update(.main, with: p1)
+            let p2 = Pair(a: 2, b: 1)
+            try resource.update(fork, with: p2)
+            try resource.mergeIntoMain(from: fork)
+            let m1 = try resource.value(in: .main)!
+            #expect(m1 == p2) // fork is dominant because updated last
+        }
+        
+        do {
+            let resource = QuickFork<SalvagablePair>()
+            try resource.create(fork)
+            
+            let p1 = SalvagablePair(a: 1, b: 2)
+            try resource.update(.main, with: p1)
+            let p2 = SalvagablePair(a: 2, b: 1)
+            try resource.update(fork, with: p2)
+            try resource.mergeIntoMain(from: fork)
+            let m1 = try resource.value(in: .main)!
+            #expect(m1 == p1) // "salvaged" chooses other
+        }
+    }
 }

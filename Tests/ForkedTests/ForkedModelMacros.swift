@@ -308,12 +308,12 @@ final class ForkedModelMacrosSuite: XCTestCase {
             extension User: Forked.Mergeable {
                 public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
                     var merged = self
-                    if areEqualForForked(self.name, commonAncestor.name) {
+                    if self.name == commonAncestor.name {
                 merged.name = other.name
                     } else {
                 merged.name = self.name
                     }
-                    if areEqualForForked(self.age, commonAncestor.age) {
+                    if self.age == commonAncestor.age {
                         merged.age = other.age
                     } else {
                         merged.age = self.age
@@ -355,6 +355,234 @@ final class ForkedModelMacrosSuite: XCTestCase {
                     merged.text = try merge(withMergerType: ArrayMerger.self, dominant: self.text, subordinate: other.text, commonAncestor: commonAncestor.text)
                     return merged
                 }
+            }
+            """,
+            macros: Self.testMacros
+        )
+    }
+
+    func testVarThatIsNotUsingMergedMacro() {
+        assertMacroExpansion(
+            """
+            @ForkedModel
+            private struct Note {
+                var text: String = ""
+            }
+            """,
+            expandedSource:
+            """
+            private struct Note {
+                var text: String = ""
+            }
+
+            extension Note: Forked.Mergeable {
+                public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
+                    var merged = self
+                    if self.text == commonAncestor.text {
+                merged.text = other.text
+                    } else {
+                merged.text = self.text
+                    }
+                    return merged
+                }
+            }
+            """,
+            macros: Self.testMacros
+        )
+    }
+
+    func testVarThatHaveSingleDidSetAccessor() {
+        assertMacroExpansion(
+            """
+            @ForkedModel
+            private struct Note {
+                var text: String = "" {
+                    didSet {
+                    
+                    }
+                }
+            }
+            """,
+            expandedSource:
+            """
+            private struct Note {
+                var text: String = "" {
+                    didSet {
+                    
+                    }
+                }
+            }
+
+            extension Note: Forked.Mergeable {
+                public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
+                    var merged = self
+                    if self.text == commonAncestor.text {
+                merged.text = other.text
+                    } else {
+                merged.text = self.text
+                    }
+                    return merged
+                }
+            }
+            """,
+            macros: Self.testMacros
+        )
+    }
+
+    func testSimpleComputedVars() {
+        assertMacroExpansion(
+            """
+            @ForkedModel
+            private struct Note {
+                var text: String = ""
+                var textComputed: String {
+                    return text
+                }
+            }
+            """,
+            expandedSource:
+            """
+            private struct Note {
+                var text: String = ""
+                var textComputed: String {
+                    return text
+                }
+            }
+
+            extension Note: Forked.Mergeable {
+                public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
+                    var merged = self
+                    if self.text == commonAncestor.text {
+                merged.text = other.text
+                    } else {
+                merged.text = self.text
+                    }
+                    return merged
+                }
+            }
+            """,
+            macros: Self.testMacros
+        )
+    }
+
+    func testComputedVarThatHaveSetter() {
+        assertMacroExpansion(
+            """
+            @ForkedModel
+            private struct Note {
+                var text: String = ""
+                var textComputed: String {
+                    get { text }
+                    set { text = newValue }
+                }
+            }
+            """,
+            expandedSource:
+            """
+            private struct Note {
+                var text: String = ""
+                var textComputed: String {
+                    get { text }
+                    set { text = newValue }
+                }
+            }
+
+            extension Note: Forked.Mergeable {
+                public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
+                    var merged = self
+                    if self.text == commonAncestor.text {
+                merged.text = other.text
+                    } else {
+                merged.text = self.text
+                    }
+                    if self.textComputed == commonAncestor.textComputed {
+                        merged.textComputed = other.textComputed
+                    } else {
+                        merged.textComputed = self.textComputed
+                    }
+                    return merged
+                }
+            }
+            """,
+            macros: Self.testMacros
+        )
+    }
+
+    func testComputedVarThatHaveSetterAndDidSetter() {
+        assertMacroExpansion(
+            """
+            @ForkedModel
+            private struct Note {
+                var text: String = ""
+                var textComputed: String {
+                    get { text }
+                    set { text = newValue }
+                    didSet { }
+                }
+            }
+            """,
+            expandedSource:
+            """
+            private struct Note {
+                var text: String = ""
+                var textComputed: String {
+                    get { text }
+                    set { text = newValue }
+                    didSet { }
+                }
+            }
+
+            extension Note: Forked.Mergeable {
+                public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
+                    var merged = self
+                    if self.text == commonAncestor.text {
+                merged.text = other.text
+                    } else {
+                merged.text = self.text
+                    }
+                    if self.textComputed == commonAncestor.textComputed {
+                        merged.textComputed = other.textComputed
+                    } else {
+                        merged.textComputed = self.textComputed
+                    }
+                    return merged
+                }
+            }
+            """,
+            macros: Self.testMacros
+        )
+    }
+
+    func testVersionedModelGeneratesCorrectExtension() {
+        assertMacroExpansion(
+            """
+            @ForkedModel(version: 1)
+            struct User {
+                var name: String = ""
+            }
+            """,
+            expandedSource:
+            """
+            struct User {
+                var name: String = ""
+
+                public static let currentModelVersion: Int = 1
+                public var modelVersion: Int? = Self.currentModelVersion
+            }
+
+            extension User: Forked.Mergeable {
+                public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
+                    var merged = self
+                    if self.name == commonAncestor.name {
+                merged.name = other.name
+                    } else {
+                merged.name = self.name
+                    }
+                    return merged
+                }
+            }
+
+            extension User: Forked.VersionedModel {
             }
             """,
             macros: Self.testMacros

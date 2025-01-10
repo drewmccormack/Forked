@@ -11,12 +11,12 @@ struct Balance: Mergeable, Codable, Hashable {
     }
 }
 
-@ForkedModel
+@ForkedModel(version: 0)
 struct Forkers: Codable {
     @Merged(using: .arrayOfIdentifiableMerge) var forkers: [Forker] = []
 }
 
-@ForkedModel
+@ForkedModel(version: 0)
 struct Forker: Identifiable, Codable, Hashable {
     var id: UUID = .init()
     var firstName: String = ""
@@ -29,4 +29,19 @@ struct Forker: Identifiable, Codable, Hashable {
     @Merged var balance: Balance = .init()
     @Merged var notes: String = ""
     @Merged var tags: Set<String> = []
+}
+
+extension Forkers {
+    
+    func salvaging(from other: Forkers) throws -> Forkers {
+        // When two devices have unrelated histories, they can't be
+        // 3-way merged. Instead, we will start with the dominant
+        // forker values (eg from the cloud), and copy in any forkers unique
+        // to the subordinate data (eg local)
+        var new = self
+        let ids = Set(self.forkers.map(\.id))
+        new.forkers += other.forkers.filter { !ids.contains($0.id) }
+        return new
+    }
+    
 }

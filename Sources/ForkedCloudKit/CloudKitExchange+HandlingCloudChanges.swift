@@ -64,7 +64,7 @@ extension CloudKitExchange {
             guard self.id == id else { continue }
             do {
                 try forkedResource.removeContent(from: .cloudKit)
-                try forkedResource.mergeIntoMain(from: .cloudKit)
+                try mergeIntoMainFromCloudKitFork()
                 recordFetchStatus = .doesNotExist
             } catch {
                 Logger.exchange.error("Failed to update resource with downloaded data: \(error)")
@@ -168,7 +168,7 @@ extension CloudKitExchange {
                 let existingContent = try forkedResource.content(of: .cloudKit)
                 guard existingContent != newContent else { return }
                 try forkedResource.update(.cloudKit, with: resource)
-                try forkedResource.mergeIntoMain(from: .cloudKit)
+                try mergeIntoMainFromCloudKitFork()
                 Logger.exchange.info("Updated cloudKitDownload with downloaded data, and merged into main")
             }
         } catch {
