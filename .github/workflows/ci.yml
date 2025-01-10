@@ -5,25 +5,28 @@ on:
   pull_request:
 jobs:
   macos-ios:
-    runs-on: macos-latest
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
-      - name: "Test Swift Package macOS"
+      - name: "Test Swift Package on macOS"
         run: swift test
-      - name: "Test Swift Package iOS"
+      - name: "Test Swift Package on iOS"
         run: xcodebuild test -sdk "iphonesimulator" -destination "platform=iOS Simulator,name=iPhone 16" -scheme "Forked-Package"
   linux-android:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: "Test Swift Package on Linux"
         run: swift test
-      - name: "Test Swift Package on Android"
+      - name: "Build Swift Package on Android"
         uses: skiptools/swift-android-action@v2
         with:
-          run-tests: false
+          # Android SDK does not yet support Testing framework
+          build-tests: false
   windows:
     runs-on: windows-latest
+    #   Error: error: invalid path 'docs/Forked/data/documentation/forked/atomicrepository/content(of:at:).json'
+    if: false
     steps:
       - uses: compnerd/gha-setup-swift@main
         with:
