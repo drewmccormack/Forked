@@ -1,3 +1,4 @@
+#if canImport(CloudKit)
 import CloudKit
 import SwiftUI
 import AsyncAlgorithms
@@ -248,4 +249,5 @@ internal extension CloudKitExchange {
     }
     
 }
+#endif
 

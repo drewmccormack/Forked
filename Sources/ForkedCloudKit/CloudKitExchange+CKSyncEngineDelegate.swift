@@ -1,3 +1,4 @@
+#if canImport(CloudKit)
 import CloudKit
 import os.log
 
@@ -71,3 +72,5 @@ extension CloudKitExchange: CKSyncEngineDelegate {
     }
     
 }
+#endif
+
