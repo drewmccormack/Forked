@@ -1,45 +1,35 @@
 name: Forked ci
 on:
   push:
-    branches: [ main ]
   workflow_dispatch:
   pull_request:
-    branches:
-      - '*'
-  #schedule:
-  #  - cron: '0 4,16 * * *'
 jobs:
-  linux:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: swift test
-  android:
-    # emulator fails to launch on ARM macOS with: HVF error: HV_UNSUPPORTED
-    # so we need to run on Intel macOS, which is macos-13
-    runs-on: macos-13
-    steps:
-      - uses: actions/checkout@v4
-      - name: "Test Swift Package Android"
-        uses: skiptools/swift-android-action@v1
-        with:
-          run-tests: false
   macos-ios:
-    runs-on: macos-15
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - name: "Test Swift Package macOS"
         run: swift test
       - name: "Test Swift Package iOS"
         run: xcodebuild test -sdk "iphonesimulator" -destination "platform=iOS Simulator,name=iPhone 16" -scheme "Forked-Package"
+  linux-android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Test Swift Package on Linux"
+        run: swift test
+      - name: "Test Swift Package on Android"
+        uses: skiptools/swift-android-action@v2
+        with:
+          run-tests: false
   windows:
     runs-on: windows-latest
     steps:
       - uses: compnerd/gha-setup-swift@main
         with:
-          branch: swift-5.9-release
-          tag: 5.9-RELEASE
+          branch: swift-6.0.3-release
+          tag: 6.0.3-RELEASE
       - uses: actions/checkout@v4
-      - run: swift build
-      - run: swift test
+      - name: "Test Swift Package on Windows"
+        run: swift test
 
