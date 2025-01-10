@@ -21,6 +21,7 @@ public protocol Mergeable: Equatable {
     /// start them syncing again, the history relating them is lost, and there is no common
     /// ancestor. You can choose one or the other, but just blindly merging the two will
     /// lead to duplications (how often have we seen that in apps like Contacts?)
+    /// 
     /// That's a lot of introduction, but it sets up this function. This function is effectively
     /// a 2-way merge. By default, it just returns `self`, which is considered the dominant
     /// copy of the data. But if you need special handling to bootstrap, you can "salvage"
