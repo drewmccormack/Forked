@@ -130,7 +130,7 @@ public struct ForkedModelMacro: ExtensionMacro, MemberMacro {
         let mergeableExtension = try generateMergeableExtension(for: type, structDecl: structDecl, defaultMergeVars: defaultMergeVars, mergePropertyVars: mergePropertyVars, backedPropertyVars: backedPropertyVars)
         
         // If version is provided, also generate VersionedModel extension
-        if let version = extractVersion(from: node) {
+        if extractVersion(from: node) != nil {
             let versionedModelExtension = try ExtensionDeclSyntax(
                 """
                 extension \(type.trimmed): Forked.VersionedModel {}
