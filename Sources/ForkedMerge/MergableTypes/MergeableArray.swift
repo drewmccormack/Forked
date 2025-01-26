@@ -10,7 +10,7 @@ import Forked
 /// This type is typically useful for strings in collaborative environments, and less useful for
 /// storing identifiable objects, since you can end up with duplicates. If you use it for this purpose,
 /// you should dedupe after every merge.
-/// This type represesnts the array internally as a tree, which generally leads to more intuitive merging
+/// This type represents the array internally as a tree, which generally leads to more intuitive merging
 /// of conflicting versions. You could use this as the basis of a basic collaborative editor.
 /// Note that it contains a complete history of changes, including deletions, so it grows over time.
 /// If you need a more compact representation, consider using a merger instead.
