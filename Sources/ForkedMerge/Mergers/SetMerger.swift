@@ -1,6 +1,6 @@
 import Foundation
 
-/// Merges an array by treating the contained elements as values.
+/// Merges a set by treating the contained elements as values.
 public struct SetMerger<Element: Hashable>: Merger {
     
     public init() {}

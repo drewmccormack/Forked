@@ -6,7 +6,21 @@ public struct ArrayOfIdentifiableMerger<Element: Identifiable & Equatable>: Merg
     public init() {}
 }
 
-extension ArrayOfIdentifiableMerger where Element: Mergeable {
+extension ArrayOfIdentifiableMerger {
+    
+    /// This is the default for when the elements are not mergeable.
+    public func merge(_ value: [Element], withSubordinate other: [Element], commonAncestor: [Element]) throws -> [Element] {
+        let v0: MergeableArray<Element> = .init(commonAncestor)
+        var v2 = v0
+        var v1 = v0
+        v2.values = other
+        v1.values = value
+        return try v1.merged(withSubordinate: v2, commonAncestor: v0).values
+    }
+    
+}
+
+extension ArrayOfIdentifiableMerger where Element: Mergeable  {
     
     /// This function merges two arrays of elements that are identifiable and mergeable.
     /// The result is different to merging where the elements are not mergeable.
@@ -22,17 +36,10 @@ extension ArrayOfIdentifiableMerger where Element: Mergeable {
 
 }
 
-extension ArrayOfIdentifiableMerger {
-    
-    /// This is the default for when the elements are note mergeable.
-    public func merge(_ value: [Element], withSubordinate other: [Element], commonAncestor: [Element]) throws -> [Element] {
-        let v0: MergeableArray<Element> = .init(commonAncestor)
-        var v2 = v0
-        var v1 = v0
-        v2.values = other
-        v1.values = value
-        return try v1.merged(withSubordinate: v2, commonAncestor: v0).values
-    }
-    
+public func merge<Element>(merger: ArrayOfIdentifiableMerger<Element>, dominant: [Element], subordinate: [Element], commonAncestor: [Element]) throws -> [Element] {
+    return try merger.merge(dominant, withSubordinate: subordinate, commonAncestor: commonAncestor)
 }
 
+public func merge<Element: Mergeable>(merger: ArrayOfIdentifiableMerger<Element>, dominant: [Element], subordinate: [Element], commonAncestor: [Element]) throws -> [Element] {
+    return try merger.merge(dominant, withSubordinate: subordinate, commonAncestor: commonAncestor)
+}

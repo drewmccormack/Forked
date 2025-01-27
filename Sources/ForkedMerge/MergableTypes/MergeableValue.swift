@@ -53,3 +53,10 @@ extension MergeableValue.Entry: Codable where T: Codable {}
 
 extension MergeableValue: Hashable where T: Hashable {}
 extension MergeableValue.Entry: Hashable where T: Hashable {}
+
+extension MergeableValue.Entry: Sendable where T: Sendable {}
+extension MergeableValue: Sendable where T: Sendable {}
+
+extension MergeableValue: Identifiable where T: Identifiable {
+    public var id: T.ID { value.id }
+}

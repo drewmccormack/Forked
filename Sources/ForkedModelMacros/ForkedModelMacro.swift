@@ -169,10 +169,16 @@ public struct ForkedModelMacro: ExtensionMacro, MemberMacro {
         for propertyInfo in mergePropertyVars {
             let varSyntax = propertyInfo.varSyntax
             let varName = varSyntax.bindings.first!.pattern.as(IdentifierPatternSyntax.self)!.identifier.text
+            let varType = varSyntax.bindings.first!.typeAnnotation!.type.trimmedDescription
             let expr: String
             
-            func mergeExpr(merger: String) -> String {
-                "merged.\(varName) = try merge(withMergerType: \(merger).self, dominant: self.\(varName), subordinate: other.\(varName), commonAncestor: commonAncestor.\(varName))"
+            func mergeExpr(mergerSetup: String) -> String {
+                """
+                do {
+                    \(mergerSetup)
+                    merged.\(varName) = try merge(merger: merger, dominant: self.\(varName), subordinate: other.\(varName), commonAncestor: commonAncestor.\(varName))
+                }
+                """
             }
             
             // If no merge given, fall back on default for variety
@@ -181,15 +187,37 @@ public struct ForkedModelMacro: ExtensionMacro, MemberMacro {
             case .mergeableProtocol:
                 expr = "merged.\(varName) = try self.\(varName).merged(withSubordinate: other.\(varName), commonAncestor: commonAncestor.\(varName))"
             case .arrayMerge:
-                expr = mergeExpr(merger: "ArrayMerger")
+                let isOptional = varType.hasSuffix("]?")
+                guard varType.hasPrefix("[") && (varType.hasSuffix("]") || isOptional) else {
+                    throw ForkedModelError.propertyMergeAndTypeAreIncompatible
+                }
+                var elementType = varType.dropFirst().dropLast()
+                if isOptional { elementType = elementType.dropLast() }
+                expr = mergeExpr(mergerSetup: "let merger = ArrayMerger<\(elementType)>()")
             case .arrayOfIdentifiableMerge:
-                expr = mergeExpr(merger: "ArrayOfIdentifiableMerger")
+                let isOptional = varType.hasSuffix("]?")
+                guard varType.hasPrefix("[") && (varType.hasSuffix("]") || isOptional) else {
+                    throw ForkedModelError.propertyMergeAndTypeAreIncompatible
+                }
+                var elementType = varType.dropFirst().dropLast()
+                if isOptional { elementType = elementType.dropLast() }
+                expr = mergeExpr(mergerSetup: "let merger = ArrayOfIdentifiableMerger<\(elementType)>()")
             case .setMerge:
-                expr = mergeExpr(merger: "SetMerger")
+                guard varType.hasPrefix("Set<") else {
+                    throw ForkedModelError.propertyMergeAndTypeAreIncompatible
+                }
+                let elementType = varType.dropFirst(4).dropLast()
+                expr = mergeExpr(mergerSetup: "let merger = SetMerger<\(elementType)>()")
             case .dictionaryMerge:
-                expr = mergeExpr(merger: "DictionaryMerger")
+                guard let (key, value) = extractKeyAndValueTypes(from: varType) else {
+                    throw ForkedModelError.propertyMergeAndTypeAreIncompatible
+                }
+                expr = mergeExpr(mergerSetup: "let merger = DictionaryMerger<\(key), \(value)>()")
             case .textMerge:
-                expr = mergeExpr(merger: "TextMerger")
+                guard varType == "String" else {
+                    throw ForkedModelError.propertyMergeAndTypeAreIncompatible
+                }
+                expr = mergeExpr(mergerSetup: "let merger = TextMerger()")
             }
             
             expressions.append(expr)

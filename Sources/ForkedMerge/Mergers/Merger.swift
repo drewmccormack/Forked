@@ -7,19 +7,17 @@ import Forked
 /// diffing against a common ancestor.
 public protocol Merger {
     associatedtype T: Equatable
-    init()
     func merge(_ value: T, withSubordinate other: T, commonAncestor: T) throws -> T
 }
 
-public func merge<M: Merger>(withMergerType: M.Type, dominant: M.T, subordinate: M.T, commonAncestor: M.T) throws -> M.T {
-    let merger = M()
+public func merge<M: Merger>(merger: M, dominant: M.T, subordinate: M.T, commonAncestor: M.T) throws -> M.T {
     return try merger.merge(dominant, withSubordinate: subordinate, commonAncestor: commonAncestor)
 }
 
-public func merge<M: Merger>(withMergerType: M.Type, dominant: M.T?, subordinate: M.T?, commonAncestor: M.T?) throws -> M.T? {
+public func merge<M: Merger>(merger: M, dominant: M.T?, subordinate: M.T?, commonAncestor: M.T?) throws -> M.T? {
     switch (dominant, subordinate, commonAncestor) {
     case let (dominant?, subordinate?, commonAncestor?):
-        return try merge(withMergerType: M.self, dominant: dominant, subordinate: subordinate, commonAncestor: commonAncestor)
+        return try merger.merge(dominant, withSubordinate: subordinate, commonAncestor: commonAncestor)
     case (nil, nil, _):
         return nil
     case let (dominant?, nil, nil):

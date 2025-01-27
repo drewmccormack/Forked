@@ -58,7 +58,10 @@ final class ForkedModelMacrosSuite: XCTestCase {
             extension TestModel: Forked.Mergeable {
                 public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
                     var merged = self
-                    merged.text = try merge(withMergerType: TextMerger.self, dominant: self.text, subordinate: other.text, commonAncestor: commonAncestor.text)
+                    do {
+                let merger = TextMerger()
+                merged.text = try merge(merger: merger, dominant: self.text, subordinate: other.text, commonAncestor: commonAncestor.text)
+                    }
                     return merged
                 }
             }
@@ -84,7 +87,10 @@ final class ForkedModelMacrosSuite: XCTestCase {
             extension TestModel: Forked.Mergeable {
                 public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
                     var merged = self
-                    merged.text = try merge(withMergerType: ArrayMerger.self, dominant: self.text, subordinate: other.text, commonAncestor: commonAncestor.text)
+                    do {
+                let merger = ArrayMerger<String.Element>()
+                merged.text = try merge(merger: merger, dominant: self.text, subordinate: other.text, commonAncestor: commonAncestor.text)
+                    }
                     return merged
                 }
             }
@@ -110,7 +116,10 @@ final class ForkedModelMacrosSuite: XCTestCase {
             extension TestModel: Forked.Mergeable {
                 public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
                     var merged = self
-                    merged.text = try merge(withMergerType: ArrayMerger.self, dominant: self.text, subordinate: other.text, commonAncestor: commonAncestor.text)
+                    do {
+                let merger = ArrayMerger<String.Element>()
+                merged.text = try merge(merger: merger, dominant: self.text, subordinate: other.text, commonAncestor: commonAncestor.text)
+                    }
                     return merged
                 }
             }
@@ -136,7 +145,10 @@ final class ForkedModelMacrosSuite: XCTestCase {
             extension TestModel: Forked.Mergeable {
                 public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
                     var merged = self
-                    merged.text = try merge(withMergerType: ArrayOfIdentifiableMerger.self, dominant: self.text, subordinate: other.text, commonAncestor: commonAncestor.text)
+                    do {
+                let merger = ArrayOfIdentifiableMerger<String.Element>()
+                merged.text = try merge(merger: merger, dominant: self.text, subordinate: other.text, commonAncestor: commonAncestor.text)
+                    }
                     return merged
                 }
             }
@@ -162,7 +174,10 @@ final class ForkedModelMacrosSuite: XCTestCase {
             extension TestModel: Forked.Mergeable {
                 public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
                     var merged = self
-                    merged.ints = try merge(withMergerType: SetMerger.self, dominant: self.ints, subordinate: other.ints, commonAncestor: commonAncestor.ints)
+                    do {
+                let merger = SetMerger<Int>()
+                merged.ints = try merge(merger: merger, dominant: self.ints, subordinate: other.ints, commonAncestor: commonAncestor.ints)
+                    }
                     return merged
                 }
             }
@@ -188,7 +203,10 @@ final class ForkedModelMacrosSuite: XCTestCase {
             extension TestModel: Forked.Mergeable {
                 public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
                     var merged = self
-                    merged.ints = try merge(withMergerType: DictionaryMerger.self, dominant: self.ints, subordinate: other.ints, commonAncestor: commonAncestor.ints)
+                    do {
+                let merger = DictionaryMerger<String, Int>()
+                merged.ints = try merge(merger: merger, dominant: self.ints, subordinate: other.ints, commonAncestor: commonAncestor.ints)
+                    }
                     return merged
                 }
             }
@@ -214,7 +232,10 @@ final class ForkedModelMacrosSuite: XCTestCase {
             extension TestModel: Forked.Mergeable {
                 public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
                     var merged = self
-                    merged.text = try merge(withMergerType: TextMerger.self, dominant: self.text, subordinate: other.text, commonAncestor: commonAncestor.text)
+                    do {
+                let merger = TextMerger()
+                merged.text = try merge(merger: merger, dominant: self.text, subordinate: other.text, commonAncestor: commonAncestor.text)
+                    }
                     return merged
                 }
             }
@@ -325,7 +346,10 @@ final class ForkedModelMacrosSuite: XCTestCase {
             extension Note: Forked.Mergeable {
                 public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
                     var merged = self
-                    merged.text = try merge(withMergerType: TextMerger.self, dominant: self.text, subordinate: other.text, commonAncestor: commonAncestor.text)
+                    do {
+                let merger = TextMerger()
+                merged.text = try merge(merger: merger, dominant: self.text, subordinate: other.text, commonAncestor: commonAncestor.text)
+                    }
                     merged._title = try self._title.merged(withSubordinate: other._title, commonAncestor: commonAncestor._title)
                     return merged
                 }
@@ -352,7 +376,10 @@ final class ForkedModelMacrosSuite: XCTestCase {
             extension Note: Forked.Mergeable {
                 public func merged(withSubordinate other: Self, commonAncestor: Self) throws -> Self {
                     var merged = self
-                    merged.text = try merge(withMergerType: ArrayMerger.self, dominant: self.text, subordinate: other.text, commonAncestor: commonAncestor.text)
+                    do {
+                let merger = ArrayMerger<String>()
+                merged.text = try merge(merger: merger, dominant: self.text, subordinate: other.text, commonAncestor: commonAncestor.text)
+                    }
                     return merged
                 }
             }
