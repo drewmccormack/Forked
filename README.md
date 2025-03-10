@@ -3,7 +3,7 @@
 [![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fdrewmccormack%2FForked%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/drewmccormack/Forked)
 [![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fdrewmccormack%2FForked%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/drewmccormack/Forked)
 
-Forked provides a generalized approach to managing shared data in Swift applications, taking control of data races and race conditions. It can be used to replace — or be used in conjunction with — actors, locks, and queues.
+Forked provides a generalized approach to managing shared data in Swift applications, both on-device — avoiding race conditions — and across devices as a framework for offline-first and [local-first](https://www.inkandswitch.com/local-first/) software.
 
 Forked can operate within a single iOS app, on a Swift server, or distributed across a network. The `ForkedCloudKit` package, for example, supports syncing of data across devices in just a few lines of code.
 
