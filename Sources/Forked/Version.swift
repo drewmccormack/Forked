@@ -3,7 +3,7 @@ import Foundation
 /// Used to chronologically order file versions. It is a standard lamport count.
 public struct Version: Comparable, Hashable, Sendable, Codable {
     public var count: UInt64 = 0
-    public var timestamp: Date = .now
+    public var timestamp: Date = .init()
     
     /// Big bang version of every ForkedResource. Effectively, it is ancient history.
     /// Also used as the initial value of any newly created branch
@@ -11,7 +11,7 @@ public struct Version: Comparable, Hashable, Sendable, Codable {
     
     /// Increase the timestamp by 1
     public func next() -> Version {
-        .init(count: count+1, timestamp: .now)
+        .init(count: count+1, timestamp: .init())
     }
     
     public func hash(into hasher: inout Hasher) {

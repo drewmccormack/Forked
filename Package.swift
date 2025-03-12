@@ -5,7 +5,7 @@ import CompilerPluginSupport
 
 let package = Package(
     name: "Forked",
-    platforms: [.macOS(.v15), .iOS(.v18), .tvOS(.v18), .watchOS(.v10), .macCatalyst(.v18)],
+    platforms: [.macOS(.v11), .iOS(.v14), .tvOS(.v14), .watchOS(.v7), .macCatalyst(.v13)],
     products: [
         .library(
             name: "Forked",

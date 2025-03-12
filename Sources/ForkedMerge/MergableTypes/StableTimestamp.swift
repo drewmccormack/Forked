@@ -2,7 +2,7 @@ import Foundation
 
 /// A orderable timestamp that should be deterministic across devices.
 internal struct StableTimestamp: Codable, Identifiable, Comparable, Hashable {
-    var timestamp: Date = .now
+    var timestamp: Date = .init()
     var id: UUID = UUID()
     
     public mutating func tick() {
