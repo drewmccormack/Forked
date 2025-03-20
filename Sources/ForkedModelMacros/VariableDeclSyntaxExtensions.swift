@@ -46,6 +46,12 @@ extension VariableDeclSyntax {
         return containsGetter && !containsSetter
     }
 
+    func isStatic() -> Bool {
+        modifiers.contains { modifier in
+            modifier.name.tokenKind == .keyword(.static)
+        }
+    }
+
     func propertyMerge() throws -> PropertyMerge? {
         let propertyAttribute = self.attributes.first { attribute in
             attribute.as(AttributeSyntax.self)?.attributeName.trimmedDescription == mergedLabel

@@ -26,6 +26,7 @@ struct Note {
     @Merged(using: .arrayOfIdentifiableMerge) var items: [NoteItem] = []
     @Merged(using: .setMerge) var categories: Set<String> = []
     @Merged(using: .dictionaryMerge) var metadata: [String:String] = [:]
+    static let shouldBeIgnored = ""
 }
 
 @ForkedModel
