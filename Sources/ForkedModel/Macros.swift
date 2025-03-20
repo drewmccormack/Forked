@@ -1,6 +1,7 @@
+@_exported import Forked
+@_exported import ForkedMerge
+
 import Foundation
-import Forked
-import ForkedMerge
 
 public typealias Mergeable = Forked.Mergeable
 
