@@ -39,7 +39,7 @@ class Store {
     /// This branch is used to update the displayedForkers for SwiftUI.
     /// Any sync changes will automatically be merged in here, as well
     /// as any editing commits. We use an AsyncStream to do the updates
-    /// in a data driver way.
+    /// in a data driven way.
     private var uiForkers: [Forker] {
         get {
             try! forkedModel.resource(of: .ui)!.forkers
