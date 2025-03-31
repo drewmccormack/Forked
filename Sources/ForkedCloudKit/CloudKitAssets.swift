@@ -1,5 +1,11 @@
 #if canImport(CloudKit)
 import CloudKit
+import AsyncAlgorithms
+
+public struct AssetChange {
+    public let fileName: String
+    public let initiatedLocally: Bool
+}
 
 @available(iOS 17.0, tvOS 17.0, watchOS 10.0, macOS 14.0, *)
 public final class CloudKitAssets: @unchecked Sendable {
@@ -16,6 +22,27 @@ public final class CloudKitAssets: @unchecked Sendable {
     
     private var engine: CKSyncEngine!
     private let stateURL: URL
+    
+    private typealias StreamID = UInt64
+    private var nextStreamID: StreamID = 0
+    private var continuations: [StreamID: AsyncStream<AssetChange>.Continuation] = [:]
+    
+    public var changeStream: AsyncStream<AssetChange> {
+        AsyncStream { continuation in
+            let id = nextStreamID
+            continuations[id] = continuation
+            continuation.onTermination = { @Sendable [weak self] _ in
+                self?.continuations[id] = nil
+            }
+            nextStreamID += 1
+        }
+    }
+    
+    private func addToChangeStreams(_ change: AssetChange) {
+        for continuation in continuations.values {
+            continuation.yield(change)
+        }
+    }
     
     public init(rootDirectory: URL, zoneName: String, cloudKitContainer: CKContainer = .default()) throws {
         self.rootDirectory = rootDirectory
@@ -68,6 +95,9 @@ public final class CloudKitAssets: @unchecked Sendable {
         
         // Add to sync engine
         engine.state.add(pendingRecordZoneChanges: [.saveRecord(recordID)])
+        
+        // Notify of local change
+        addToChangeStreams(AssetChange(fileName: targetFileName, initiatedLocally: true))
     }
     
     public func deleteAsset(named fileName: String) throws {
@@ -79,6 +109,9 @@ public final class CloudKitAssets: @unchecked Sendable {
         
         // Delete local file
         try? FileManager.default.removeItem(at: assetURL)
+        
+        // Notify of local change
+        addToChangeStreams(AssetChange(fileName: fileName, initiatedLocally: true))
     }
     
     public func listAssets() throws -> [URL] {
@@ -150,6 +183,7 @@ extension CloudKitAssets: CKSyncEngineDelegate {
                        let sourceURL = assetReference.fileURL {
                         let destinationURL = rootDirectory.appendingPathComponent(fileName)
                         _ = try? FileManager.default.copyItem(at: sourceURL, to: destinationURL)
+                        addToChangeStreams(AssetChange(fileName: fileName, initiatedLocally: false))
                     }
                 }
             }
@@ -158,6 +192,7 @@ extension CloudKitAssets: CKSyncEngineDelegate {
                 let fileName = deletion.recordID.recordName
                 let assetURL = rootDirectory.appendingPathComponent(fileName)
                 _ = try? FileManager.default.removeItem(at: assetURL)
+                addToChangeStreams(AssetChange(fileName: fileName, initiatedLocally: false))
             }
             
         case .sentRecordZoneChanges:
