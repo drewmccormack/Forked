@@ -11,6 +11,8 @@ public struct AssetChange: Sendable {
 public final class CloudKitAssets: @unchecked Sendable {
     public enum Error: Swift.Error {
         case sourceIsNotAFile
+        case assetAlreadyExists
+        case assetNotFound
     }
     
     private static let stateFileName = "_CloudKitAssets_State.json"
@@ -71,6 +73,11 @@ public final class CloudKitAssets: @unchecked Sendable {
         let targetFileName = fileName ?? sourceFileName
         let assetURL = rootDirectory.appendingPathComponent(targetFileName)
         
+        // Check if asset already exists
+        if FileManager.default.fileExists(atPath: assetURL.path) {
+            throw Error.assetAlreadyExists
+        }
+        
         // Copy file to our directory
         try FileManager.default.copyItem(at: fileURL, to: assetURL)
         
@@ -82,6 +89,27 @@ public final class CloudKitAssets: @unchecked Sendable {
         
         // Notify of local change
         addToChangeStreams(AssetChange(fileName: targetFileName, initiatedLocally: true))
+    }
+    
+    public func addAsset(data: Data, named fileName: String) throws {
+        let assetURL = rootDirectory.appendingPathComponent(fileName)
+        
+        // Check if asset already exists
+        if FileManager.default.fileExists(atPath: assetURL.path) {
+            throw Error.assetAlreadyExists
+        }
+        
+        // Write data to file
+        try data.write(to: assetURL)
+        
+        // Create metadata record
+        let recordID = CKRecord.ID(recordName: fileName, zoneID: zoneID)
+        
+        // Add to sync engine
+        engine.state.add(pendingRecordZoneChanges: [.saveRecord(recordID)])
+        
+        // Notify of local change
+        addToChangeStreams(AssetChange(fileName: fileName, initiatedLocally: true))
     }
     
     public func deleteAsset(named fileName: String) throws {
@@ -119,6 +147,14 @@ public final class CloudKitAssets: @unchecked Sendable {
             
             return true
         }
+    }
+    
+    public func data(forAssetNamed fileName: String) throws -> Data {
+        let assetURL = rootDirectory.appendingPathComponent(fileName)
+        guard FileManager.default.fileExists(atPath: assetURL.path) else {
+            throw Error.assetNotFound
+        }
+        return try Data(contentsOf: assetURL, options: .mappedIfSafe)
     }
 }
 
