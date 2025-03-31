@@ -2,7 +2,7 @@
 import CloudKit
 import AsyncAlgorithms
 
-public struct AssetChange {
+public struct AssetChange: Sendable {
     public let fileName: String
     public let initiatedLocally: Bool
 }
@@ -22,25 +22,39 @@ public final class CloudKitAssets: @unchecked Sendable {
     
     private var engine: CKSyncEngine!
     private let stateURL: URL
+    private let lock = NSRecursiveLock()
     
     private typealias StreamID = UInt64
     private var nextStreamID: StreamID = 0
     private var continuations: [StreamID: AsyncStream<AssetChange>.Continuation] = [:]
     
+    private func serialize<T>(_ operation: () throws -> T) rethrows -> T {
+        lock.lock()
+        defer { lock.unlock() }
+        return try operation()
+    }
+    
     public var changeStream: AsyncStream<AssetChange> {
         AsyncStream { continuation in
-            let id = nextStreamID
-            continuations[id] = continuation
-            continuation.onTermination = { @Sendable [weak self] _ in
-                self?.continuations[id] = nil
+            serialize {
+                let currentID = nextStreamID
+                continuations[currentID] = continuation
+                continuation.onTermination = { @Sendable [weak self] _ in
+                    guard let self else { return }
+                    serialize {
+                        continuations[currentID] = nil
+                    }
+                }
+                nextStreamID += 1
             }
-            nextStreamID += 1
         }
     }
     
     private func addToChangeStreams(_ change: AssetChange) {
-        for continuation in continuations.values {
-            continuation.yield(change)
+        serialize {
+            for continuation in continuations.values {
+                continuation.yield(change)
+            }
         }
     }
     
