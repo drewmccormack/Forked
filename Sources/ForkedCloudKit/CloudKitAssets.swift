@@ -28,36 +28,6 @@ public final class CloudKitAssets: @unchecked Sendable {
     private var nextStreamID: StreamID = 0
     private var continuations: [StreamID: AsyncStream<AssetChange>.Continuation] = [:]
     
-    private func serialize<T>(_ operation: () throws -> T) rethrows -> T {
-        lock.lock()
-        defer { lock.unlock() }
-        return try operation()
-    }
-    
-    public var changeStream: AsyncStream<AssetChange> {
-        AsyncStream { continuation in
-            serialize {
-                let currentID = nextStreamID
-                continuations[currentID] = continuation
-                continuation.onTermination = { @Sendable [weak self] _ in
-                    guard let self else { return }
-                    serialize {
-                        continuations[currentID] = nil
-                    }
-                }
-                nextStreamID += 1
-            }
-        }
-    }
-    
-    private func addToChangeStreams(_ change: AssetChange) {
-        serialize {
-            for continuation in continuations.values {
-                continuation.yield(change)
-            }
-        }
-    }
-    
     public init(rootDirectory: URL, zoneName: String, cloudKitContainer: CKContainer = .default()) throws {
         self.rootDirectory = rootDirectory
         self.cloudKitContainer = cloudKitContainer
@@ -148,6 +118,39 @@ public final class CloudKitAssets: @unchecked Sendable {
             }
             
             return true
+        }
+    }
+}
+
+@available(iOS 17.0, tvOS 17.0, watchOS 10.0, macOS 14.0, *)
+extension CloudKitAssets {
+        private func serialize<T>(_ operation: () throws -> T) rethrows -> T {
+        lock.lock()
+        defer { lock.unlock() }
+        return try operation()
+    }
+    
+    public var changeStream: AsyncStream<AssetChange> {
+        AsyncStream { continuation in
+            serialize {
+                let currentID = nextStreamID
+                continuations[currentID] = continuation
+                continuation.onTermination = { @Sendable [weak self] _ in
+                    guard let self else { return }
+                    serialize {
+                        continuations[currentID] = nil
+                    }
+                }
+                nextStreamID += 1
+            }
+        }
+    }
+    
+    private func addToChangeStreams(_ change: AssetChange) {
+        serialize {
+            for continuation in continuations.values {
+                continuation.yield(change)
+            }
         }
     }
 }
