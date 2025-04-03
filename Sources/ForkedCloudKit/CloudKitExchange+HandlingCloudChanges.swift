@@ -155,12 +155,8 @@ extension CloudKitExchange {
         let id = record.recordID.recordName
         guard self.id == id else { return }
         
-        guard let data = record.encryptedValues[CKRecord.resourceDataKey] as? Data else {
-            Logger.exchange.error("No data found in CKRecord")
-            return
-        }
-        
         do {
+            let data = try record.extractResourceData()
             try forkedResource.performAtomically {
                 recordFetchStatus = .fetched(record)
                 let resource = try JSONDecoder().decode(R.Resource.self, from: data)

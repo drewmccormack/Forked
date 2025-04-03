@@ -19,10 +19,6 @@ extension Fork {
     static let uploadingToCloudKit: Self = .init(name: "uploadingToCloudKit")
 }
 
-extension CKRecord {
-    static let resourceDataKey = "resourceData"
-}
-
 enum RecordFetchStatus: Equatable {
     case uninitialized
     case fetched(CKRecord)
@@ -36,6 +32,7 @@ enum RecordFetchStatus: Equatable {
 
 public enum Error: Swift.Error {
     case unknownVersionEncountered(version: Int, type: String)
+    case noDataFound
 }
 
 @available(iOS 17.0, tvOS 17.0, watchOS 10.0, macOS 14.0, *)
@@ -248,6 +245,62 @@ internal extension CloudKitExchange {
         try forkedResource.delete(.uploadingToCloudKit)
     }
     
+    internal func createRecordWithData(_ data: Data, recordID: CKRecord.ID) throws -> CKRecord {
+        let record = CKRecord(recordType: recordType, recordID: recordID)
+        
+        if data.count <= CKRecord.maxEncryptedDataSize {
+            // For small data, use encrypted values
+            record.encryptedValues[CKRecord.resourceDataKey] = data
+        } else {
+            // For large data, create a temporary file and use CKAsset
+            let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+            try data.write(to: tempURL)
+            let asset = CKAsset(fileURL: tempURL)
+            record[CKRecord.largeDataKey] = asset
+            
+            // Clean up temp file after asset is created
+            try? FileManager.default.removeItem(at: tempURL)
+        }
+        
+        record["peerId"] = peerId
+        return record
+    }
+}
+
+@available(iOS 17.0, tvOS 17.0, watchOS 10.0, macOS 14.0, *)
+extension CKRecord {
+    static let resourceDataKey = "resourceData"
+    static let largeDataKey = "largeData"
+    static let maxEncryptedDataSize = 1024 * 1024 // 1MB
+    
+    func updateRecord(withResourceData data: Data, peerId: String) throws {
+        if data.count <= Self.maxEncryptedDataSize {
+            // For small data, use encrypted values
+            encryptedValues[Self.resourceDataKey] = data
+            self[Self.largeDataKey] = nil
+        } else {
+            // For large data, create a temporary file and use CKAsset
+            let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+            try data.write(to: tempURL)
+            let asset = CKAsset(fileURL: tempURL)
+            self[Self.largeDataKey] = asset
+            encryptedValues[Self.resourceDataKey] = nil
+            try? FileManager.default.removeItem(at: tempURL)
+        }
+        
+        self["peerId"] = peerId
+    }
+    
+    func extractResourceData() throws -> Data {
+        if let data = encryptedValues[Self.resourceDataKey] as? Data {
+            return data
+        } else if let asset = self[Self.largeDataKey] as? CKAsset,
+           let fileURL = asset.fileURL {
+            return try Data(contentsOf: fileURL)
+        } else {
+            throw Error.noDataFound
+        }
+    }
 }
 #endif
 

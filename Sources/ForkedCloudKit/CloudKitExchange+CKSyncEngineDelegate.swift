@@ -48,9 +48,11 @@ extension CloudKitExchange: CKSyncEngineDelegate {
                     if let resourceValue = try resourceForUpload() {
                         let record = recordFetchStatus.record ?? CKRecord(recordType: recordType, recordID: recordID)
                         let data = try JSONEncoder().encode(resourceValue)
-                        if data != record.encryptedValues[CKRecord.resourceDataKey] {
-                            record.encryptedValues[CKRecord.resourceDataKey] = data
-                            record["peerId"] = peerId
+                        
+                        // Check if the data has changed
+                        let existingData = try? record.extractResourceData()
+                        if data != existingData {
+                            try record.updateRecord(withResourceData: data, peerId: peerId)
                             try forkedResource.update(.uploadingToCloudKit, with: resourceValue)
                             return record
                         } else {
