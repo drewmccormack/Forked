@@ -143,6 +143,10 @@ extension CloudKitExchange {
             case .unknownItem:
                 // May be deleted by other device. Let that deletion propagate naturally.
                 Logger.exchange.error("Unknown item error following upload. Ignoring: \(failedRecordSave.error)")
+            case .assetFileNotFound:
+                // The temporary file was cleaned up before upload. Re-enqueue the upload.
+                Logger.exchange.info("Asset file not found, re-enqueueing upload")
+                engine.state.add(pendingRecordZoneChanges: [.saveRecord(failedRecord.recordID)])
             case .networkFailure, .networkUnavailable, .zoneBusy, .serviceUnavailable, .notAuthenticated, .operationCancelled:
                 Logger.exchange.debug("Retryable error saving \(failedRecord.recordID): \(failedRecordSave.error)")
             default:

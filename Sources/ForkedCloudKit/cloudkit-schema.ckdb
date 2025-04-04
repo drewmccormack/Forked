@@ -1,0 +1,49 @@
+DEFINE SCHEMA
+
+    RECORD TYPE ForkedAsset (
+        "___createTime" TIMESTAMP,
+        "___createdBy"  REFERENCE,
+        "___etag"       STRING,
+        "___modTime"    TIMESTAMP,
+        "___modifiedBy" REFERENCE,
+        "___recordID"   REFERENCE,
+	    asset           ASSET,
+	    asset_part1     ASSET,
+	    asset_part2     ASSET,
+	    asset_part3     ASSET,
+	    asset_part4     ASSET,
+	    asset_part5     ASSET,
+		deleted         INT64 QUERYABLE SORTABLE,
+        numberOfParts   INT64 QUERYABLE SORTABLE,
+        totalSize       INT64 QUERYABLE SORTABLE,
+        GRANT WRITE TO "_creator",
+        GRANT CREATE TO "_icloud",
+        GRANT READ TO "_world"
+    );
+
+    RECORD TYPE ForkedResource (
+        "___createTime" TIMESTAMP,
+        "___createdBy"  REFERENCE,
+        "___etag"       STRING,
+        "___modTime"    TIMESTAMP,
+        "___modifiedBy" REFERENCE,
+        "___recordID"   REFERENCE,
+        largeData       ASSET,
+        peerId          STRING QUERYABLE SEARCHABLE SORTABLE,
+        resourceData    ENCRYPTED BYTES,
+        GRANT WRITE TO "_creator",
+        GRANT CREATE TO "_icloud",
+        GRANT READ TO "_world"
+    );
+
+    RECORD TYPE Users (
+        "___createTime" TIMESTAMP,
+        "___createdBy"  REFERENCE,
+        "___etag"       STRING,
+        "___modTime"    TIMESTAMP,
+        "___modifiedBy" REFERENCE,
+        "___recordID"   REFERENCE,
+        roles           LIST<INT64>,
+        GRANT WRITE TO "_creator",
+        GRANT READ TO "_world"
+    );

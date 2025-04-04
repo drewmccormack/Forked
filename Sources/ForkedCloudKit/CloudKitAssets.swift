@@ -2,6 +2,33 @@
 import CloudKit
 import AsyncAlgorithms
 
+private enum AssetRecordKey {
+    case deleted
+    case asset
+    case numberOfParts
+    case totalSize
+    case assetPart(Int)
+    
+    var string: String {
+        switch self {
+        case .deleted:
+            return "deleted"
+        case .asset:
+            return "asset"
+        case .numberOfParts:
+            return "numberOfParts"
+        case .totalSize:
+            return "totalSize"
+        case .assetPart(let partNumber):
+            return "asset_part\(partNumber)"
+        }
+    }
+}
+
+@available(iOS 17.0, tvOS 17.0, watchOS 10.0, macOS 14.0, *)
+extension CKRecord {
+}
+
 public struct AssetChange: Sendable {
     public let fileName: String
     public let initiatedLocally: Bool
@@ -161,14 +188,12 @@ public final class CloudKitAssets: @unchecked Sendable {
         // Create a record with deletion marker and clear all asset properties
         let recordID = CKRecord.ID(recordName: fileName, zoneID: zoneID)
         let record = CKRecord(recordType: recordType, recordID: recordID)
-        record["deleted"] = true
-        
-        // Clear all asset-related properties
-        record["asset"] = nil
-        record["numberOfParts"] = nil
-        record["totalSize"] = nil
+        record[AssetRecordKey.deleted.string] = true
+        record[AssetRecordKey.asset.string] = nil
+        record[AssetRecordKey.numberOfParts.string] = nil
+        record[AssetRecordKey.totalSize.string] = nil
         for partNumber in 1...CKRecord.maxParts {
-            record["asset_part\(partNumber)"] = nil
+            record[AssetRecordKey.assetPart(partNumber).string] = nil
         }
         
         // Add to sync engine
@@ -211,7 +236,7 @@ public final class CloudKitAssets: @unchecked Sendable {
         guard FileManager.default.fileExists(atPath: assetURL.path) else {
             throw Error.assetNotFound
         }
-        return try Data(contentsOf: assetURL, options: .mappedIfSafe)
+        return try Data(contentsOf: assetURL)
     }
 }
 
@@ -314,8 +339,7 @@ extension CloudKitAssets: CKSyncEngineDelegate {
             if FileManager.default.fileExists(atPath: assetURL.path) {
                 try? record.addAsset(assetURL)
             } else {
-                // Mark the record for deletion
-                record["deleted"] = true
+                record[AssetRecordKey.deleted.string] = true
             }
             
             return record
@@ -333,12 +357,12 @@ extension CKRecord {
         let fileSize = try? FileManager.default.attributesOfItem(atPath: fileURL.path)[.size] as? Int64 ?? 0
         
         // Clear any deletion marker
-        self["deleted"] = false
+        self[AssetRecordKey.deleted.string] = false
         
         if fileSize ?? 0 <= Self.maxPartSize {
             // For small files, use the original asset field
             let asset = CKAsset(fileURL: fileURL)
-            self["asset"] = asset
+            self[AssetRecordKey.asset.string] = asset
         } else {
             // For large files, split into parts
             let numberOfParts = Swift.min(Self.maxParts, Int((fileSize! + Self.maxPartSize - 1) / Self.maxPartSize))
@@ -366,27 +390,29 @@ extension CKRecord {
                         
                         // Add the part to the record
                         let partAsset = CKAsset(fileURL: partURL)
-                        self["asset_part\(partNumber)"] = partAsset
+                        self[AssetRecordKey.assetPart(partNumber).string] = partAsset
                     }
                 }
                 try? fileHandle.close()
             }
             
             // Add metadata about the parts
-            self["numberOfParts"] = numberOfParts
-            self["totalSize"] = fileSize
+            self[AssetRecordKey.numberOfParts.string] = numberOfParts
+            if let fileSize = fileSize {
+                self[AssetRecordKey.totalSize.string] = fileSize
+            }
         }
     }
     
     func reconstructAsset(to destinationURL: URL) throws {
         // Check if this record is marked for deletion
-        if self["deleted"] as? Bool == true {
+        if let isDeleted = self[AssetRecordKey.deleted.string] as? Bool, isDeleted {
             try? FileManager.default.removeItem(at: destinationURL)
             return
         }
         
         // Check if this is a split asset
-        if let numberOfParts = self["numberOfParts"] as? Int {
+        if let numberOfParts = self[AssetRecordKey.numberOfParts.string] as? Int {
             // Create a temporary directory for the parts
             let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
             try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
@@ -399,7 +425,7 @@ extension CKRecord {
             // Download all parts
             var partURLs: [URL] = []
             for partNumber in 1...numberOfParts {
-                if let partAsset = self["asset_part\(partNumber)"] as? CKAsset,
+                if let partAsset = self[AssetRecordKey.assetPart(partNumber).string] as? CKAsset,
                    let sourceURL = partAsset.fileURL {
                     let partURL = tempDir.appendingPathComponent("part\(partNumber)")
                     _ = try? FileManager.default.copyItem(at: sourceURL, to: partURL)
@@ -420,7 +446,7 @@ extension CKRecord {
                 }
                 try? outputHandle.close()
             }
-        } else if let assetReference = self["asset"] as? CKAsset,
+        } else if let assetReference = self[AssetRecordKey.asset.string] as? CKAsset,
                   let sourceURL = assetReference.fileURL {
             // Handle single asset (under 50MB)
             _ = try? FileManager.default.copyItem(at: sourceURL, to: destinationURL)
