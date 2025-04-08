@@ -53,17 +53,6 @@ public protocol Repository: AnyObject {
     func removeCommit(at version: Version, from fork: Fork) throws
 }
 
-public extension Persistent {
-    
-    func persist() throws {
-        fatalError("Persist not implemented for \(Self.self)")
-    }
-    
-    func load() throws {
-        fatalError("load not implemented for \(Self.self)")
-    }
-    
-}
    
 extension Repository {
     
