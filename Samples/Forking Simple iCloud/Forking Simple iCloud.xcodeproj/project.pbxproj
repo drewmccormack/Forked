@@ -10,6 +10,8 @@
 		070038D92CCA6E9000015444 /* Forked in Frameworks */ = {isa = PBXBuildFile; productRef = 070038D82CCA6E9000015444 /* Forked */; };
 		070038DB2CCA6E9000015444 /* ForkedCloudKit in Frameworks */ = {isa = PBXBuildFile; productRef = 070038DA2CCA6E9000015444 /* ForkedCloudKit */; };
 		0716CE8F2CCBC0BF00A726BD /* AsyncAlgorithms in Frameworks */ = {isa = PBXBuildFile; productRef = 0716CE8E2CCBC0BF00A726BD /* AsyncAlgorithms */; };
+		079E0DAE2DA52A1E00A8E34B /* Forked in Frameworks */ = {isa = PBXBuildFile; productRef = 079E0DAD2DA52A1E00A8E34B /* Forked */; };
+		079E0DB02DA52A1E00A8E34B /* ForkedCloudKit in Frameworks */ = {isa = PBXBuildFile; productRef = 079E0DAF2DA52A1E00A8E34B /* ForkedCloudKit */; };
 		07B9746B2D01E48800D59D02 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 07B9746A2D01E48200D59D02 /* README.md */; };
 /* End PBXBuildFile section */
 
@@ -31,7 +33,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				079E0DB02DA52A1E00A8E34B /* ForkedCloudKit in Frameworks */,
 				070038DB2CCA6E9000015444 /* ForkedCloudKit in Frameworks */,
+				079E0DAE2DA52A1E00A8E34B /* Forked in Frameworks */,
 				070038D92CCA6E9000015444 /* Forked in Frameworks */,
 				0716CE8F2CCBC0BF00A726BD /* AsyncAlgorithms in Frameworks */,
 			);
@@ -80,6 +84,8 @@
 				070038D82CCA6E9000015444 /* Forked */,
 				070038DA2CCA6E9000015444 /* ForkedCloudKit */,
 				0716CE8E2CCBC0BF00A726BD /* AsyncAlgorithms */,
+				079E0DAD2DA52A1E00A8E34B /* Forked */,
+				079E0DAF2DA52A1E00A8E34B /* ForkedCloudKit */,
 			);
 			productName = "Forking Simple iCloud";
 			productReference = 070038C62CCA6E3200015444 /* Forking Simple iCloud.app */;
@@ -93,7 +99,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1600;
-				LastUpgradeCheck = 1600;
+				LastUpgradeCheck = 1630;
 				TargetAttributes = {
 					070038C52CCA6E3200015444 = {
 						CreatedOnToolsVersion = 16.0;
@@ -110,8 +116,8 @@
 			mainGroup = 070038BD2CCA6E3200015444;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				070038D72CCA6E9000015444 /* XCLocalSwiftPackageReference "../../../Forked" */,
 				0716CE8D2CCBC0BF00A726BD /* XCRemoteSwiftPackageReference "swift-async-algorithms" */,
+				079E0DAC2DA52A1E00A8E34B /* XCLocalSwiftPackageReference "../../../Forked" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 070038C72CCA6E3200015444 /* Products */;
@@ -180,6 +186,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = P7BXV6PHLD;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -243,6 +250,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = P7BXV6PHLD;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -273,7 +281,6 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Forking Simple iCloud/Preview Content\"";
-				DEVELOPMENT_TEAM = P7BXV6PHLD;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Forking-Simple-iCloud-Info.plist";
@@ -308,7 +315,6 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Forking Simple iCloud/Preview Content\"";
-				DEVELOPMENT_TEAM = P7BXV6PHLD;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Forking-Simple-iCloud-Info.plist";
@@ -358,7 +364,7 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		070038D72CCA6E9000015444 /* XCLocalSwiftPackageReference "../../../Forked" */ = {
+		079E0DAC2DA52A1E00A8E34B /* XCLocalSwiftPackageReference "../../../Forked" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../../../Forked;
 		};
@@ -388,6 +394,14 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 0716CE8D2CCBC0BF00A726BD /* XCRemoteSwiftPackageReference "swift-async-algorithms" */;
 			productName = AsyncAlgorithms;
+		};
+		079E0DAD2DA52A1E00A8E34B /* Forked */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Forked;
+		};
+		079E0DAF2DA52A1E00A8E34B /* ForkedCloudKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ForkedCloudKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
