@@ -13,8 +13,8 @@ public final class AtomicRepository<Resource: Equatable>: Repository {
     /// If nil, `persist` and `load` do nothing, and you manually manage the repo.
     private let managedFileURL: URL?
     
-    /// Persist using Codable
-    public init(managedFileURL: URL) throws where Resource: Codable {
+    /// Persistent, such as when Codable
+    public init(managedFileURL: URL) throws where Self: Persistent {
         self.managedFileURL = managedFileURL
         try? load()
     }
