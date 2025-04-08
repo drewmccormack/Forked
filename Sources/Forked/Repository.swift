@@ -1,5 +1,17 @@
 import Foundation
 
+public protocol Persistent: Repository {
+    /// If needed, the repo can store data persistently at this point (or do nothing)
+    /// Do not call this unless you are using a type that is persistable, otherwise you
+    /// will get a fatalError.
+    func persist() throws
+    
+    /// Loads repo from storage if this is a persistable repo.
+    /// Do not call this unless you are using a type that is persistable, otherwise you
+    /// will get a fatalError.
+    func load() throws
+}
+
 /// This is storage for the `ForkedResource`. It could
 /// be persisted on disk, or just kept in memory.
 /// This type does not understand any of the mechanisms of forking
@@ -39,19 +51,21 @@ public protocol Repository: AnyObject {
     /// Remove a commit for a given version from the fork. If the version is
     /// not found, an error is thrown.
     func removeCommit(at version: Version, from fork: Fork) throws
-
-    /// If needed, the repo can store data persistently at this point (or do nothing)
-    func persist() throws
-    
-    /// Loads repo from storage, if this is supported. Otherwise, does nothing.
-    func load() throws
 }
 
+public extension Persistent {
+    
+    func persist() throws {
+        fatalError("Persist not implemented for \(Self.self)")
+    }
+    
+    func load() throws {
+        fatalError("load not implemented for \(Self.self)")
+    }
+    
+}
+   
 extension Repository {
-    
-    public func persist() throws {}
-    
-    public func load() throws {}
     
     /// Versions in ascending order, from oldest to newest
     func ascendingVersions(storedIn fork: Fork) throws -> [Version] {

@@ -74,7 +74,7 @@ public final class AtomicRepository<Resource: Equatable>: Repository {
     }
 }
 
-extension AtomicRepository: Codable where Resource: Codable {
+extension AtomicRepository: Codable & Persistent where Resource: Codable {
 
     public func persist() throws {
         let data = try JSONEncoder().encode(self)

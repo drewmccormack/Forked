@@ -1,6 +1,7 @@
 #if canImport(CloudKit)
 import CloudKit
 import os.log
+import Forked
 
 @available(iOS 17.0, tvOS 17.0, watchOS 10.0, macOS 14.0, *)
 extension CloudKitExchange: CKSyncEngineDelegate {
@@ -13,7 +14,9 @@ extension CloudKitExchange: CKSyncEngineDelegate {
                 // we continue from the previous state and don't lose anything
                 syncState.stateSerialization = event.stateSerialization
                 try forkedResource.performAtomically {
-                    try forkedResource.persist()
+                    if let r = forkedResource.repository as? Persistent {
+                        try r.persist()
+                    }
                     try saveState()
                 }
             } catch {

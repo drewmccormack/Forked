@@ -57,11 +57,6 @@ public final class ForkedResource<RepositoryType: Repository>: @unchecked Sendab
         }
     }
     
-    /// Persists any pending changes in the underlying repository to permanent storage
-    /// - Throws: An error if the persistence operation fails
-    public func persist() throws {
-        try repository.persist()
-    }
 }
 
 internal extension ForkedResource {
