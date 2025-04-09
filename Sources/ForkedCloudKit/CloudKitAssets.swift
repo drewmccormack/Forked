@@ -41,6 +41,10 @@ public struct AssetChange: Sendable {
 ///
 /// The class maintains a local copy of all assets and synchronizes changes with CloudKit, ensuring that all devices
 /// have access to the same set of files. It uses soft deletion to track removed assets while maintaining metadata.
+///
+/// The class can also operate in a local-only mode, which is useful for setting up assets while offline or when
+/// CloudKit synchronization is not needed. When switching from local-only mode to CloudKit mode, all local files
+/// will be automatically uploaded to CloudKit.
 @available(iOS 17.0, tvOS 17.0, watchOS 10.0, macOS 14.0, *)
 public final class CloudKitAssets: @unchecked Sendable {
     public enum Error: Swift.Error {
@@ -50,13 +54,18 @@ public final class CloudKitAssets: @unchecked Sendable {
         case syncEngineNotReady
         case assetTooLarge
     }
-    
-    private static let stateFileName = "_CloudKitAssets_State.json"
-    private static let maxTotalSize: Int64 = 250 * 1024 * 1024 // 250MB in bytes
+
+    public enum Configuration {
+        case local
+        case cloudKit(container: CKContainer, zoneName: String, syncImmediately: Bool = true)
+    }
     
     public let rootDirectory: URL
-    public let cloudKitContainer: CKContainer
-    public let zoneID: CKRecordZone.ID
+    public let configuration: Configuration
+
+    private static let stateFileName = "_CloudKitAssets_State.json"
+    private static let maxTotalSize: Int64 = 250 * 1024 * 1024 // 250MB in bytes
+
     public let recordType: CKRecord.RecordType = "ForkedAsset"
     
     private var engine: CKSyncEngine?
@@ -67,29 +76,35 @@ public final class CloudKitAssets: @unchecked Sendable {
     private var nextStreamID: StreamID = 0
     private var continuations: [StreamID: AsyncStream<AssetChange>.Continuation] = [:]
     
-    /// Initializes a new CloudKitAssets instance with the specified directory and zone.
-    /// The sync engine starts immediately unless syncImmediately is passed in as false.
-    public init(rootDirectory: URL, zoneName: String, cloudKitContainer: CKContainer = .default(), syncImmediately: Bool = true) throws {
+    /// Initializes a new CloudKitAssets instance with the specified directory and configuration.
+    /// If configuration is .local, the instance will operate in local-only mode.
+    /// If configuration is .cloudKit, syncImmediately determines whether to start syncing right away.
+    public init(rootDirectory: URL, configuration: Configuration) throws {
         self.rootDirectory = rootDirectory
-        self.cloudKitContainer = cloudKitContainer
-        self.zoneID = CKRecordZone.ID(zoneName: zoneName)
+        self.configuration = configuration
         self.stateURL = rootDirectory.appendingPathComponent(Self.stateFileName)
         
         // Create directory if it doesn't exist
         try FileManager.default.createDirectory(at: rootDirectory, withIntermediateDirectories: true)
         
-        if syncImmediately {
+        if case .cloudKit(_, _, let syncImmediately) = configuration, syncImmediately {
             startSyncing()
         }
     }
      
     /// Starts the CloudKit sync engine, loading any existing state and creating the zone if needed.
+    /// If this is the first sync (no state file exists), it will automatically add all local files to CloudKit.
     public func startSyncing() {
         guard engine == nil else { return }
+        guard case .cloudKit(let container, let zoneName, _) = configuration else { return }
+        let zoneID = CKRecordZone.ID(zoneName: zoneName)
         
         // Load state serialization
         let stateSerialization: CKSyncEngine.State.Serialization?
-        if let data = try? Data(contentsOf: stateURL),
+        let isFirstSync = !FileManager.default.fileExists(atPath: stateURL.path)
+        
+        if !isFirstSync,
+           let data = try? Data(contentsOf: stateURL),
            let state = try? JSONDecoder().decode(CKSyncEngine.State.Serialization.self, from: data) {
             stateSerialization = state
         } else {
@@ -98,7 +113,7 @@ public final class CloudKitAssets: @unchecked Sendable {
         
         // Setup engine
         let configuration = CKSyncEngine.Configuration(
-            database: cloudKitContainer.privateCloudDatabase,
+            database: container.privateCloudDatabase,
             stateSerialization: stateSerialization,
             delegate: self
         )
@@ -107,13 +122,40 @@ public final class CloudKitAssets: @unchecked Sendable {
         // Create zone if it doesn't exist
         let zone = CKRecordZone(zoneID: zoneID)
         engine!.state.add(pendingDatabaseChanges: [.saveZone(zone)])
+        
+        // If this is first sync, add all local files
+        if isFirstSync {
+            uploadAllLocalFiles()
+        }
+    }
+    
+    private func uploadAllLocalFiles() {
+        guard let engine = engine,
+              case .cloudKit(let container, let zoneName, _) = configuration else { return }
+        let zoneID = CKRecordZone.ID(zoneName: zoneName)
+        if let files = try? listAssets() {
+            let recordIDs = files.map { fileURL in
+                let fileName = fileURL.lastPathComponent
+                return CKRecord.ID(recordName: fileName, zoneID: zoneID)
+            }
+            let recordChanges: [CKSyncEngine.PendingRecordZoneChange] = recordIDs.map { .saveRecord($0) }
+            engine.state.add(pendingRecordZoneChanges: recordChanges)
+        }
+    }
+    
+    private func deleteStateFileIfLocalOnly() {
+        if case .local = configuration {
+            try? FileManager.default.removeItem(at: stateURL)
+        }
     }
     
     /// Adds a file asset from the specified URL, optionally with a custom name.
     /// The file must be under 250MB in size.
     public func addAsset(at fileURL: URL, named fileName: String? = nil) throws {
-        guard let engine else {
-            throw Error.syncEngineNotReady
+        if case .cloudKit = configuration {
+            guard engine != nil else {
+                throw Error.syncEngineNotReady
+            }
         }
         
         // Verify the source URL points to a file
@@ -142,10 +184,15 @@ public final class CloudKitAssets: @unchecked Sendable {
         try FileManager.default.copyItem(at: fileURL, to: assetURL)
         
         // Create metadata record
-        let recordID = CKRecord.ID(recordName: targetFileName, zoneID: zoneID)
-        
-        // Add to sync engine
-        engine.state.add(pendingRecordZoneChanges: [.saveRecord(recordID)])
+        if case .cloudKit(_, let zoneName, _) = configuration {
+            let zoneID = CKRecordZone.ID(zoneName: zoneName)
+            let recordID = CKRecord.ID(recordName: targetFileName, zoneID: zoneID)
+            
+            // Add to sync engine
+            engine!.state.add(pendingRecordZoneChanges: [.saveRecord(recordID)])
+        } else {
+            deleteStateFileIfLocalOnly()
+        }
         
         // Notify of local change
         addToChangeStreams(AssetChange(fileName: targetFileName, initiatedLocally: true))
@@ -153,8 +200,10 @@ public final class CloudKitAssets: @unchecked Sendable {
     
     /// Adds a data asset with the specified name.
     public func addAsset(data: Data, named fileName: String) throws {
-        guard let engine else {
-            throw Error.syncEngineNotReady
+        if case .cloudKit = configuration {
+            guard engine != nil else {
+                throw Error.syncEngineNotReady
+            }
         }
         
         let assetURL = rootDirectory.appendingPathComponent(fileName)
@@ -168,10 +217,15 @@ public final class CloudKitAssets: @unchecked Sendable {
         try data.write(to: assetURL)
         
         // Create metadata record
-        let recordID = CKRecord.ID(recordName: fileName, zoneID: zoneID)
-        
-        // Add to sync engine
-        engine.state.add(pendingRecordZoneChanges: [.saveRecord(recordID)])
+        if case .cloudKit(_, let zoneName, _) = configuration {
+            let zoneID = CKRecordZone.ID(zoneName: zoneName)
+            let recordID = CKRecord.ID(recordName: fileName, zoneID: zoneID)
+            
+            // Add to sync engine
+            engine!.state.add(pendingRecordZoneChanges: [.saveRecord(recordID)])
+        } else {
+            deleteStateFileIfLocalOnly()
+        }
         
         // Notify of local change
         addToChangeStreams(AssetChange(fileName: fileName, initiatedLocally: true))
@@ -179,25 +233,32 @@ public final class CloudKitAssets: @unchecked Sendable {
     
     /// Deletes an asset by name, removing it locally and marking it as deleted in CloudKit.
     public func deleteAsset(named fileName: String) throws {
-        guard let engine else {
-            throw Error.syncEngineNotReady
+        if case .cloudKit = configuration {
+            guard engine != nil else {
+                throw Error.syncEngineNotReady
+            }
         }
         
         let assetURL = rootDirectory.appendingPathComponent(fileName)
         
         // Create a record with deletion marker and clear all asset properties
-        let recordID = CKRecord.ID(recordName: fileName, zoneID: zoneID)
-        let record = CKRecord(recordType: recordType, recordID: recordID)
-        record[AssetRecordKey.deleted.string] = true
-        record[AssetRecordKey.asset.string] = nil
-        record[AssetRecordKey.numberOfParts.string] = nil
-        record[AssetRecordKey.totalSize.string] = nil
-        for partNumber in 1...CKRecord.maxParts {
-            record[AssetRecordKey.assetPart(partNumber).string] = nil
+        if case .cloudKit(_, let zoneName, _) = configuration {
+            let zoneID = CKRecordZone.ID(zoneName: zoneName)
+            let recordID = CKRecord.ID(recordName: fileName, zoneID: zoneID)
+            let record = CKRecord(recordType: recordType, recordID: recordID)
+            record[AssetRecordKey.deleted.string] = true
+            record[AssetRecordKey.asset.string] = nil
+            record[AssetRecordKey.numberOfParts.string] = nil
+            record[AssetRecordKey.totalSize.string] = nil
+            for partNumber in 1...CKRecord.maxParts {
+                record[AssetRecordKey.assetPart(partNumber).string] = nil
+            }
+            
+            // Add to sync engine
+            engine!.state.add(pendingRecordZoneChanges: [.saveRecord(recordID)])
+        } else {
+            deleteStateFileIfLocalOnly()
         }
-        
-        // Add to sync engine
-        engine.state.add(pendingRecordZoneChanges: [.saveRecord(recordID)])
         
         // Delete local file
         try? FileManager.default.removeItem(at: assetURL)
@@ -242,7 +303,7 @@ public final class CloudKitAssets: @unchecked Sendable {
 
 @available(iOS 17.0, tvOS 17.0, watchOS 10.0, macOS 14.0, *)
 extension CloudKitAssets {
-        private func serialize<T>(_ operation: () throws -> T) rethrows -> T {
+    private func serialize<T>(_ operation: () throws -> T) rethrows -> T {
         lock.lock()
         defer { lock.unlock() }
         return try operation()
@@ -290,13 +351,7 @@ extension CloudKitAssets: CKSyncEngineDelegate {
                 try? FileManager.default.removeItem(at: stateURL)
                 
                 // Upload all local files
-                if let files = try? listAssets() {
-                    for fileURL in files {
-                        let fileName = fileURL.lastPathComponent
-                        let recordID = CKRecord.ID(recordName: fileName, zoneID: zoneID)
-                        engine?.state.add(pendingRecordZoneChanges: [.saveRecord(recordID)])
-                    }
-                }
+                uploadAllLocalFiles()
             case .signOut:
                 // When signing out, we keep both local files and CloudKit assets
                 // This allows other devices to access the assets when they sign in
@@ -311,11 +366,14 @@ extension CloudKitAssets: CKSyncEngineDelegate {
             for modification in event.modifications {
                 let fileName = modification.record.recordID.recordName
                 // Handle new, modified, or deleted asset
-                let recordID = CKRecord.ID(recordName: fileName, zoneID: zoneID)
-                if let asset = try? await engine?.database.record(for: recordID) {
-                    let destinationURL = rootDirectory.appendingPathComponent(fileName)
-                    try? asset.reconstructAsset(to: destinationURL)
-                    addToChangeStreams(AssetChange(fileName: fileName, initiatedLocally: false))
+                if case .cloudKit(_, let zoneName, _) = configuration {
+                    let zoneID = CKRecordZone.ID(zoneName: zoneName)
+                    let recordID = CKRecord.ID(recordName: fileName, zoneID: zoneID)
+                    if let asset = try? await engine?.database.record(for: recordID) {
+                        let destinationURL = rootDirectory.appendingPathComponent(fileName)
+                        try? asset.reconstructAsset(to: destinationURL)
+                        addToChangeStreams(AssetChange(fileName: fileName, initiatedLocally: false))
+                    }
                 }
             }
             
