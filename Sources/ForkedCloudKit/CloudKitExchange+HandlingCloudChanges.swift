@@ -49,9 +49,14 @@ extension CloudKitExchange {
         // it will rollback anything unchanged from the other device, because
         // it will be different to the ancestor, and will seem like a recent change.
         for modification in event.modifications {
+            let id = modification.record.recordID.recordName
+            guard self.id == id else { continue }
+            
             // Check if the record has a peerId and if it matches the current device
             if let recordPeerId = modification.record["peerId"] as? String,
                recordPeerId == peerId {
+                recordFetchStatus = .fetched(modification.record)
+                Logger.exchange.info("Received record from our device, updating record reference only")
                 continue
             }
             
