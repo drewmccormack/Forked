@@ -392,7 +392,8 @@ extension CloudKitAssets: CKSyncEngineDelegate {
             let fileName = recordID.recordName
             let assetURL = rootDirectory.appendingPathComponent(fileName)
             
-            let record = CKRecord(recordType: recordType, recordID: recordID)
+            // Try to fetch existing record first
+            let record = (try? await engine?.database.record(for: recordID)) ?? CKRecord(recordType: recordType, recordID: recordID)
             
             if FileManager.default.fileExists(atPath: assetURL.path) {
                 try? record.addAsset(assetURL)
