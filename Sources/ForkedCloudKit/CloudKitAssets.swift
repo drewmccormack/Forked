@@ -25,10 +25,6 @@ private enum AssetRecordKey {
     }
 }
 
-@available(iOS 17.0, tvOS 17.0, watchOS 10.0, macOS 14.0, *)
-extension CKRecord {
-}
-
 public struct AssetChange: Sendable {
     public let fileName: String
     public let initiatedLocally: Bool
@@ -64,12 +60,14 @@ public final class CloudKitAssets: @unchecked Sendable {
     public let configuration: Configuration
 
     private static let stateFileName = "_CloudKitAssets_State.json"
+    private static let tempDirName = "_CloudKitAssets_Temp"
     private static let maxTotalSize: Int64 = 250 * 1024 * 1024 // 250MB in bytes
 
     public let recordType: CKRecord.RecordType = "ForkedAsset"
     
     private var engine: CKSyncEngine?
     private let stateURL: URL
+    private let tempDirURL: URL
     private let lock = NSRecursiveLock()
     
     private typealias StreamID = UInt64
@@ -83,9 +81,14 @@ public final class CloudKitAssets: @unchecked Sendable {
         self.rootDirectory = rootDirectory
         self.configuration = configuration
         self.stateURL = rootDirectory.appendingPathComponent(Self.stateFileName)
+        self.tempDirURL = rootDirectory.appendingPathComponent(Self.tempDirName)
         
         // Create directory if it doesn't exist
         try FileManager.default.createDirectory(at: rootDirectory, withIntermediateDirectories: true)
+        
+        // Clean temp directory by removing and recreating it
+        try? FileManager.default.removeItem(at: tempDirURL)
+        try FileManager.default.createDirectory(at: tempDirURL, withIntermediateDirectories: true)
         
         if case .cloudKit(_, _, let syncImmediately) = configuration, syncImmediately {
             startSyncing()
@@ -377,12 +380,29 @@ extension CloudKitAssets: CKSyncEngineDelegate {
                 }
             }
             
-        case .sentRecordZoneChanges:
-            // No need to do anything here - the records have already been saved
-            break
+        case .sentRecordZoneChanges(let event):
+            // Clean up temp files for records that were successfully saved
+            for recordSave in event.savedRecords {
+                cleanupTempFilesForRecord(recordSave)
+            }
             
         default:
             break
+        }
+    }
+    
+    /// Cleans up temporary files associated with a record after successful upload
+    private func cleanupTempFilesForRecord(_ record: CKRecord) {
+        // Check if this record has parts
+        if let numberOfParts = record[AssetRecordKey.numberOfParts.string] as? Int {
+            let fileName = record.recordID.recordName
+            
+            // Delete all part files for this record
+            for partNumber in 1...numberOfParts {
+                let partFileName = "\(fileName)_part\(partNumber)"
+                let partURL = tempDirURL.appendingPathComponent(partFileName)
+                try? FileManager.default.removeItem(at: partURL)
+            }
         }
     }
     
@@ -396,7 +416,7 @@ extension CloudKitAssets: CKSyncEngineDelegate {
             let record = (try? await engine?.database.record(for: recordID)) ?? CKRecord(recordType: recordType, recordID: recordID)
             
             if FileManager.default.fileExists(atPath: assetURL.path) {
-                try? record.addAsset(assetURL)
+                try? record.addAsset(assetURL, tempDir: tempDirURL)
             } else {
                 record[AssetRecordKey.deleted.string] = true
             }
@@ -411,7 +431,7 @@ extension CKRecord {
     static let maxPartSize: Int64 = 50 * 1024 * 1024 // 50MB in bytes
     static let maxParts = 5
     
-    func addAsset(_ fileURL: URL) throws {
+    func addAsset(_ fileURL: URL, tempDir: URL) throws {
         // Get file size
         let fileSize = try? FileManager.default.attributesOfItem(atPath: fileURL.path)[.size] as? Int64 ?? 0
         
@@ -422,23 +442,32 @@ extension CKRecord {
             // For small files, use the original asset field
             let asset = CKAsset(fileURL: fileURL)
             self[AssetRecordKey.asset.string] = asset
+            
+            // Clear any part properties that might exist from a previous version
+            self[AssetRecordKey.numberOfParts.string] = nil
+            self[AssetRecordKey.totalSize.string] = nil
+            for partNumber in 1...Self.maxParts {
+                self[AssetRecordKey.assetPart(partNumber).string] = nil
+            }
         } else {
             // For large files, split into parts
             let numberOfParts = Swift.min(Self.maxParts, Int((fileSize! + Self.maxPartSize - 1) / Self.maxPartSize))
             
-            // Create a temporary directory for the parts
-            let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-            try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+            // Clear the single asset property
+            self[AssetRecordKey.asset.string] = nil
             
-            defer {
-                // Clean up temp directory
-                try? FileManager.default.removeItem(at: tempDir)
+            // Clear any existing part properties beyond what we need
+            for partNumber in (numberOfParts + 1)...Self.maxParts {
+                self[AssetRecordKey.assetPart(partNumber).string] = nil
             }
             
-            // Split file into parts
+            // Split file into parts using the provided temp directory
             if let fileHandle = try? FileHandle(forReadingFrom: fileURL) {
                 for partNumber in 1...numberOfParts {
-                    let partURL = tempDir.appendingPathComponent("part\(partNumber)")
+                    // Create a unique filename based on the source file's name
+                    let fileName = fileURL.lastPathComponent
+                    let partURL = tempDir.appendingPathComponent("\(fileName)_part\(partNumber)")
+                    
                     if let partHandle = try? FileHandle(forWritingTo: partURL) {
                         // Read and write the part
                         let bytesToRead = Swift.min(Self.maxPartSize, fileSize! - Int64(partNumber - 1) * Self.maxPartSize)
