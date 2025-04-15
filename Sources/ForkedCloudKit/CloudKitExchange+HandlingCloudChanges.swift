@@ -163,9 +163,10 @@ extension CloudKitExchange {
         }
     }
     
-    func update(withDownloadedRecord record: CKRecord) {
+    func update(withDownloadedRecord record: CKRecord) {        
         let id = record.recordID.recordName
-        guard self.id == id else { return }
+        let recordPeerId = record["peerId"] as? String
+        guard self.id == id, let recordPeerId, recordPeerId != peerId else { return }
         
         do {
             let data = try record.extractResourceData()
@@ -173,7 +174,10 @@ extension CloudKitExchange {
                 let resource = try JSONDecoder().decode(R.Resource.self, from: data)
                 let newContent: CommitContent = .resource(resource)
                 let existingContent = try forkedResource.content(of: .cloudKit)
-                guard existingContent != newContent else { return }
+                guard existingContent != newContent else { 
+                    recordFetchStatus = .fetched(record)
+                    return 
+                }
                 try forkedResource.update(.cloudKit, with: resource)
                 try mergeIntoMainFromCloudKitFork()
                 recordFetchStatus = .fetched(record)
