@@ -134,7 +134,7 @@ public final class CloudKitAssets: @unchecked Sendable {
     
     private func uploadAllLocalFiles() {
         guard let engine = engine,
-              case .cloudKit(let container, let zoneName, _) = configuration else { return }
+              case .cloudKit(_, let zoneName, _) = configuration else { return }
         let zoneID = CKRecordZone.ID(zoneName: zoneName)
         if let files = try? listAssets() {
             let recordIDs = files.map { fileURL in

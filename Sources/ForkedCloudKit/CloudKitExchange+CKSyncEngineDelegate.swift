@@ -14,7 +14,7 @@ extension CloudKitExchange: CKSyncEngineDelegate {
                 // we continue from the previous state and don't lose anything
                 syncState.stateSerialization = event.stateSerialization
                 try forkedResource.performAtomically {
-                    if let r = forkedResource.repository as? Persistent {
+                    if let r = forkedResource.repository as? (any Persistent) {
                         try r.persist()
                     }
                     try saveState()

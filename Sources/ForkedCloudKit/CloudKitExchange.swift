@@ -293,7 +293,7 @@ internal extension CloudKitExchange {
         try forkedResource.delete(.uploadingToCloudKit)
     }
     
-    internal func createRecordWithData(_ data: Data, recordID: CKRecord.ID) throws -> CKRecord {
+    func createRecordWithData(_ data: Data, recordID: CKRecord.ID) throws -> CKRecord {
         let record = CKRecord(recordType: recordType, recordID: recordID)
         
         try record.update(withResourceData: data, peerId: peerId, tempDir: tempDirURL)
