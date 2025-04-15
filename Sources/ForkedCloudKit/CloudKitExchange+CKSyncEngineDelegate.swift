@@ -55,7 +55,7 @@ extension CloudKitExchange: CKSyncEngineDelegate {
                         // Check if the data has changed
                         let existingData = try? record.extractResourceData()
                         if data != existingData {
-                            try record.updateRecord(withResourceData: data, peerId: peerId)
+                            try record.update(withResourceData: data, peerId: peerId, tempDir: tempDirURL)
                             try forkedResource.update(.uploadingToCloudKit, with: resourceValue)
                             return record
                         } else {

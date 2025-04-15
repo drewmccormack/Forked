@@ -75,7 +75,12 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
     internal var recordFetchStatus: RecordFetchStatus = .uninitialized
 
     private let dataURL: URL
+    internal let tempDirURL: URL
     public let peerId: String
+    
+    // Constants
+    private let stateFileName = "CloudKitExchange_State.json"
+    private let tempDirName = "_CloudKitExchange_Temp"
     
     internal struct SyncState: Codable {
         var stateSerialization: CKSyncEngine.State.Serialization?
@@ -98,11 +103,22 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
         self.dataURL = dirURL
             .appending(component: id)
             .appendingPathExtension("json")
+        self.tempDirURL = dirURL
+            .appendingPathComponent(tempDirName)
         
         // Create directory in Application Support if it doesn't exist
         if !FileManager.default.fileExists(atPath: dirURL.path()) {
             try FileManager.default.createDirectory(at: dirURL, withIntermediateDirectories: true)
         }
+        
+        // Create temp directory if it doesn't exist
+        if !FileManager.default.fileExists(atPath: tempDirURL.path()) {
+            try FileManager.default.createDirectory(at: tempDirURL, withIntermediateDirectories: true)
+        }
+        
+        // Clean up the specific temp file for this exchange if it exists
+        let tempFileURL = tempDirURL.appendingPathComponent(id)
+        try? FileManager.default.removeItem(at: tempFileURL)
         
         // Setup peerId. This allows us to skip changes from this device.
         var peerIdURL = dirURL.appendingPathComponent("PeerId_\(id).txt")
@@ -245,6 +261,21 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
         let data = try JSONEncoder().encode(syncState)
         try data.write(to: dataURL)
     }
+    
+    /// Cleans up temporary files associated with a record after successful upload
+    internal func cleanupTempFilesForRecord(_ record: CKRecord) {
+        // After successful upload to CloudKit, we can clean up the temporary file
+        // used for the CKAsset. Since we're using recordID as the filename, it's easy to identify.
+        if record[ResourceRecordKey.largeData.string] != nil {
+            let fileName = record.recordID.recordName
+            let fileURL = tempDirURL.appendingPathComponent(fileName)
+            
+            if FileManager.default.fileExists(atPath: fileURL.path()) {
+                try? FileManager.default.removeItem(at: fileURL)
+                Logger.exchange.info("Cleaned up temporary asset file: \(fileName)")
+            }
+        }
+    }
 }
 
 @available(iOS 17.0, tvOS 17.0, watchOS 10.0, macOS 14.0, *)
@@ -265,21 +296,7 @@ internal extension CloudKitExchange {
     internal func createRecordWithData(_ data: Data, recordID: CKRecord.ID) throws -> CKRecord {
         let record = CKRecord(recordType: recordType, recordID: recordID)
         
-        if data.count <= CKRecord.maxEncryptedDataSize {
-            // For small data, use encrypted values
-            record.encryptedValues[ResourceRecordKey.resourceData.string] = data
-        } else {
-            // For large data, create a temporary file and use CKAsset
-            let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-            try data.write(to: tempURL)
-            let asset = CKAsset(fileURL: tempURL)
-            record[ResourceRecordKey.largeData.string] = asset
-            
-            // Clean up temp file after asset is created
-            try? FileManager.default.removeItem(at: tempURL)
-        }
-        
-        record[ResourceRecordKey.peerId.string] = peerId
+        try record.update(withResourceData: data, peerId: peerId, tempDir: tempDirURL)
         return record
     }
 }
@@ -288,28 +305,20 @@ internal extension CloudKitExchange {
 extension CKRecord {
     static let maxEncryptedDataSize = 1024 * 1024 // 1MB
     
-    func updateRecord(withResourceData data: Data, peerId: String) throws {
+    func update(withResourceData data: Data, peerId: String, tempDir: URL) throws {
         if data.count <= Self.maxEncryptedDataSize {
             // For small data, use encrypted values
             encryptedValues[ResourceRecordKey.resourceData.string] = data
             self[ResourceRecordKey.largeData.string] = nil
         } else {
-            // For large data, create a temporary file and use CKAsset
-            let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-            try data.write(to: tempURL)
-            let asset = CKAsset(fileURL: tempURL)
+            // For large data, create a file in the temp directory using recordID as the filename
+            let fileName = recordID.recordName
+            let fileURL = tempDir.appendingPathComponent(fileName)
+            try data.write(to: fileURL)
+            
+            let asset = CKAsset(fileURL: fileURL)
             self[ResourceRecordKey.largeData.string] = asset
             encryptedValues[ResourceRecordKey.resourceData.string] = nil
-            
-            // Schedule cleanup after 10 seconds
-            // We can't remove immediately, because the asset is still being used by CloudKit.
-            // This should be enough time for the asset to be uploaded.
-            // If it's not, the upload will get resubmitted automatically in the
-            // failure handler.
-            Task {
-                try? await Task.sleep(for: .seconds(10))
-                try? FileManager.default.removeItem(at: tempURL)
-            }
         }
         
         self[ResourceRecordKey.peerId.string] = peerId

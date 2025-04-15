@@ -99,6 +99,9 @@ extension CloudKitExchange {
                         Logger.exchange.error("Attempt to handle uploaded record, but no uploading resource found: \(recordSave.recordID.recordName)")
                     }
                 }
+                
+                // Clean up temporary files used for the upload
+                cleanupTempFilesForRecord(recordSave)
             } catch {
                 Logger.exchange.error("Exception handling sent record zone: \(error)")
             }
