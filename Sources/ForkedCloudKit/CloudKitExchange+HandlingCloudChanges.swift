@@ -72,7 +72,7 @@ extension CloudKitExchange {
                 try mergeIntoMainFromCloudKitFork()
                 recordFetchStatus = .doesNotExist
             } catch {
-                Logger.exchange.error("Failed to update resource with downloaded data: \(error)")
+                Logger.exchange.error("Failed to handle deletion of resource \(id): \(error)")
             }
             Logger.exchange.info("Updated for deletion of record: \(id)")
         }
@@ -137,7 +137,7 @@ extension CloudKitExchange {
                 }
                 update(withDownloadedRecord: serverRecord)
                 engine.state.add(pendingRecordZoneChanges: [.saveRecord(failedRecord.recordID)])
-                Logger.exchange.info("Server record was changed, so updated and will try again")
+                Logger.exchange.info("Server record was changed for \(failedRecord.recordID), so updated and will try again")
             case .zoneNotFound:
                 do {
                     try removeForks()
@@ -170,13 +170,13 @@ extension CloudKitExchange {
         do {
             let data = try record.extractResourceData()
             try forkedResource.performAtomically {
-                recordFetchStatus = .fetched(record)
                 let resource = try JSONDecoder().decode(R.Resource.self, from: data)
                 let newContent: CommitContent = .resource(resource)
                 let existingContent = try forkedResource.content(of: .cloudKit)
                 guard existingContent != newContent else { return }
                 try forkedResource.update(.cloudKit, with: resource)
                 try mergeIntoMainFromCloudKitFork()
+                recordFetchStatus = .fetched(record)
                 Logger.exchange.info("Updated cloudKitDownload with downloaded data, and merged into main")
             }
         } catch {
