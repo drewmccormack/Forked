@@ -159,7 +159,7 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
                 let fetchedRecord = try await engine.database.record(for: recordID)
                 forkedResource.performAtomically {
                     guard recordFetchStatus == .uninitialized else { return }
-                    recordFetchStatus = .fetched(fetchedRecord)
+                    update(withDownloadedRecord: fetchedRecord)
                     Logger.exchange.info("Successfully fetched initial record from syncEngine's database.")
                 }
             } catch {
@@ -231,6 +231,7 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
     }
     
     private func enqueueUploadOfMainIfNeeded() {
+        guard recordFetchStatus != .uninitialized else { return }
         do {
             try forkedResource.performAtomically {
                 try mergeIntoMainFromCloudKitFork()

@@ -52,7 +52,7 @@ extension CloudKitExchange: CKSyncEngineDelegate {
                         let record = recordFetchStatus.record ?? CKRecord(recordType: recordType, recordID: recordID)
                         let data = try JSONEncoder().encode(resourceValue)
                         
-                        // Check if the data has changed
+                        // Check if the data has change
                         let existingData = try? record.extractResourceData()
                         if data != existingData {
                             try record.update(withResourceData: data, peerId: peerId, tempDir: tempDirURL)
