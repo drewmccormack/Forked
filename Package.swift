@@ -36,7 +36,8 @@ let package = Package(
             ]
         ),
         .target(
-            name: "Forked"),
+            name: "Forked"
+        ),
         .target(
             name: "ForkedMerge",
             dependencies: [
