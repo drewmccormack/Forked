@@ -225,10 +225,23 @@ extension MergeableArray {
         let anchoredByAnchorId: [ValueContainer.ID? : [ValueContainer]] = .init(grouping: sorted) { $0.anchor }
         var result: [ValueContainer] = []
         
+        // Track visited nodes to prevent cycles
+        var visitedIds = Set<ValueContainer.ID>()
+        
         func addDecendants(of containers: [ValueContainer]) {
             for container in containers {
+                // Add the container to result first
                 result.append(container)
+                
+                // Convert non-optional ID to optional for dictionary lookup
                 let optionalId: ValueContainer.ID? = container.id
+                
+                // Skip already visited nodes to prevent cycles
+                if !visitedIds.insert(container.id).inserted {
+                    continue // Already visited this node, skip to prevent cycles
+                }
+                
+                // Process children
                 if let children = anchoredByAnchorId[optionalId] {
                     addDecendants(of: children)
                 }
