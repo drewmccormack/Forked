@@ -225,31 +225,31 @@ extension MergeableArray {
         let anchoredByAnchorId: [ValueContainer.ID? : [ValueContainer]] = .init(grouping: sorted) { $0.anchor }
         var result: [ValueContainer] = []
         
-        // Track visited nodes to prevent cycles
+        // Use an explicit stack instead of recursion to avoid stack overflow
+        var stack: [ValueContainer] = anchoredByAnchorId[nil] ?? []
         var visitedIds = Set<ValueContainer.ID>()
         
-        func addDecendants(of containers: [ValueContainer]) {
-            for container in containers {
-                // Add the container to result first
+        // Process nodes in a depth-first order
+        while !stack.isEmpty {
+            // Take the last container from the stack
+            let container = stack.removeLast()
+            
+            // Add to result if not already visited
+            if visitedIds.insert(container.id).inserted {
                 result.append(container)
                 
-                // Convert non-optional ID to optional for dictionary lookup
+                // Find children and add them to the stack in reverse order
+                // (so they get processed in the correct order when popped)
                 let optionalId: ValueContainer.ID? = container.id
-                
-                // Skip already visited nodes to prevent cycles
-                if !visitedIds.insert(container.id).inserted {
-                    continue // Already visited this node, skip to prevent cycles
-                }
-                
-                // Process children
                 if let children = anchoredByAnchorId[optionalId] {
-                    addDecendants(of: children)
+                    // Add in reverse order so they get processed in the right order
+                    for child in children.reversed() {
+                        stack.append(child)
+                    }
                 }
             }
         }
         
-        let roots = anchoredByAnchorId[nil] ?? []
-        addDecendants(of: roots)
         return result
     }
     
