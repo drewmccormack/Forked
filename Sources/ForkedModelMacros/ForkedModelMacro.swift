@@ -1,5 +1,6 @@
 import SwiftSyntax
 import SwiftSyntaxMacros
+import Foundation
 
 // Define our own local version of PropertyMerge to avoid ForkedMerge dependency
 public enum PropertyMerge: String {
