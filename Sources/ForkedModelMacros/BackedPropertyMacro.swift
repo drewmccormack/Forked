@@ -43,7 +43,7 @@ public struct BackedPropertyMacro: PeerMacro, AccessorMacro {
                 public var \(raw: backingPropertyPrefix + propertyName) = ForkedMerge.MergeableSet<\(raw: elementType)>(\(raw: defaultValue))
                 """
         case .mergeableDictionary:
-            guard let (keyType, valueType) = extractKeyAndValueTypes(from: originalType) else {
+            guard let (keyType, valueType) = ForkedModelMacro.extractKeyAndValueTypes(from: originalType) else {
                 throw ForkedModelError.propertyBackingAndTypeAreIncompatible
             }
             backingProperty =

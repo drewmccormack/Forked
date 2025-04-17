@@ -1,6 +1,5 @@
 import SwiftSyntax
 import SwiftSyntaxMacros
-import ForkedMerge
 
 public struct MergeablePropertyMacro: PeerMacro {
     

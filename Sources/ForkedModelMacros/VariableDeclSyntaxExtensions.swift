@@ -1,6 +1,5 @@
 import SwiftSyntax
 import SwiftSyntaxMacros
-import ForkedMerge
 
 private let mergedLabel = "Merged"
 private let mergeAlgorithmLabel = "using"
@@ -81,7 +80,7 @@ extension VariableDeclSyntax {
         let originalType = binding.typeAnnotation!.type.trimmedDescription
 
         let result: PropertyVariety
-        if nil != extractKeyAndValueTypes(from: originalType) {
+        if nil != ForkedModelMacro.extractKeyAndValueTypes(from: originalType) {
             result = .dictionary
         } else if originalType.hasPrefix("Set<") && originalType.hasSuffix(">") {
             result = .set

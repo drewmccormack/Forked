@@ -1,6 +1,23 @@
 import SwiftSyntax
 import SwiftSyntaxMacros
-import ForkedMerge
+
+// Define our own local version of PropertyMerge to avoid ForkedMerge dependency
+public enum PropertyMerge: String {
+    case mergeableProtocol
+    case arrayMerge
+    case arrayOfIdentifiableMerge
+    case setMerge
+    case dictionaryMerge
+    case textMerge
+}
+
+// Define our own local version of PropertyBacking to avoid ForkedMerge dependency
+public enum PropertyBacking: String {
+    case mergeableValue
+    case mergeableArray
+    case mergeableSet
+    case mergeableDictionary
+}
 
 enum PropertyVariety {
     case singleValue
@@ -41,6 +58,27 @@ private struct BackedPropertyVar {
 private let versionLabel = "version"
 
 public struct ForkedModelMacro: ExtensionMacro, MemberMacro {
+    // Helper function to extract key and value types from Dictionary type
+    public static func extractKeyAndValueTypes(from type: String) -> (String, String)? {
+        // We have a few ways to represent dictionaries
+        if type.hasPrefix("[") && type.contains(":") && type.hasSuffix("]") {
+            // [Key: Value]
+            let content = type.dropFirst().dropLast()
+            guard let colonIndex = content.firstIndex(of: ":") else { return nil }
+            let key = String(content[..<colonIndex]).trimmingCharacters(in: .whitespaces)
+            let value = String(content[content.index(after: colonIndex)...]).trimmingCharacters(in: .whitespaces)
+            return (key, value)
+        } else if type.hasPrefix("Dictionary<") && type.hasSuffix(">") {
+            // Dictionary<Key, Value>
+            let content = type.dropFirst(11).dropLast()
+            guard let commaIndex = content.firstIndex(of: ",") else { return nil }
+            let key = String(content[..<commaIndex]).trimmingCharacters(in: .whitespaces)
+            let value = String(content[content.index(after: commaIndex)...]).trimmingCharacters(in: .whitespaces)
+            return (key, value)
+        }
+        return nil
+    }
+    
     public static func expansion(
         of node: AttributeSyntax,
         providingMembersOf declaration: some DeclGroupSyntax,
@@ -214,7 +252,7 @@ public struct ForkedModelMacro: ExtensionMacro, MemberMacro {
                 let elementType = varType.dropFirst(4).dropLast()
                 expr = mergeExpr(mergerSetup: "let merger = SetMerger<\(elementType)>()")
             case .dictionaryMerge:
-                guard let (key, value) = extractKeyAndValueTypes(from: varType) else {
+                guard let (key, value) = ForkedModelMacro.extractKeyAndValueTypes(from: varType) else {
                     throw ForkedModelError.propertyMergeAndTypeAreIncompatible
                 }
                 expr = mergeExpr(mergerSetup: "let merger = DictionaryMerger<\(key), \(value)>()")
