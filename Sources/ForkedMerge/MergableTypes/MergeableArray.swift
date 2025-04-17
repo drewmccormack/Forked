@@ -196,7 +196,11 @@ extension MergeableArray where Element: Identifiable {
             let id = container.value.id
             guard let mostRecent = mostRecentContainerByID[id] else { continue }
             
-            if container.id == mostRecent.id && seen.insert(id).inserted {
+            // Explicit conversion to optional UUID for comparison
+            let containerIdOptional: ValueContainer.ID? = container.id 
+            let mostRecentIdOptional: ValueContainer.ID? = mostRecent.id
+            
+            if containerIdOptional == mostRecentIdOptional && seen.insert(id).inserted {
                 newValueContainers.append(container)
             } else {
                 var tombstone = container
@@ -224,8 +228,10 @@ extension MergeableArray {
         func addDecendants(of containers: [ValueContainer]) {
             for container in containers {
                 result.append(container)
-                guard let anchoredToValueContainer = anchoredByAnchorId[container.id] else { continue }
-                addDecendants(of: anchoredToValueContainer)
+                let optionalId: ValueContainer.ID? = container.id
+                if let children = anchoredByAnchorId[optionalId] {
+                    addDecendants(of: children)
+                }
             }
         }
         
