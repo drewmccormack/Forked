@@ -225,27 +225,52 @@ extension MergeableArray {
         let anchoredByAnchorId: [ValueContainer.ID? : [ValueContainer]] = .init(grouping: sorted) { $0.anchor }
         var result: [ValueContainer] = []
         
-        // Use an explicit stack instead of recursion to avoid stack overflow
-        var stack: [ValueContainer] = anchoredByAnchorId[nil] ?? []
+        // Track visited nodes to avoid processing the same node twice and prevent cycles
         var visitedIds = Set<ValueContainer.ID>()
         
-        // Process nodes in a depth-first order
+        // Start with root nodes
+        let roots = anchoredByAnchorId[nil] ?? []
+        
+        // Use a stack to mimic the recursive call stack
+        // Each entry is a tuple of (containers, currentIndex)
+        var stack: [([ValueContainer], Int)] = []
+        
+        // Initial work item for root containers
+        if !roots.isEmpty {
+            stack.append((roots, 0))
+        }
+        
+        // Process the stack iteratively
         while !stack.isEmpty {
-            // Take the last container from the stack
-            let container = stack.removeLast()
+            // Get current work item
+            var (containers, index) = stack.removeLast()
             
-            // Add to result if not already visited
+            // If we've processed all containers in this group, continue to next item
+            if index >= containers.count {
+                continue
+            }
+            
+            // Get the current container
+            let container = containers[index]
+            
+            // Add the container to result first (just like in the recursive approach)
+            result.append(container)
+            
+            // Update the index for this container group
+            index += 1
+            
+            // If there are more containers in this group, push the updated work item back
+            if index < containers.count {
+                stack.append((containers, index))
+            }
+            
+            // Skip already visited nodes to prevent cycles
             if visitedIds.insert(container.id).inserted {
-                result.append(container)
-                
-                // Find children and add them to the stack in reverse order
-                // (so they get processed in the correct order when popped)
+                // Get the children of this container
                 let optionalId: ValueContainer.ID? = container.id
-                if let children = anchoredByAnchorId[optionalId] {
-                    // Add in reverse order so they get processed in the right order
-                    for child in children.reversed() {
-                        stack.append(child)
-                    }
+                if let children = anchoredByAnchorId[optionalId], !children.isEmpty {
+                    // Add the children as a new work item (this mimics the recursive call)
+                    stack.append((children, 0))
                 }
             }
         }
@@ -296,3 +321,4 @@ extension MergeableArray.ValueContainer: Codable where Element: Codable {}
 
 extension MergeableArray: Hashable where Element: Hashable {}
 extension MergeableArray.ValueContainer: Hashable where Element: Hashable {}
+
