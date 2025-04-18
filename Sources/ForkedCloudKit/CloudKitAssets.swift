@@ -217,7 +217,7 @@ public final class CloudKitAssets: @unchecked Sendable {
         }
         
         // Write data to file
-        try data.write(to: assetURL)
+        try data.write(to: assetURL, options: .atomic)
         
         // Create metadata record
         if case .cloudKit(_, let zoneName, _) = configuration {
@@ -344,7 +344,7 @@ extension CloudKitAssets: CKSyncEngineDelegate {
         switch event {
         case .stateUpdate(let event):
             // Save state when it changes
-            try? JSONEncoder().encode(event.stateSerialization).write(to: stateURL)
+            try? JSONEncoder().encode(event.stateSerialization).write(to: stateURL, options: .atomic)
             
         case .accountChange(let event):
             switch event.changeType {

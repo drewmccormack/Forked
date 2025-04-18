@@ -260,7 +260,7 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
     
     internal func saveState() throws {
         let data = try JSONEncoder().encode(syncState)
-        try data.write(to: dataURL)
+        try data.write(to: dataURL, options: .atomic)
     }
     
     /// Cleans up temporary files associated with a record after successful upload

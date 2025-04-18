@@ -78,7 +78,7 @@ extension AtomicRepository: Codable & Persistent where Resource: Codable {
 
     public func persist() throws {
         let data = try JSONEncoder().encode(self)
-        try data.write(to: managedFileURL!)
+        try data.write(to: managedFileURL!, options: .atomic)
     }
     
     public func load() throws {

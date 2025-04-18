@@ -84,11 +84,11 @@ public final class FileRepository: Repository {
         // Save metadata
         let metadata = VersionMetadata(count: commit.version.count, timestamp: commit.version.timestamp)
         let encoder = JSONEncoder()
-        try encoder.encode(metadata).write(to: metadataURL)
+        try encoder.encode(metadata).write(to: metadataURL, options: .atomic)
         
         // Save content if it's not .none
         if case .resource(let data) = commit.content {
-            try data.write(to: dataURL)
+            try data.write(to: dataURL, options: .atomic)
         }
     }
 
