@@ -432,14 +432,15 @@ extension CKRecord {
     static let maxParts = 5
     
     func addAsset(_ fileURL: URL, tempDir: URL) throws {
-        // Get file size
-        let fileSize = try? FileManager.default.attributesOfItem(atPath: fileURL.path)[.size] as? Int64 ?? 0
+        // Get file size - empty files will have size 0
+        let fileSize = try FileManager.default.attributesOfItem(atPath: fileURL.path)[.size] as? Int64 ?? 0
         
         // Clear any deletion marker
         self[AssetRecordKey.deleted.string] = false
         
-        if fileSize ?? 0 <= Self.maxPartSize {
-            // For small files, use the original asset field
+        // Handle empty files and small files (under maxPartSize) as single assets
+        if fileSize == 0 || fileSize <= Self.maxPartSize {
+            // For empty files and small files, use the original asset field
             let asset = CKAsset(fileURL: fileURL)
             self[AssetRecordKey.asset.string] = asset
             
@@ -451,7 +452,7 @@ extension CKRecord {
             }
         } else {
             // For large files, split into parts
-            let numberOfParts = Swift.min(Self.maxParts, Int((fileSize! + Self.maxPartSize - 1) / Self.maxPartSize))
+            let numberOfParts = Swift.min(Self.maxParts, Int((fileSize + Self.maxPartSize - 1) / Self.maxPartSize))
             
             // Clear the single asset property
             self[AssetRecordKey.asset.string] = nil
@@ -462,40 +463,39 @@ extension CKRecord {
             }
             
             // Split file into parts using the provided temp directory
-            if let fileHandle = try? FileHandle(forReadingFrom: fileURL) {
-                for partNumber in 1...numberOfParts {
-                    // Create a unique filename based on the source file's name
-                    let fileName = fileURL.lastPathComponent
-                    let partURL = tempDir.appendingPathComponent("\(fileName)_part\(partNumber)")
-                    
-                    if let partHandle = try? FileHandle(forWritingTo: partURL) {
-                        // Read and write the part
-                        let bytesToRead = Swift.min(Self.maxPartSize, fileSize! - Int64(partNumber - 1) * Self.maxPartSize)
-                        if let data = try? fileHandle.read(upToCount: Int(bytesToRead)) {
-                            try? partHandle.write(contentsOf: data)
-                        }
-                        try? partHandle.close()
-                        
-                        // Add the part to the record
-                        let partAsset = CKAsset(fileURL: partURL)
-                        self[AssetRecordKey.assetPart(partNumber).string] = partAsset
-                    }
+            let fileHandle = try FileHandle(forReadingFrom: fileURL)
+            defer { try? fileHandle.close() }
+            
+            for partNumber in 1...numberOfParts {
+                // Create a unique filename based on the source file's name
+                let fileName = fileURL.lastPathComponent
+                let partURL = tempDir.appendingPathComponent("\(fileName)_part\(partNumber)")
+                
+                let partHandle = try FileHandle(forWritingTo: partURL)
+                defer { try? partHandle.close() }
+                
+                // Read and write the part
+                let bytesToRead = Swift.min(Self.maxPartSize, fileSize - Int64(partNumber - 1) * Self.maxPartSize)
+                guard let data = try fileHandle.read(upToCount: Int(bytesToRead)) else {
+                    throw CloudKitAssets.Error.assetNotFound
                 }
-                try? fileHandle.close()
+                try partHandle.write(contentsOf: data)
+                
+                // Add the part to the record
+                let partAsset = CKAsset(fileURL: partURL)
+                self[AssetRecordKey.assetPart(partNumber).string] = partAsset
             }
             
             // Add metadata about the parts
             self[AssetRecordKey.numberOfParts.string] = numberOfParts
-            if let fileSize = fileSize {
-                self[AssetRecordKey.totalSize.string] = fileSize
-            }
+            self[AssetRecordKey.totalSize.string] = fileSize
         }
     }
     
     func reconstructAsset(to destinationURL: URL) throws {
         // Check if this record is marked for deletion
         if let isDeleted = self[AssetRecordKey.deleted.string] as? Bool, isDeleted {
-            try? FileManager.default.removeItem(at: destinationURL)
+            try FileManager.default.removeItem(at: destinationURL)
             return
         }
         
@@ -503,7 +503,7 @@ extension CKRecord {
         if let numberOfParts = self[AssetRecordKey.numberOfParts.string] as? Int {
             // Create a temporary directory for the parts
             let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-            try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+            try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
             
             defer {
                 // Clean up temp directory
@@ -513,31 +513,40 @@ extension CKRecord {
             // Download all parts
             var partURLs: [URL] = []
             for partNumber in 1...numberOfParts {
-                if let partAsset = self[AssetRecordKey.assetPart(partNumber).string] as? CKAsset,
-                   let sourceURL = partAsset.fileURL {
-                    let partURL = tempDir.appendingPathComponent("part\(partNumber)")
-                    _ = try? FileManager.default.copyItem(at: sourceURL, to: partURL)
-                    partURLs.append(partURL)
+                guard let partAsset = self[AssetRecordKey.assetPart(partNumber).string] as? CKAsset,
+                      let sourceURL = partAsset.fileURL else {
+                    throw CloudKitAssets.Error.assetNotFound
                 }
+                
+                let partURL = tempDir.appendingPathComponent("part\(partNumber)")
+                try FileManager.default.copyItem(at: sourceURL, to: partURL)
+                partURLs.append(partURL)
             }
             
+            // Create the output file, even if it's empty
+            try Data().write(to: destinationURL, options: .atomic)
+            
             // Combine parts into final file
-            if let outputHandle = try? FileHandle(forWritingTo: destinationURL) {
-                for partURL in partURLs {
-                    var partHandle: FileHandle?
-                    if let handle = try? FileHandle(forReadingFrom: partURL),
-                       let data = try? handle.readToEnd() {
-                        try? outputHandle.write(contentsOf: data)
-                        partHandle = handle
-                    }
-                    try? partHandle?.close()
+            let outputHandle = try FileHandle(forWritingTo: destinationURL)
+            defer { try? outputHandle.close() }
+            
+            for partURL in partURLs {
+                let partHandle = try FileHandle(forReadingFrom: partURL)
+                defer { try? partHandle.close() }
+                
+                guard let data = try partHandle.readToEnd() else {
+                    throw CloudKitAssets.Error.assetNotFound
                 }
-                try? outputHandle.close()
+                try outputHandle.write(contentsOf: data)
             }
         } else if let assetReference = self[AssetRecordKey.asset.string] as? CKAsset,
                   let sourceURL = assetReference.fileURL {
             // Handle single asset (under 50MB)
-            _ = try? FileManager.default.copyItem(at: sourceURL, to: destinationURL)
+            // Create an empty file first to ensure the destination exists
+            try Data().write(to: destinationURL, options: .atomic)
+            try FileManager.default.copyItem(at: sourceURL, to: destinationURL)
+        } else {
+            throw CloudKitAssets.Error.assetNotFound
         }
     }
 }
