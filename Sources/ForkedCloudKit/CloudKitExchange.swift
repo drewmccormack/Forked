@@ -159,12 +159,27 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
                 let fetchedRecord = try await engine.database.record(for: recordID)
                 forkedResource.performAtomically {
                     guard recordFetchStatus == .uninitialized else { return }
-                    update(withDownloadedRecord: fetchedRecord)
-                    Logger.exchange.info("Successfully fetched initial record from syncEngine's database.")
+                    let recordPeerId = fetchedRecord["peerId"] as? String
+                    if recordPeerId == peerId {
+                        // Our own record - no merge needed, just update status
+                        recordFetchStatus = .fetched(fetchedRecord)
+                        Logger.exchange.info("Fetched initial record from this device, no merge needed.")
+                    } else {
+                        update(withDownloadedRecord: fetchedRecord)
+                        Logger.exchange.info("Successfully fetched and merged initial record from syncEngine's database.")
+                    }
                 }
+            } catch let error as CKError where error.code == .unknownItem {
+                // Record doesn't exist on server - this is a valid state for new records
+                forkedResource.performAtomically {
+                    recordFetchStatus = .doesNotExist
+                }
+                Logger.exchange.info("No record exists on server yet, ready for first upload.")
             } catch {
-                recordFetchStatus = .doesNotExist
-                Logger.exchange.error("Failed to fetch initial record from syncEngine's database: \(error)")
+                // Network error or other failure - leave as .uninitialized to block uploads
+                // until we can successfully fetch the current server state.
+                // CKSyncEngine will retry and eventually deliver the record via delegate.
+                Logger.exchange.error("Failed to fetch initial record (will retry via sync engine): \(error)")
             }
         }
         

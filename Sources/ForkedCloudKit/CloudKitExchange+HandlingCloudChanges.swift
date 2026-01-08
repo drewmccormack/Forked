@@ -55,7 +55,9 @@ extension CloudKitExchange {
             // Check if the record has a peerId and if it matches the current device
             if let recordPeerId = modification.record["peerId"] as? String,
                recordPeerId == peerId {
-                recordFetchStatus = .fetched(modification.record)
+                forkedResource.performAtomically {
+                    recordFetchStatus = .fetched(modification.record)
+                }
                 Logger.exchange.info("Received record from our device, updating record reference only")
                 continue
             }
@@ -68,9 +70,11 @@ extension CloudKitExchange {
             let id = deletion.recordID.recordName
             guard self.id == id else { continue }
             do {
-                try forkedResource.removeContent(from: .cloudKit)
-                try mergeIntoMainFromCloudKitFork()
-                recordFetchStatus = .doesNotExist
+                try forkedResource.performAtomically {
+                    try forkedResource.removeContent(from: .cloudKit)
+                    try mergeIntoMainFromCloudKitFork()
+                    recordFetchStatus = .doesNotExist
+                }
             } catch {
                 Logger.exchange.error("Failed to handle deletion of resource \(id): \(error)")
             }
@@ -135,9 +139,18 @@ extension CloudKitExchange {
                     Logger.exchange.error("No server record for conflict \(failedRecordSave.error)")
                     continue
                 }
-                update(withDownloadedRecord: serverRecord)
+                let serverPeerId = serverRecord["peerId"] as? String
+                if serverPeerId == peerId {
+                    // Our own record returned - just need the updated changeTag, no merge needed
+                    forkedResource.performAtomically {
+                        recordFetchStatus = .fetched(serverRecord)
+                    }
+                    Logger.exchange.info("Server record was our own upload, updated changeTag for \(failedRecord.recordID)")
+                } else {
+                    update(withDownloadedRecord: serverRecord)
+                    Logger.exchange.info("Server record was changed by another device for \(failedRecord.recordID), merged and will retry")
+                }
                 engine.state.add(pendingRecordZoneChanges: [.saveRecord(failedRecord.recordID)])
-                Logger.exchange.info("Server record was changed for \(failedRecord.recordID), so updated and will try again")
             case .zoneNotFound:
                 do {
                     try removeForks()
