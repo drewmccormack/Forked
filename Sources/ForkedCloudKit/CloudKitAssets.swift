@@ -458,8 +458,10 @@ extension CKRecord {
             self[AssetRecordKey.asset.string] = nil
             
             // Clear any existing part properties beyond what we need
-            for partNumber in (numberOfParts + 1)...Self.maxParts {
-                self[AssetRecordKey.assetPart(partNumber).string] = nil
+            if numberOfParts < Self.maxParts {
+                for partNumber in (numberOfParts + 1)...Self.maxParts {
+                    self[AssetRecordKey.assetPart(partNumber).string] = nil
+                }
             }
             
             // Split file into parts using the provided temp directory
