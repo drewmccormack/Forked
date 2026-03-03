@@ -1,7 +1,9 @@
 #if canImport(CloudKit)
 import CloudKit
 import SwiftUI
+#if canImport(AsyncAlgorithms)
 import AsyncAlgorithms
+#endif
 import Forked
 public import os.log
 
@@ -186,16 +188,24 @@ public final class CloudKitExchange<R: Repository>: @unchecked Sendable where R.
         // Monitor changes to main
         monitorTask = Task { [weak self, changeStream] in
             await self?.uploadMain()
-            for await _ in changeStream
+            let filtered = changeStream
                 .filter({
                     $0.fork == .main &&
                     .cloudKit != $0.mergingFork
                 })
-                .debounce(for: .seconds(1)) {
+            #if canImport(AsyncAlgorithms)
+            for await _ in filtered.debounce(for: .seconds(1)) {
                 guard let self else { break }
                 Logger.exchange.info("Main fork changed, so will upload")
                 await uploadMain()
             }
+            #else
+            for await _ in filtered {
+                guard let self else { break }
+                Logger.exchange.info("Main fork changed, so will upload")
+                await uploadMain()
+            }
+            #endif
         }
         
         // Regularly check if an upload is needed,

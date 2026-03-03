@@ -1,4 +1,4 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 6.1
 
 import PackageDescription
 import CompilerPluginSupport
@@ -20,6 +20,10 @@ let package = Package(
             name: "ForkedCloudKit",
             targets: ["ForkedCloudKit"]),
     ],
+    traits: [
+        .trait(name: "CloudKit"),
+        .trait(name: "Model"),
+    ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-docc-plugin", from: "1.0.0"),
         .package(url: "https://github.com/apple/swift-async-algorithms", from: "1.0.2"),
@@ -29,8 +33,8 @@ let package = Package(
         .macro(
             name: "ForkedModelMacros",
             dependencies: [
-                .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
-                .product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
+                .product(name: "SwiftSyntaxMacros", package: "swift-syntax", condition: .when(traits: ["Model"])),
+                .product(name: "SwiftCompilerPlugin", package: "swift-syntax", condition: .when(traits: ["Model"])),
             ]
         ),
         .target(
@@ -47,24 +51,24 @@ let package = Package(
             dependencies: [
                 "Forked",
                 "ForkedMerge",
-                "ForkedModelMacros",
+                .target(name: "ForkedModelMacros", condition: .when(traits: ["Model"])),
             ]
         ),
         .target(
             name: "ForkedCloudKit",
             dependencies: [
                 "Forked",
-                .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
+                .product(name: "AsyncAlgorithms", package: "swift-async-algorithms", condition: .when(traits: ["CloudKit"])),
             ]
         ),
         .testTarget(
             name: "ForkedTests",
             dependencies: [
                 "Forked",
-                "ForkedModelMacros",
+                .target(name: "ForkedModelMacros", condition: .when(traits: ["Model"])),
                 "ForkedMerge",
                 "ForkedModel",
-                .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax"),
+                .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax", condition: .when(traits: ["Model"])),
             ]
         ),
     ],

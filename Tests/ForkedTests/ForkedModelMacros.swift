@@ -1,7 +1,9 @@
+#if canImport(SwiftSyntaxMacrosTestSupport)
 import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
 import SwiftSyntaxMacrosTestSupport
+#endif
 import XCTest
 
 #if canImport(ForkedModelMacros)
