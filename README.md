@@ -34,6 +34,30 @@ dependencies: [
 3. Click + and enter: `https://github.com/drewmccormack/Forked.git`
 4. Add `Forked` and any of the subpackages you need
 
+#### Enabling Optional Features with Traits
+
+The `Forked` and `ForkedMerge` libraries are always available, but `ForkedModel` macros and `ForkedCloudKit` require enabling SPM traits to pull in their heavier dependencies (swift-syntax and swift-async-algorithms respectively). This keeps the package lightweight for consumers who only need the core libraries.
+
+In your `Package.swift`, enable traits on the dependency:
+
+```swift
+// Enable ForkedModel macros only
+.package(url: "https://github.com/drewmccormack/Forked.git", from: "0.1.0", traits: ["Model"])
+
+// Enable ForkedCloudKit with debounce support only
+.package(url: "https://github.com/drewmccormack/Forked.git", from: "0.1.0", traits: ["CloudKit"])
+
+// Enable both
+.package(url: "https://github.com/drewmccormack/Forked.git", from: "0.1.0", traits: ["Model", "CloudKit"])
+```
+
+| Trait | What it enables | Heavy dependency |
+|-------|----------------|-----------------|
+| `Model` | `@ForkedModel`, `@Merged`, `@Backed` macros | swift-syntax |
+| `CloudKit` | Change debouncing in `CloudKitExchange` | swift-async-algorithms |
+
+> **Note:** `ForkedModel` without the `Model` trait still provides the `Mergeable` typealias, and `ForkedCloudKit` still works without the `CloudKit` trait — it just skips debouncing of change notifications.
+
 ## Key Features
 
 - **Safe**: Prevents data races and manages race conditions without locks, queues, or actors

@@ -8,7 +8,13 @@ ForkedCloudKit makes it easy to sync your Forked data between devices using Appl
 
 ## Getting Started
 
-First, make sure you have the ForkedCloudKit subpackage added to your project dependencies.
+First, make sure you have the ForkedCloudKit subpackage added to your project dependencies. For full functionality, enable the `CloudKit` trait in your `Package.swift`:
+
+```swift
+.package(url: "https://github.com/drewmccormack/Forked.git", from: "0.1.0", traits: ["CloudKit"])
+```
+
+This pulls in swift-async-algorithms, which is used to debounce rapid change notifications before uploading. Without the trait, ForkedCloudKit still works but uploads every change immediately.
 
 Then import ForkedCloudKit in your source files:
 

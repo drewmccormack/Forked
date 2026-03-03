@@ -8,6 +8,18 @@ ForkedModel provides a simple way to define data models using Swift value types 
 
 A mergeable model is useful for handling concurrent changes to data within your app, between processes (_eg_ extensions), and even between devices if you are syncing with iCloud. Adopting `@ForkedModel` takes very little effort, has very little risk since your model is comprised of standard structs, and prepares your app for whatever data concurrency challenges may arise.
 
+## Enabling ForkedModel Macros
+
+The `@ForkedModel`, `@Merged`, and `@Backed` macros require the `Model` trait to be enabled on the Forked package dependency. This keeps swift-syntax — a large dependency — from being downloaded when you only need the core `Forked` or `ForkedMerge` libraries.
+
+In your `Package.swift`, enable the trait:
+
+```swift
+.package(url: "https://github.com/drewmccormack/Forked.git", from: "0.1.0", traits: ["Model"])
+```
+
+Without the `Model` trait, `ForkedModel` still provides the `Mergeable` typealias, but the macros will not be available.
+
 ## Creating a Basic Model
 
 You create a mergeable model using the `@ForkedModel` macro:
