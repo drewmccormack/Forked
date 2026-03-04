@@ -9,16 +9,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: "Test Swift Package on macOS"
-        run: swift test
+        run: swift test --traits Model,CloudKit
       - name: "Build Swift Package on iOS"
-        run: xcodebuild build -skipMacroValidation -skipPackagePluginValidation -sdk "iphonesimulator" -destination "platform=iOS Simulator,name=iPhone 16" -scheme "Forked-Package"
-        #run: xcodebuild test -skipMacroValidation -skipPackagePluginValidation -sdk "iphonesimulator" -destination "platform=iOS Simulator,name=iPhone 16" -scheme "Forked-Package"
+        run: xcodebuild build -skipMacroValidation -skipPackagePluginValidation -sdk "iphonesimulator" -destination "platform=iOS Simulator,name=iPhone 16" -scheme "Forked-Package" SWIFT_PACKAGE_TRAITS="Model CloudKit"
+        #run: xcodebuild test -skipMacroValidation -skipPackagePluginValidation -sdk "iphonesimulator" -destination "platform=iOS Simulator,name=iPhone 16" -scheme "Forked-Package" SWIFT_PACKAGE_TRAITS="Model CloudKit"
   linux-android:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: "Test Swift Package on Linux"
-        run: swift test
+        run: swift test --traits Model,CloudKit
       - name: "Build Swift Package on Android"
         uses: skiptools/swift-android-action@v2
         with:
