@@ -11,8 +11,10 @@ jobs:
       - name: "Test Swift Package on macOS"
         run: swift test --traits Model,CloudKit
       - name: "Build Swift Package on iOS"
-        run: xcodebuild build -skipMacroValidation -skipPackagePluginValidation -sdk "iphonesimulator" -destination "platform=iOS Simulator,name=iPhone 16" -scheme "Forked-Package" SWIFT_PACKAGE_TRAITS="Model CloudKit"
-        #run: xcodebuild test -skipMacroValidation -skipPackagePluginValidation -sdk "iphonesimulator" -destination "platform=iOS Simulator,name=iPhone 16" -scheme "Forked-Package" SWIFT_PACKAGE_TRAITS="Model CloudKit"
+        run: |
+          for scheme in Forked ForkedMerge ForkedCloudKit; do
+            xcodebuild build -skipMacroValidation -skipPackagePluginValidation -sdk "iphonesimulator" -destination "platform=iOS Simulator,name=iPhone 16" -scheme "$scheme"
+          done
   linux-android:
     runs-on: ubuntu-24.04
     steps:
