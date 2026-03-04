@@ -26,6 +26,7 @@ jobs:
         with:
           # Android SDK does not yet support Testing framework
           build-tests: false
+          swift-build-flags: "--traits Model,CloudKit"
   windows:
     runs-on: windows-latest
     #   Error: error: invalid path 'docs/Forked/data/documentation/forked/atomicrepository/content(of:at:).json'
